@@ -99,8 +99,8 @@ async function handleCommand(message, channelMemories, client, providerManager, 
         break;
       }
 
-       case 'debug': {
-         const channelCount = channelMemories.size;
+        case 'debug': {
+          const channelCount = channelMemories.size();
          const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
          const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
 
@@ -1044,9 +1044,9 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             globalPrompt[0] = text;
             await fs.promises.writeFile('globalPrompt.txt', text);
             await interaction.editReply('Custom prompt set!');
-         } else if (interaction.commandName === 'debug') {
-           await interaction.deferReply();
-           const channelCount = channelMemories.size;
+          } else if (interaction.commandName === 'debug') {
+            await interaction.deferReply();
+            const channelCount = channelMemories.size();
            const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
            const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
 
