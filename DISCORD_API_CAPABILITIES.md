@@ -250,4 +250,4 @@ export async function executeGetUserPresence(args, client) {
 </xai:function_call">Let me also create a simple test to show what specific Discord API data we're missing: 
 
 <xai:function_call name="write">
-<parameter name="filePath">/root/maxwell/maxwell-selfbot/discord-api-test.js
+<parameter name="filePath">/path/to/discord-selfbot/discord-api-test.js

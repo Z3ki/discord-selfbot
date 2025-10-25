@@ -145,7 +145,7 @@ This document outlines the additional data and capabilities available from the A
 
 Run the comprehensive test to see current capabilities:
 ```bash
-cd /root/maxwell/maxwell-selfbot
+cd /path/to/discord-selfbot
 node test-comprehensive.js
 ```
 
@@ -153,4 +153,4 @@ This will show both the currently extracted metadata and available raw response 
 </xai:function_call">Now let me run the final test to show the current capabilities: 
 
 <xai:function_call name="bash">
-<parameter name="command">cd /root/maxwell/maxwell-selfbot && node test-comprehensive.js 2>&1 | grep -A 20 "Discovering available API capabilities"
+<parameter name="command">cd /path/to/discord-selfbot && node test-comprehensive.js 2>&1 | grep -A 20 "Discovering available API capabilities"
