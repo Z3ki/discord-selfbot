@@ -1068,8 +1068,15 @@ async function processMediaAsync(message, context) {
         );
 
         if (mediaAnalysis) {
-          await message.reply(`🤖 **Media Analysis**: ${mediaAnalysis}`);
-          logger.info('Sent media analysis follow-up message', { channelId: message.channel.id });
+          try {
+            await message.reply(`🤖 **Media Analysis**: ${mediaAnalysis}`);
+            logger.info('Sent media analysis follow-up message', { channelId: message.channel?.id || 'unknown' });
+          } catch (replyError) {
+            logger.error('Failed to send media analysis reply', { error: replyError.message });
+            if (message.channel && message.channel.send) {
+              await message.channel.send(`🤖 **Media Analysis**: ${mediaAnalysis}`);
+            }
+          }
         }
       } catch (error) {
         logger.error('Failed to send media analysis follow-up', { error: error.message });
@@ -1077,6 +1084,9 @@ async function processMediaAsync(message, context) {
           await message.reply(`❌ **Media Processing Error**: ${error.message}`);
         } catch (replyError) {
           logger.error('Failed to send error message', { error: replyError.message });
+          if (message.channel && message.channel.send) {
+            await message.channel.send(`❌ **Media Processing Error**: ${error.message}`);
+          }
         }
       }
     }
