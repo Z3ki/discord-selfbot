@@ -196,7 +196,7 @@ Check logs in the `logs/` directory:
 
 ### Project Structure
 ```
-maxwell-selfbot/
+discord-selfbot/
 ├── services/          # Core services (Bot, DataManager)
 ├── tools/            # Tool modules and executor
 ├── utils/            # Utilities and helpers
