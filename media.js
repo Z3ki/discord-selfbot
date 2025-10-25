@@ -348,7 +348,7 @@ export async function processVideo(url, maxRedirects = 5) {
         }
 
         // Create secure temporary directory
-        const tempDir = mkdtempSync(path.join(tmpdir(), 'maxwell-media-'));
+        const tempDir = mkdtempSync(path.join(tmpdir(), 'discord-selfbot-media-'));
         const videoPath = path.join(tempDir, `video_${Date.now()}.mp4`);
         const fileStream = fs.createWriteStream(videoPath);
 
