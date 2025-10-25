@@ -5,7 +5,21 @@ config();
 export const CONFIG = {
   discord: {
     token: process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN,
-    clientId: process.env.DISCORD_USER_ID,
+    clientId: process.env.DISCORD_USER_ID || (() => {
+      const token = process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN;
+      if (token) {
+        try {
+          const parts = token.split('.');
+          if (parts.length >= 1) {
+            const decoded = Buffer.from(parts[0], 'base64').toString('utf8');
+            return decoded;
+          }
+        } catch (e) {
+          logger.warn('Failed to decode user ID from token', { error: e.message });
+        }
+      }
+      return process.env.DISCORD_USER_ID;
+    })(),
     intents: ['Guilds', 'GuildMembers', 'GuildMessages', 'MessageContent', 'DirectMessages', 'GuildPresences']
   },
   ai: {
@@ -51,11 +65,9 @@ export const CONFIG = {
 export function validateConfig() {
   const required = ['GOOGLE_API_KEY'];
   const discordTokenRequired = !process.env.DISCORD_TOKEN && !process.env.DISCORD_USER_TOKEN;
-  const userIdRequired = !process.env.DISCORD_USER_ID;
 
   const missing = [];
   if (discordTokenRequired) missing.push('DISCORD_TOKEN or DISCORD_USER_TOKEN');
-  if (userIdRequired) missing.push('DISCORD_USER_ID');
   missing.push(...required.filter(key => !process.env[key]));
 
   if (missing.length > 0) {

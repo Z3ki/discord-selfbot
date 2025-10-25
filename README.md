@@ -61,13 +61,13 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, fea
    ```
 
 3. Create a `.env` file:
-   ```env
-   DISCORD_USER_TOKEN=your_discord_user_token_here
-   DISCORD_USER_ID=your_discord_user_id_here
-   GOOGLE_API_KEY=your_google_ai_api_key_here
-   NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
-   LOG_LEVEL=info
-   ```
+    ```env
+    DISCORD_USER_TOKEN=your_discord_user_token_here
+    GOOGLE_API_KEY=your_google_ai_api_key_here
+    NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
+    LOG_LEVEL=info
+    ADMIN_USER_ID=your_admin_user_id_here
+    ```
 
 4. Start the bot:
    ```bash
@@ -77,13 +77,14 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, fea
 ## Configuration
 
 ### Environment Variables
-- `DISCORD_USER_TOKEN`: Your Discord user token (required)
-- `DISCORD_USER_ID`: Your Discord user ID (required)
+- `DISCORD_USER_TOKEN`: Your Discord user token (required, user ID auto-detected)
 - `GOOGLE_API_KEY`: Google AI API key for primary AI (required)
 - `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI (optional)
+- `ADMIN_USER_ID`: Admin user ID for restricted commands (optional, defaults to token user)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
 
 ### Optional Configuration
+- `ADMIN_USER_ID`: User ID with admin privileges
 - `STEALTH_ENABLED`: Enable stealth features (default: false)
 - `LOG_LEVEL`: Set logging level
 - `NVIDIA_NIM_BASE_URL`: Custom NVIDIA NIM endpoint
@@ -96,6 +97,7 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, fea
 - `;info` - Get bot information
 - `;health` - Show system health (admin only)
 - `;restart` - Restart the bot (admin only)
+- `;blacklist` - Manage blacklisted servers (admin only)
 
 ### Reasoning Commands
 - `;reasoning-mode brief` - Set reasoning display mode
@@ -126,6 +128,7 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - Server information and analytics
 - Permission checking and user investigation
 - Invite and member management
+- Server blacklisting for ignored responses
 
 ### Investigation (2 tools)
 - `investigate_user` - Comprehensive user analysis

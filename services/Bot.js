@@ -39,6 +39,9 @@ export class Bot {
     this.lastResponse = [''];
     this.lastToolCalls = [[]];
     this.lastToolResults = [[]];
+
+    // Blacklist for servers
+    this.blacklist = new Set();
   }
 
   async initialize(providerManager) {
@@ -128,10 +131,19 @@ export class Bot {
 
     this.globalPrompt[0] = await this.dataManager.loadGlobalPrompt();
 
+    // Load blacklist
+    const blacklistData = await this.dataManager.loadData('blacklist.json');
+    if (Array.isArray(blacklistData)) {
+      this.blacklist = new Set(blacklistData);
+    } else {
+      this.blacklist = new Set();
+    }
+
     logger.info('Data loaded into existing LRU caches', {
       channelMemories: this.channelMemories.size(),
       dmContexts: this.dmContexts.size(),
-      dmOrigins: this.dmOrigins.size()
+      dmOrigins: this.dmOrigins.size(),
+      blacklistedServers: this.blacklist.size
     });
   }
 
@@ -251,6 +263,7 @@ export class Bot {
       await saveUserContext(userContext);
 
       await this.dataManager.saveGlobalPrompt(this.globalPrompt[0]);
+      await this.dataManager.saveData('blacklist.json', Array.from(this.blacklist));
       logger.info('Data saved successfully');
     } catch (error) {
       logger.error('Error saving data', { error: error.message });

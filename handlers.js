@@ -33,6 +33,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
 \`;refresh <type>\` - Clear data (memories/context/dm/all)
 \`;info\` - Bot info
 \`;servers\` - Server list
+\`;blacklist\` - Manage blacklisted servers
 \`;prompt <text>\` - Set prompt
 \`;prompt clear <text>\` - Clear memory + set prompt
 \`;nvidia <msg>\` - NVIDIA AI
@@ -420,17 +421,59 @@ async function handleCommand(message, channelMemories, client, providerManager, 
         break;
       }
 
-      case 'servers': {
-          try {
-            const guilds = client.guilds.cache;
-            const serverList = guilds.map(g => `${g.name} (${g.id}) - ${g.memberCount} members`).join('\n');
-            const response = guilds.size > 0 ? `Bot is in ${guilds.size} servers:\n${serverList}` : 'Bot is not in any servers';
-            await message.reply(response);
-          } catch (error) {
-            await message.reply('Failed to get server list: ' + error.message);
-          }
-          break;
-        }
+       case 'servers': {
+           try {
+             const guilds = client.guilds.cache;
+             const serverList = guilds.map(g => `${g.name} (${g.id}) - ${g.memberCount} members`).join('\n');
+             const response = guilds.size > 0 ? `Bot is in ${guilds.size} servers:\n${serverList}` : 'Bot is not in any servers';
+             await message.reply(response);
+           } catch (error) {
+             await message.reply('Failed to get server list: ' + error.message);
+           }
+           break;
+         }
+
+       case 'blacklist': {
+         const subcommand = args[0]?.toLowerCase();
+         const serverId = args[1];
+
+         if (!subcommand) {
+           // Show current blacklist
+           const blacklisted = Array.from(bot.blacklist);
+           const response = blacklisted.length > 0 ?
+             `Blacklisted servers (${blacklisted.length}):\n${blacklisted.join('\n')}` :
+             'No servers are blacklisted.';
+           await message.reply(response);
+           break;
+         }
+
+         if (subcommand === 'add') {
+           if (!serverId) {
+             await message.reply('Usage: `;blacklist add <server_id>`');
+             break;
+           }
+           if (bot.blacklist.has(serverId)) {
+             await message.reply(`Server ${serverId} is already blacklisted.`);
+           } else {
+             bot.blacklist.add(serverId);
+             await message.reply(`Server ${serverId} added to blacklist.`);
+           }
+         } else if (subcommand === 'remove' || subcommand === 'rm') {
+           if (!serverId) {
+             await message.reply('Usage: `;blacklist remove <server_id>`');
+             break;
+           }
+           if (bot.blacklist.has(serverId)) {
+             bot.blacklist.delete(serverId);
+             await message.reply(`Server ${serverId} removed from blacklist.`);
+           } else {
+             await message.reply(`Server ${serverId} is not blacklisted.`);
+           }
+         } else {
+           await message.reply('Usage: `;blacklist` (show), `;blacklist add <server_id>`, `;blacklist remove <server_id>`');
+         }
+         break;
+       }
 
       default:
         await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
@@ -545,7 +588,12 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       return;
     }
 
-    const isDM = message.channel.type === 'DM' || message.channel.type === 1; // Discord.js v13 uses numbers for channel types
+    // Check if server is blacklisted
+    const isDM = message.channel.type === 'DM' || message.channel.type === 1;
+    if (!isDM && message.guild && bot.blacklist.has(message.guild.id)) {
+      logger.debug('Ignoring message from blacklisted server', { serverId: message.guild.id });
+      return;
+    }
 
     // Stickers are now processed in the image processing function
 

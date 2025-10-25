@@ -31,7 +31,7 @@ export const sendDMTool = {
         });
 
         // Set dmOrigins to link DM channel to original channel
-        context.bot.dmOrigins.set(dmMessage.channel.id, message.channel.id);
+        context.dmOrigins.set(dmMessage.channel.id, message.channel.id);
 
         logger.info('DM sent successfully', {
           targetUserId: args.userId,
