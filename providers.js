@@ -152,10 +152,25 @@ export class GoogleAIProvider extends AIProvider {
 
     const result = await this.model.generateContent(formattedContent);
     const response = result.response;
+    const responseText = response.text();
+
+    // Check for problematic responses that should trigger fallback
+    const finishReason = response.candidates?.[0]?.finishReason;
+    const hasEmptyText = !responseText || responseText.trim().length === 0;
+    const hasProblematicFinish = finishReason === 'OTHER' || finishReason === 'SAFETY' || finishReason === 'RECITATION';
+
+    if (hasEmptyText || hasProblematicFinish) {
+      logger.warn('Google AI returned problematic response, triggering fallback', {
+        finishReason,
+        hasEmptyText,
+        responseLength: responseText?.length || 0
+      });
+      throw new Error(`Google AI returned problematic response: finishReason=${finishReason}, emptyText=${hasEmptyText}`);
+    }
 
     // Extract comprehensive information from Google AI response
     const fullResponse = {
-      text: response.text(),
+      text: responseText,
       metadata: {
         provider: 'google',
         model: this.config.model,
@@ -166,7 +181,7 @@ export class GoogleAIProvider extends AIProvider {
           totalTokenCount: response.usageMetadata.totalTokenCount
         } : null,
         safetyRatings: response.candidates?.[0]?.safetyRatings || null,
-        finishReason: response.candidates?.[0]?.finishReason || null,
+        finishReason: finishReason,
         // Additional Google AI specific data
         blocked: response.candidates?.[0]?.blocked || false,
         grounding: response.candidates?.[0]?.grounding || null,
@@ -177,7 +192,7 @@ export class GoogleAIProvider extends AIProvider {
       rawResponse: {
         candidates: response.candidates,
         usageMetadata: response.usageMetadata,
-        text: response.text()
+        text: responseText
       }
     };
 
