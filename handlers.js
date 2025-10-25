@@ -1,0 +1,1096 @@
+
+import fs from 'fs';
+
+import { saveMapToJSON } from './utils/index.js';
+import { getHealthMetrics, logHealthMetrics, hasHealthPermission } from './health.js';
+import { logger } from './utils/logger.js';
+import { processMessageMedia } from './media.js';
+// import { CONFIG } from './config/config.js'; // eslint-disable-line no-unused-vars
+
+// Stealth utilities removed - no stealth features
+
+// eslint-disable-next-line no-unused-vars
+async function handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, apiResourceManager, bot) {
+  const args = message.content.slice(1).trim().split(' ');
+  const command = args.shift().toLowerCase();
+
+  // Admin check for all commands except help
+  const adminId = process.env.ADMIN_USER_ID;
+  if (command !== 'help' && (!adminId || message.author.id !== adminId)) {
+    await message.reply('❌ Access denied. This command is restricted to administrators only.');
+    return;
+  }
+
+  try {
+    switch (command) {
+      case 'help': {
+        const helpText = `**Commands**
+📝 Commands
+\`;help\` - Show commands
+\`;debug\` - Debug info
+\`;functions\` - List available tools
+\`;restart\` - Restart
+\`;refresh <type>\` - Clear data (memories/context/dm/all)
+\`;info\` - Bot info
+\`;servers\` - Server list
+\`;prompt <text>\` - Set prompt
+\`;prompt clear <text>\` - Clear memory + set prompt
+\`;nvidia <msg>\` - NVIDIA AI
+\`;health\` - Health (admin)
+\`;testqueue\` - Test queue
+\`;reasoning-log\` - View reasoning logs
+\`;reasoning-mode brief\` - Set reasoning display mode (brief only)`;
+        await message.reply(helpText);
+        break;
+      }
+
+      case 'functions':
+      case 'tools': {
+        const { ToolExecutor } = await import('./tools/ToolExecutor.js');
+        const toolExecutor = new ToolExecutor();
+        const allTools = toolExecutor.registry.getAllTools();
+
+        let functionsList = '**Available Functions/Tools:**\n\n';
+        allTools.forEach(tool => {
+          functionsList += `🔧 **${tool.name}**\n${tool.description}\n`;
+
+          // Add parameters if they exist
+          if (tool.parameters && tool.parameters.properties) {
+            const params = Object.entries(tool.parameters.properties)
+              .map(([key, prop]) => {
+                const required = tool.parameters.required?.includes(key) ? ' (required)' : ' (optional)';
+                return `  • ${key}: ${prop.type}${required}`;
+              })
+              .join('\n');
+            if (params) {
+              functionsList += `Parameters:\n${params}\n`;
+            }
+          }
+          functionsList += '\n';
+        });
+
+        // Split into chunks if too long for Discord
+        const maxLength = 1900;
+        if (functionsList.length > maxLength) {
+          const chunks = [];
+          let currentChunk = '';
+          const lines = functionsList.split('\n');
+
+          for (const line of lines) {
+            if ((currentChunk + line + '\n').length > maxLength) {
+              chunks.push(currentChunk.trim());
+              currentChunk = line + '\n';
+            } else {
+              currentChunk += line + '\n';
+            }
+          }
+          if (currentChunk.trim()) {
+            chunks.push(currentChunk.trim());
+          }
+
+          for (let i = 0; i < chunks.length; i++) {
+            const title = i === 0 ? '**Available Functions/Tools**' : `**Functions/Tools (Part ${i + 1}/${chunks.length})**`;
+            await message.reply(`${title}\n\n${chunks[i]}`);
+          }
+        } else {
+          await message.reply(`**Available Functions/Tools**\n\n${functionsList}`);
+        }
+        break;
+      }
+
+       case 'debug': {
+         const channelCount = channelMemories.size;
+         const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
+         const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
+
+         // Helper to safely stringify objects
+         const safeStringify = (obj, len = 400) => {
+           if (obj === null || obj === undefined) return 'None';
+           if (typeof obj === 'string') return truncate(obj, len);
+           try {
+             const str = JSON.stringify(obj);
+             return truncate(str, len);
+           } catch (e) {
+             return truncate(String(obj), len);
+           }
+         };
+
+// Get memory usage
+          const memoryUsage = process.memoryUsage();
+          const memoryInfo = `Memory: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`;
+          
+          let debugInfo = `Memory channels: ${channelCount}\nMessages: ${totalMessages}\n${memoryInfo}\nPrompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\n\nLast prompt:\n${safeStringify(lastPrompt[0], 400)}\n\nLast response:\n${safeStringify(lastResponse[0], 400)}`;
+          if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
+            const callsStr = JSON.stringify(lastToolCalls[0]);
+            debugInfo += `\n\nTool calls: ${callsStr.length > 400 ? callsStr.substring(0, 400) + '...' : callsStr}`;
+          }
+          if (lastToolResults.length > 0 && lastToolResults[0] && lastToolResults[0].length > 0) {
+            const resultsStr = JSON.stringify(lastToolResults[0]);
+            debugInfo += `\n\nTool results: ${resultsStr.length > 400 ? resultsStr.substring(0, 400) + '...' : resultsStr}`;
+          }
+         // Truncate to fit Discord limit
+         if (debugInfo.length > 1900) {
+           debugInfo = debugInfo.substring(0, 1900) + '...';
+         }
+         await message.reply(debugInfo);
+         break;
+       }
+
+      case 'restart':
+        await message.reply('Restarting bot...');
+        logger.info('Bot restart requested', { username: message.author.username, userId: message.author.id });
+        process.exit(0);
+        break;
+
+      case 'refresh_commands':
+        await message.reply('Command refresh not needed with ; prefix system!');
+        break;
+
+      case 'refresh': {
+        const refreshType = args[0]?.toLowerCase();
+
+        if (!refreshType) {
+          await message.reply('Usage: `;refresh <type>` where type is:\n- `memories` - Clear conversation memories\n- `context` - Clear user context data\n- `dm` - Clear DM metadata\n- `all` - Clear everything');
+          break;
+        }
+
+        let clearedItems = [];
+
+        if (refreshType === 'memories' || refreshType === 'all') {
+          // Clear both bot's memory and handlers reference
+          bot.channelMemories.clear();
+          channelMemories.clear();
+
+          // Save empty state to disk
+          await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+
+          // Force reload to ensure consistency
+          await bot.loadData();
+
+          // Verify memory was cleared
+          const verifyCleared = () => {
+            const memory = channelMemories.get(message.channel.id) || [];
+            return memory.length === 0;
+          };
+
+          if (!verifyCleared()) {
+            await message.reply('⚠️ Memory may not have cleared properly. Please try again.');
+            return;
+          }
+
+          clearedItems.push('conversation memories');
+        }
+
+        if (refreshType === 'context' || refreshType === 'all') {
+          // Clear user context
+          const { loadUserContext, saveUserContext } = await import('./utils/index.js');
+          const userContext = await loadUserContext();
+          userContext.clear();
+          await saveUserContext(userContext);
+          clearedItems.push('user context');
+        }
+
+        if (refreshType === 'dm' || refreshType === 'all') {
+          // Clear DM metadata
+          const dmMetadataPath = './data-selfbot/dmMetadata.json';
+          if (fs.existsSync(dmMetadataPath)) {
+            await fs.promises.writeFile(dmMetadataPath, JSON.stringify({}));
+          }
+          clearedItems.push('DM metadata');
+        }
+
+        if (refreshType === 'all') {
+          await message.reply('All memories, user context, and DM metadata cleared!');
+        } else if (clearedItems.length > 0) {
+          await message.reply(`Cleared: ${clearedItems.join(', ')}.`);
+        } else {
+          await message.reply('Invalid refresh type. Use `;refresh` to see available options.');
+        }
+        break;
+      }
+
+        case 'prompt': {
+          // Capture everything after ";prompt " to preserve newlines and formatting
+          const promptArgs = message.content.slice(8).trim();
+          const args = promptArgs.split(' ');
+
+          if (args[0] === 'clear') {
+            // Clear memory first, then set new prompt
+            const newPrompt = message.content.slice(14).trim(); // After "*prompt clear "
+
+            if (!newPrompt) {
+              await message.reply('Usage: `;prompt clear <new prompt text>` - Clears memory and sets new prompt');
+              return;
+            }
+
+            try {
+              // Clear memory
+              bot.channelMemories.clear();
+              channelMemories.clear();
+              await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+              await bot.loadData();
+
+              // Verify memory was cleared
+              const verifyCleared = () => {
+                const memory = channelMemories.get(message.channel.id) || [];
+                return memory.length === 0;
+              };
+
+              if (!verifyCleared()) {
+                await message.reply('⚠️ Memory may not have cleared properly. Prompt not updated.');
+                return;
+              }
+
+              // Set new prompt
+              await fs.promises.writeFile('globalPrompt.txt', newPrompt);
+              globalPrompt[0] = newPrompt;
+
+              await message.reply('✅ Memory cleared and global prompt updated successfully!');
+            } catch (error) {
+              await message.reply('Failed to clear memory and update prompt: ' + error.message);
+            }
+            return;
+          }
+
+          if (!promptArgs) {
+            // Show current prompt and usage instructions
+            const currentPrompt = globalPrompt[0] || 'None set';
+            await message.reply(`**Current Global Prompt:**\n\`\`\`\n${currentPrompt}\n\`\`\`\n\n**Usage:**\n\`;prompt <text>\` - Set a new global prompt\n\`;prompt clear <text>\` - Clear memory and set new prompt\n\nYou can include newlines and formatting in your prompt.`);
+            return;
+          }
+
+          try {
+            await fs.promises.writeFile('globalPrompt.txt', promptArgs);
+            globalPrompt[0] = promptArgs;
+            await message.reply('Global prompt updated successfully!');
+          } catch (error) {
+            await message.reply('Failed to update prompt: ' + error.message);
+          }
+          break;
+        }
+
+      case 'nvidia': {
+        const nvidiaMessage = args.join(' ');
+        if (!nvidiaMessage && message.attachments.size === 0 && !message.stickers?.size) {
+          await message.reply('Usage: `;nvidia <message>` - Send a message to NVIDIA NIM AI provider (supports text, images, and media)');
+          return;
+        }
+
+        try {
+          await message.reply('🤖 *Using NVIDIA NIM provider...*');
+
+          // Process media attachments for NVIDIA NIM
+          const { multimodalContent } = await processMessageMedia(message);
+          const contentToSend = multimodalContent || { text: nvidiaMessage || 'What is shown in this image?' };
+
+          // Call NVIDIA provider directly
+          const response = await providerManager.generateContent(contentToSend);
+          await message.reply(response);
+        } catch (error) {
+          logger.error('NVIDIA NIM command failed', { error: error.message });
+          await message.reply('❌ NVIDIA NIM provider failed: ' + error.message);
+        }
+        break;
+      }
+
+
+
+      case 'info':
+        await message.reply(`This is ${client.user.username}, a Discord selfbot powered by Google's Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools.`);
+        break;
+
+      case 'health': {
+         if (!hasHealthPermission(message)) {
+           await message.reply('You do not have permission to view health metrics. This command requires Manage Server permission.');
+           break;
+         }
+          const metrics = getHealthMetrics(client);
+          await logHealthMetrics(metrics); // Log every time health is checked
+         const memoryStatus = metrics.memory.heapUsed > 100 ? '🔴 HIGH' : metrics.memory.heapUsed > 50 ? '🟡 MEDIUM' : '🟢 LOW';
+         const healthText = `**Bot Health Status**
+⏱️ **Uptime:** ${metrics.uptime}
+🧠 **Memory Usage:** RSS ${metrics.memory.rss}MB, Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
+📡 **API Latency:** ${metrics.apiLatency}ms
+❌ **Last Error:** ${metrics.lastError}`;
+         await message.reply(healthText);
+          break;
+        }
+
+      case 'testqueue': {
+         // Import the formatPositionMessage method from queues.js
+         const { RequestQueue } = await import('./queues.js');
+         const tempQueue = new RequestQueue();
+         const testMessage = tempQueue.formatPositionMessage(2); // Test with position 2
+
+         const sentMessage = await message.reply(testMessage);
+
+         // Animate for 5 seconds then delete
+         let animationCount = 0;
+         const maxAnimations = 5; // 5 frames * 1000ms = 5 seconds
+
+         const animationInterval = setInterval(async () => {
+           animationCount++;
+           if (animationCount >= maxAnimations) {
+             clearInterval(animationInterval);
+             try {
+               await sentMessage.delete();
+             } catch (error) {
+               // Message might already be deleted
+             }
+             return;
+           }
+
+           try {
+             const updatedMessage = tempQueue.formatPositionMessage(2);
+             await sentMessage.edit(updatedMessage);
+           } catch (error) {
+             clearInterval(animationInterval);
+           }
+          }, 1000);
+
+          break;
+        }
+
+      case 'reasoning-log':
+      case 'reasoning': {
+        try {
+          const fs = await import('fs');
+          const path = await import('path');
+          const reasoningLogPath = path.join(process.cwd(), 'logs', 'reasoning.log');
+          
+          if (!fs.existsSync(reasoningLogPath)) {
+            await message.reply('No reasoning logs found yet. Use the reason_complex tool to generate some reasoning data!');
+            break;
+          }
+
+          const logContent = await fs.promises.readFile(reasoningLogPath, 'utf8');
+          const lines = logContent.trim().split('\n');
+          
+          if (lines.length === 0) {
+            await message.reply('Reasoning log is empty.');
+            break;
+          }
+
+          // Get last 10 entries
+          const recentLines = lines.slice(-10);
+          const logEntries = recentLines.map(line => {
+            try {
+              const [timestamp, type, ...rest] = line.split(' | ');
+              const data = rest.join(' | ');
+              return `**${timestamp}** [${type}]\n${data.substring(0, 200)}${data.length > 200 ? '...' : ''}`;
+            } catch (e) {
+              return line.substring(0, 300);
+            }
+          }).join('\n\n');
+
+          const response = `**Recent Reasoning Activity (Last 10 entries):**\n\n${logEntries}`;
+          
+          if (response.length > 1900) {
+            // If too long, send as file
+            const fileName = `reasoning-log-${Date.now()}.txt`;
+            await fs.promises.writeFile(fileName, logContent);
+            await message.reply({
+              content: 'Reasoning log is too large. Here are the recent entries:',
+              files: [fileName]
+            });
+            // Clean up temp file
+            setTimeout(() => {
+              fs.unlink(fileName, () => {});
+            }, 5000);
+          } else {
+            await message.reply(response);
+          }
+        } catch (error) {
+          await message.reply('Failed to read reasoning log: ' + error.message);
+        }
+        break;
+      }
+
+      case 'reasoning-mode': {
+        const mode = args[1]?.toLowerCase();
+        if (!mode || mode !== 'brief') {
+          await message.reply('Usage: `;reasoning-mode brief`\n- `brief`: Show only short progress indicators in Discord (full reasoning available in logs)');
+          break;
+        }
+
+        // Import and update the global reasoning mode
+        const { setGlobalReasoningMode } = await import('./tools/system/reasonComplex.js');
+        setGlobalReasoningMode(mode);
+        await message.reply(`Reasoning mode set to: **${mode}**\nWill show brief progress indicators only (full reasoning available in logs)`);
+        break;
+      }
+
+      case 'servers': {
+          try {
+            const guilds = client.guilds.cache;
+            const serverList = guilds.map(g => `${g.name} (${g.id}) - ${g.memberCount} members`).join('\n');
+            const response = guilds.size > 0 ? `Bot is in ${guilds.size} servers:\n${serverList}` : 'Bot is not in any servers';
+            await message.reply(response);
+          } catch (error) {
+            await message.reply('Failed to get server list: ' + error.message);
+          }
+          break;
+        }
+
+      default:
+        await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
+    }
+  } catch (error) {
+    logger.error('Error handling command', { command, error: error.message, userId: message.author.id });
+    await message.reply('There was an error while executing this command!');
+  }
+}
+
+// Typing state tracker
+const typingStates = new Map(); // channelId-userId -> { isTyping: boolean, lastTyping: timestamp }
+
+// Anti-spam system
+const lastMessageTimes = new Map(); // userId -> channelId -> timestamp
+const SPAM_THRESHOLD = 1000; // 1 second between messages
+const spamWarnings = new Map(); // userId -> channelId -> warningCount
+
+export function setupHandlers(client, requestQueue, apiResourceManager, channelMemories, dmContexts, dmOrigins, globalDMQueue, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, providerManager, bot) {
+
+  // Typing start handler - ignore bot's own typing
+  client.on('typingStart', (typing) => {
+    if (typing.user.id === client.user.id) return; // Ignore bot's own typing
+    const key = `${typing.channel.id}-${typing.user.id}`;
+    typingStates.set(key, {
+      isTyping: true,
+      lastTyping: Date.now()
+    });
+    logger.debug('User started typing', { userId: typing.user.id, channelId: typing.channel.id });
+  });
+
+  // Typing stop handler
+  client.on('typingStop', (typing) => {
+    const key = `${typing.channel.id}-${typing.user.id}`;
+    const state = typingStates.get(key);
+    if (state) {
+      state.isTyping = false;
+      // Keep the state for a short time in case they start typing again
+      setTimeout(() => {
+        typingStates.delete(key);
+      }, 2000); // Clean up after 2 seconds
+    }
+    logger.debug('User stopped typing', { userId: typing.user.id, channelId: typing.channel.id });
+  });
+
+  // Friend request handler
+  client.on('relationshipAdd', async (relationship) => {
+    if (relationship.type === 1) { // 1 = incoming friend request
+      logger.info('Incoming friend request detected', { 
+        userId: relationship.id,
+        username: relationship.user?.username || 'Unknown'
+      });
+
+      // Create a mock message for AI processing
+      const mockMessage = {
+        content: `Friend request from ${relationship.user?.username || 'Unknown user'} (${relationship.id}). Should I accept, decline, or ignore this request?`,
+        author: { 
+          id: relationship.id,
+          username: relationship.user?.username || 'Unknown',
+          discriminator: relationship.user?.discriminator || '0000'
+        },
+        channel: { 
+          id: 'friend-request',
+          type: 'DM'
+        },
+        id: `fr-${relationship.id}`,
+        mentions: new Set(),
+        reference: null,
+        attachments: new Map(),
+        stickers: new Map()
+      };
+
+      // Process the friend request through AI
+      try {
+        await generateResponse(
+          mockMessage,
+          channelMemories,
+          client,
+          providerManager,
+          globalPrompt,
+          lastPrompt,
+          lastResponse,
+          lastToolCalls,
+          lastToolResults,
+          dmOrigins,
+          apiResourceManager
+        );
+       } catch (error) {
+         logger.error('Error handling friend request:', error);
+         // No interaction to reply to in friend request handler
+      }
+    }
+  });
+
+  // Message handler
+  client.on('messageCreate', async (message) => {
+    try {
+      logger.debug('Message received', {
+        content: message.content.substring(0, 100),
+        author: message.author.username,
+        authorId: message.author.id,
+        botId: client.user.id,
+        isBot: message.author.bot,
+        channel: message.channel.name,
+        hasAttachments: message.attachments.size > 0,
+        channelId: message.channel.id,
+        hasStickers: message.stickers?.size > 0
+      });
+
+    if (message.author.id === client.user.id || message.author.id === '1226166714547437628') {
+      logger.debug('Ignoring own message', { authorId: message.author.id, botId: client.user.id });
+      return;
+    }
+
+    const isDM = message.channel.type === 'DM' || message.channel.type === 1; // Discord.js v13 uses numbers for channel types
+
+    // Stickers are now processed in the image processing function
+
+    const isMentioned = message.mentions.has(client.user.id);
+    let isReplyToBot = false;
+    let repliedMessageContent = null;
+    if (message.reference && message.reference.messageId) {
+      try {
+        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+        isReplyToBot = repliedMessage.author.id === client.user.id;
+        if (isReplyToBot) {
+          repliedMessageContent = repliedMessage.content;
+        }
+      } catch (error) {
+        // Ignore fetch errors
+      }
+    }
+
+    // Add mention info to message for AI awareness
+    message.isMentioned = isMentioned;
+    message.isReplyToBot = isReplyToBot;
+    message.repliedMessageContent = repliedMessageContent;
+
+    logger.debug('Message analysis', {
+      isDM,
+      isMentioned,
+      isReplyToBot,
+      botId: client.user.id,
+      mentions: message.mentions.users.map(u => u.id),
+      contentLength: message.content.length
+    });
+
+
+
+    // Check for ; prefix commands
+    if (message.content.startsWith(';')) {
+      try {
+        await handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, apiResourceManager, bot);
+      } catch (commandError) {
+        logger.error('Error handling command', { 
+          command: message.content.split(' ')[0], 
+          error: commandError.message, 
+          userId: message.author.id 
+        });
+        try {
+          await message.reply('There was an error while executing this command!');
+        } catch (replyError) {
+          logger.error('Failed to send command error message', { error: replyError.message });
+        }
+      }
+      return;
+    }
+
+    if (message.author.bot) return; // Ignore all bot messages
+    if (!isDM && !isMentioned && !isReplyToBot) return; // In channels, only respond to mentions or replies
+
+    // Anti-spam check (only for messages the bot will process)
+    const userId = message.author.id;
+    const channelId = message.channel.id;
+    const now = Date.now();
+
+    if (!lastMessageTimes.has(userId)) {
+      lastMessageTimes.set(userId, new Map());
+    }
+    const userChannels = lastMessageTimes.get(userId);
+
+    if (userChannels.has(channelId)) {
+      const lastTime = userChannels.get(channelId);
+      const timeDiff = now - lastTime;
+
+      if (timeDiff < SPAM_THRESHOLD) {
+        // Detected spam - ignore the message
+        logger.info('Spam detected - ignoring message', {
+          userId,
+          channelId,
+          timeDiff,
+          content: message.content.substring(0, 50)
+        });
+
+        // Track warnings
+        if (!spamWarnings.has(userId)) {
+          spamWarnings.set(userId, new Map());
+        }
+        const userWarnings = spamWarnings.get(userId);
+        if (!userWarnings.has(channelId)) {
+          userWarnings.set(channelId, 0);
+        }
+        const warningCount = userWarnings.get(channelId) + 1;
+        userWarnings.set(channelId, warningCount);
+
+        // Warn after 3 consecutive spam messages
+        if (warningCount >= 3) {
+          try {
+            await message.reply('Please slow down with your messages. You are sending them too quickly.');
+            userWarnings.set(channelId, 0); // Reset after warning
+          } catch (error) {
+            logger.warn('Failed to send spam warning', { error: error.message });
+          }
+        }
+
+        return; // Ignore the spam message
+      }
+    }
+
+    // Update last message time
+    userChannels.set(channelId, now);
+
+    // Include replied message content if replying to user (not bot)
+    let repliedMediaInfo = '';
+    if (message.reference && message.reference.messageId) {
+      try {
+        logger.debug('Fetching replied message', { repliedMessageId: message.reference.messageId, channelId: message.channel.id });
+        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+
+        // Process replies to users and other bots, but skip replies to self to prevent AI confusion
+        if (!isReplyToBot) {
+          logger.debug('Fetched replied message', { repliedAuthor: repliedMessage.author.username, repliedContentLength: repliedMessage.content.length, repliedAttachments: repliedMessage.attachments.size, repliedEmbeds: repliedMessage.embeds?.length || 0, isBot: repliedMessage.author.bot, hasRepliedEmbeds: !!(repliedMessage.embeds?.length > 0) });
+
+          // Process replied message embeds
+          let repliedEmbedInfo = '';
+          if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
+            const embedSummaries = repliedMessage.embeds.map((embed, index) => {
+              let summary = `EMBED ${index + 1}:`;
+              if (embed.title) summary += ` Title: "${embed.title}"`;
+              if (embed.description) summary += ` Description: "${embed.description.substring(0, 200)}${embed.description.length > 200 ? '...' : ''}"`;
+              if (embed.url) summary += ` URL: ${embed.url}`;
+              if (embed.author?.name) summary += ` Author: "${embed.author.name}"`;
+              if (embed.fields && embed.fields.length > 0) {
+                summary += ` Fields: ${embed.fields.map(field => `"${field.name}: ${field.value.substring(0, 100)}${field.value.length > 100 ? '...' : ''}"`).join(', ')}`;
+              }
+              if (embed.image?.url) summary += ` Image: ${embed.image.url}`;
+              if (embed.thumbnail?.url) summary += ` Thumbnail: ${embed.thumbnail.url}`;
+              if (embed.footer?.text) summary += ` Footer: "${embed.footer.text}"`;
+              return summary;
+            });
+            repliedEmbedInfo = `\n\nREPLIED EMBEDS: ${embedSummaries.join(' | ')}`;
+            logger.debug('Replied embeds processed', { count: repliedMessage.embeds.length });
+          }
+
+          const repliedContent = repliedMessage.content || (repliedMessage.embeds?.length > 0 ? '[Embed Content]' : '[Media/Attachment]');
+          const repliedAuthor = `${repliedMessage.author.username} (${repliedMessage.author.id})`;
+
+          // Normal reply context for other users only
+          message.content = `Replying to ${repliedAuthor}: "${repliedContent}": ${message.content}${repliedEmbedInfo}`;
+
+          // Also include replied attachments for processing
+          if (repliedMessage.attachments.size > 0) {
+            logger.debug('Adding replied attachments', { count: repliedMessage.attachments.size });
+            // Add replied attachments to message attachments for multimodal processing
+            repliedMessage.attachments.forEach((attachment, key) => {
+              if (!message.attachments.has(key)) { // Avoid duplicates if same
+                message.attachments.set(key, attachment);
+              }
+            });
+            const repliedMediaAttachments = repliedMessage.attachments.filter(attachment =>
+              attachment.contentType && (
+                attachment.contentType.startsWith('image/') ||
+                attachment.contentType.startsWith('video/') ||
+                attachment.contentType === 'image/gif'
+              )
+            );
+            if (repliedMediaAttachments.length > 0) {
+              repliedMediaInfo = `\n\nREPLIED MEDIA ATTACHMENTS: ${repliedMediaAttachments.map(media => `${media.url} (${media.contentType})`).join(', ')}`;
+              logger.debug('Replied media attachments added', { count: repliedMediaAttachments.length });
+            }
+          }
+        } else {
+          logger.debug('Skipping reply context - replying to self to prevent AI confusion');
+        }
+      } catch (error) {
+        logger.warn('Failed to fetch replied message', { error: error.message, repliedMessageId: message.reference.messageId });
+      }
+    }
+
+    logger.debug('Processing message for response', {
+      hasAttachments: message.attachments.size > 0,
+      hasStickers: message.stickers?.size > 0,
+      hasEmbeds: message.embeds?.length > 0,
+      attachmentTypes: message.attachments.map(a => a.contentType),
+      embedCount: message.embeds?.length || 0
+    });
+
+    // Check for embeds
+    let embedInfo = '';
+    if (message.embeds && message.embeds.length > 0) {
+      const embedSummaries = message.embeds.map((embed, index) => {
+        let summary = `EMBED ${index + 1}:`;
+        if (embed.title) summary += ` Title: "${embed.title}"`;
+        if (embed.description) summary += ` Description: "${embed.description.substring(0, 200)}${embed.description.length > 200 ? '...' : ''}"`;
+        if (embed.url) summary += ` URL: ${embed.url}`;
+        if (embed.author?.name) summary += ` Author: "${embed.author.name}"`;
+        if (embed.fields && embed.fields.length > 0) {
+          summary += ` Fields: ${embed.fields.map(field => `"${field.name}: ${field.value.substring(0, 100)}${field.value.length > 100 ? '...' : ''}"`).join(', ')}`;
+        }
+        if (embed.image?.url) summary += ` Image: ${embed.image.url}`;
+        if (embed.thumbnail?.url) summary += ` Thumbnail: ${embed.thumbnail.url}`;
+        if (embed.footer?.text) summary += ` Footer: "${embed.footer.text}"`;
+        return summary;
+      });
+      embedInfo = `\n\nEMBEDS: ${embedSummaries.join(' | ')}`;
+    }
+
+    // Check for media attachments (images, videos, GIFs, audio)
+    let mediaInfo = '';
+    let transcriptionInfo = '';
+    if (message.attachments.size > 0) {
+      const mediaAttachments = message.attachments.filter(attachment =>
+        attachment.contentType && (
+          attachment.contentType.startsWith('image/') ||
+          attachment.contentType.startsWith('video/') ||
+          attachment.contentType === 'image/gif'
+        )
+      );
+      if (mediaAttachments.length > 0) {
+        mediaInfo = `\n\nMEDIA ATTACHMENTS: ${mediaAttachments.map(media => `${media.url} (${media.contentType})`).join(', ')}`;
+      }
+
+      // Process audio attachments for transcription
+      const audioAttachments = message.attachments.filter(attachment =>
+        attachment.contentType && attachment.contentType.startsWith('audio/')
+      );
+      if (audioAttachments.length > 0) {
+        try {
+          // Import processMessageMedia here to avoid circular imports
+          const { processMessageMedia } = await import('./media.js');
+          const tempMessage = { ...message, attachments: audioAttachments };
+          const { audioTranscription } = await processMessageMedia(tempMessage);
+          if (audioTranscription && audioTranscription.trim()) {
+            transcriptionInfo = `\n\nAUDIO TRANSCRIPTION: "${audioTranscription}"`;
+            logger.info(`Audio transcription added to memory: ${audioTranscription.substring(0, 100)}...`);
+          }
+        } catch (error) {
+          logger.warn('Failed to transcribe audio for memory storage', { error: error.message });
+        }
+      }
+    }
+
+    // Add to memory with error handling
+    try {
+      if (!channelMemories.has(message.channel.id)) {
+        channelMemories.set(message.channel.id, []);
+      }
+      const memory = channelMemories.get(message.channel.id);
+      const userMessage = {
+        user: `${message.author.displayName || message.author.username} (${message.author.username}) [${message.author.id}]`,
+        message: message.content + embedInfo + mediaInfo + repliedMediaInfo + transcriptionInfo,
+        timestamp: Date.now()
+      };
+      memory.push(userMessage);
+      if (memory.length > 50) {
+        memory.shift();
+      }
+
+      logger.debug('Added user message to memory', {
+        channelId: message.channel.id,
+        user: userMessage.user,
+        messageLength: userMessage.message.length,
+        totalMessages: memory.length
+      });
+
+      await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+
+      // Also add to dmContexts if this is a DM
+      if (isDM) {
+        if (!dmContexts.has(message.channel.id)) {
+          dmContexts.set(message.channel.id, []);
+        }
+        const dmMemory = dmContexts.get(message.channel.id);
+        dmMemory.push(userMessage);
+        if (dmMemory.length > 100) { // dmContexts has higher limit
+          dmMemory.shift();
+        }
+        logger.debug('Added DM message to dmContexts', {
+          dmChannelId: message.channel.id,
+          totalMessages: dmMemory.length
+        });
+      }
+    } catch (memoryError) {
+      logger.error('Error saving message to memory', {
+        error: memoryError.message,
+        channelId: message.channel.id
+      });
+      // Continue processing even if memory save fails
+    }
+
+    // Process message in queue
+      try {
+        await requestQueue.add(message.channel.id, async () => {
+
+
+          // const processingStartTime = Date.now(); // eslint-disable-line no-unused-vars
+
+          // Start typing indicator to show the bot is processing
+          try {
+            await message.channel.sendTyping();
+            logger.debug('Started typing indicator for message processing', { channelId: message.channel.id });
+          } catch (error) {
+            logger.warn('Failed to start typing indicator for message processing', { error: error.message });
+          }
+
+          let response;
+          try {
+            response = await generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager);
+         } catch (error) {
+          logger.error('Message processing failed', {
+            error: error.message,
+            stack: error.stack,
+            messageId: message.id,
+            channelId: message.channel?.id,
+            authorId: message.author?.id
+          });
+
+          if (error.message.includes('rate limit') || error.message.includes('User rate limit exceeded')) {
+            // Stealth: More human-like rate limit message
+            const humanMessages = [
+              'Whoa, slow down there! The API is getting hammered. Give me a sec...',
+              'Looks like I\'m getting rate limited. Too many people talking to me at once!',
+              'Hold on, the servers are getting overwhelmed. Try again in a moment.',
+              'API is getting hammered right now. Give me a bit to catch up.'
+            ];
+            const randomMessage = humanMessages[Math.floor(Math.random() * humanMessages.length)];
+            await message.reply(randomMessage);
+          } else {
+            // Generic error message for other failures
+            await message.reply('Sorry, I\'m having trouble processing your message right now. Please try again later.');
+          }
+           return; // Don't continue processing if there's an error
+         }
+        logger.debug('Generated response', {
+          responseLength: response?.length || 0,
+          channelId: message.channel.id,
+          ignored: response === null
+        });
+        if (response) {
+            logger.debug('Sending follow-up response to Discord', {
+              responseLength: response.length,
+              channelId: message.channel.id,
+              userId: message.author.id
+            });
+
+            // Start typing indicator to show the bot is responding
+            try {
+              await message.channel.sendTyping();
+              logger.debug('Started typing indicator for response', { channelId: message.channel.id });
+            } catch (error) {
+              logger.warn('Failed to start typing indicator for response', { error: error.message });
+            }
+
+            // No delay for typing indicator
+
+            // No stealth processing - direct response
+
+            try {
+              // Use reply() in channels for better context, but send() in DMs since reply isn't needed there
+              if (isDM) {
+                await message.channel.send(response);
+              } else {
+                await message.reply(response);
+              }
+              logger.debug('Follow-up response sent successfully', {
+                channelId: message.channel.id,
+                userId: message.author.id,
+                usedReply: !isDM
+              });
+            } catch (error) {
+              if (error.code === 50035 && error.message.includes('message_reference')) {
+                // Fallback: send without reply if reference is invalid
+                logger.warn('Reply failed due to invalid message_reference, sending without reply', { error: error.message });
+                await message.channel.send(response);
+              } else {
+                throw error;
+              }
+            }
+            // Add follow-up response to memory
+            const memory = channelMemories.get(message.channel.id);
+            if (memory) {
+              const botMessage = {
+                user: `${client.user.displayName || client.user.username} (${client.user.username}) [${client.user.id}]`,
+                message: response,
+                timestamp: Date.now()
+              };
+              memory.push(botMessage);
+              if (memory.length > 50) {
+                memory.shift();
+              }
+
+            logger.debug('Added bot response to memory', {
+              channelId: message.channel.id,
+              user: botMessage.user,
+              messageLength: botMessage.message.length,
+              totalMessages: memory.length
+            });
+
+ // Save memory after adding bot's response
+              await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+
+              // Also add to dmContexts if this is a DM
+              if (isDM) {
+                const dmMemory = dmContexts.get(message.channel.id);
+                if (dmMemory) {
+                  dmMemory.push(botMessage);
+                  if (dmMemory.length > 100) {
+                    dmMemory.shift();
+                  }
+                  logger.debug('Added bot response to dmContexts', {
+                    dmChannelId: message.channel.id,
+                    totalMessages: dmMemory.length
+                  });
+                }
+              }
+            }
+          }
+           });
+      } catch (queueError) {
+        logger.error('Error in request queue', { 
+          error: queueError.message, 
+          userId: message.author.id,
+          channelId: message.channel.id 
+        });
+        try {
+          await message.reply('Sorry, I encountered an error while processing your message.');
+        } catch (replyError) {
+          logger.error('Failed to send queue error message', { error: replyError.message });
+        }
+      }
+    } catch (error) {
+      logger.error('Error generating response', {
+        error: error.message,
+        userId: message.author.id,
+        channelId: message.channel.id
+      });
+      try {
+        await message.reply('Sorry, I encountered an error while processing your message.');
+      } catch (e) {
+        logger.error('Failed to send error message', { error: e.message });
+      }
+    }
+  });
+
+  // Interaction handler
+  client.on('interactionCreate', async (interaction) => {
+    try {
+      if (interaction.isChatInputCommand()) {
+        try {
+          if (interaction.commandName === 'prompt') {
+            await interaction.deferReply();
+            const text = interaction.options.getString('text');
+            globalPrompt[0] = text;
+            await fs.promises.writeFile('globalPrompt.txt', text);
+            await interaction.editReply('Custom prompt set!');
+         } else if (interaction.commandName === 'debug') {
+           await interaction.deferReply();
+           const channelCount = channelMemories.size;
+           const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
+           const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
+
+           // Helper to safely stringify objects
+           const safeStringify = (obj, len = 500) => {
+             if (obj === null || obj === undefined) return 'None';
+             if (typeof obj === 'string') return truncate(obj, len);
+             try {
+               const str = JSON.stringify(obj);
+               return truncate(str, len);
+             } catch (e) {
+               return truncate(String(obj), len);
+             }
+           };
+
+           let debugInfo = `Channels with memory: ${channelCount}\nTotal messages stored: ${totalMessages}\nGlobal prompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\n\nLast prompt (truncated):\n${safeStringify(lastPrompt[0], 500)}\n\nLast response (truncated):\n${safeStringify(lastResponse[0], 500)}`;
+           if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
+             const callsStr = JSON.stringify(lastToolCalls[0]);
+             debugInfo += `\n\nLast tool calls: ${callsStr.length > 500 ? callsStr.substring(0, 500) + '...' : callsStr}`;
+           }
+           if (lastToolResults.length > 0 && lastToolResults[0] && lastToolResults[0].length > 0) {
+             const resultsStr = JSON.stringify(lastToolResults[0]);
+             debugInfo += `\n\nLast tool results: ${resultsStr.length > 500 ? resultsStr.substring(0, 500) + '...' : resultsStr}`;
+           }
+           // Truncate to fit Discord limit
+           if (debugInfo.length > 1900) {
+             debugInfo = debugInfo.substring(0, 1900) + '...';
+           }
+           await interaction.editReply(debugInfo);
+        } else if (interaction.commandName === 'refresh') {
+          await interaction.deferReply();
+          const refreshType = interaction.options.getString('type') || 'all';
+
+          let clearedItems = [];
+
+          if (refreshType === 'memories' || refreshType === 'all') {
+            channelMemories.clear();
+            clearedItems.push('conversation memories');
+          }
+
+          if (refreshType === 'context' || refreshType === 'all') {
+            // Clear user context
+            const { loadUserContext, saveUserContext } = await import('./utils/index.js');
+            const userContext = await loadUserContext();
+            userContext.clear();
+            await saveUserContext(userContext);
+            clearedItems.push('user context');
+          }
+
+          if (refreshType === 'dm' || refreshType === 'all') {
+            // Clear DM metadata
+            const dmMetadataPath = './data-selfbot/dmMetadata.json';
+            if (fs.existsSync(dmMetadataPath)) {
+              await fs.promises.writeFile(dmMetadataPath, JSON.stringify({}));
+            }
+            clearedItems.push('DM metadata');
+          }
+
+          if (refreshType === 'all') {
+            await interaction.editReply('All memories, user context, and DM metadata cleared! Shell history preserved.');
+          } else if (clearedItems.length > 0) {
+            await interaction.editReply(`Cleared: ${clearedItems.join(', ')}. Shell history preserved.`);
+          } else {
+            await interaction.editReply('Invalid refresh type.');
+          }
+        } else if (interaction.commandName === 'info') {
+          await interaction.deferReply();
+          await interaction.editReply('This is a Discord selfbot powered by Google\'s Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools.');
+
+        }
+        } catch (commandError) {
+          logger.error('Error handling slash command', { 
+            command: interaction.commandName, 
+            error: commandError.message, 
+            userId: interaction.user?.id || 'unknown' 
+          });
+          try {
+            if (interaction.replied || interaction.deferred) {
+              await interaction.editReply('There was an error while executing this command!');
+            } else {
+              await interaction.reply('There was an error while executing this command!');
+            }
+          } catch (replyError) {
+            logger.error('Failed to send slash command error message', { error: replyError.message });
+          }
+        }
+      }
+    } catch (interactionError) {
+      logger.error('Error processing interaction', { 
+        error: interactionError.message, 
+        userId: interaction.user?.id || 'unknown' 
+      });
+    }
+  });
+}
