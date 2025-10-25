@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 this is the shitty code that i made with ai and everything that you will see its the ai's fault not mine 🥰
 
 A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring advanced reasoning capabilities, tool integration, and intelligent conversation management.
