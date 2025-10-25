@@ -1,6 +1,6 @@
 this is the shitty code that i made with ai and everything that you will see its the ais fault not mine 🥰
 
-# Maxwell Selfbot
+# Discord Selfbot
 
 A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, featuring advanced reasoning capabilities, tool integration, and intelligent conversation management.
 
