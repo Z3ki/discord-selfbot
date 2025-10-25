@@ -5,7 +5,7 @@ config();
 export const CONFIG = {
   discord: {
     token: process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN,
-    clientId: process.env.DISCORD_CLIENT_ID,
+    clientId: process.env.DISCORD_USER_ID,
     intents: ['Guilds', 'GuildMembers', 'GuildMessages', 'MessageContent', 'DirectMessages', 'GuildPresences']
   },
   ai: {
@@ -23,7 +23,7 @@ export const CONFIG = {
     }
   },
   admin: {
-    userId: process.env.ADMIN_USER_ID
+    userId: process.env.DISCORD_USER_ID
   },
   limits: {
     maxMemoryMessages: 30, // Reduced from 50 for better memory management
@@ -51,11 +51,11 @@ export const CONFIG = {
 export function validateConfig() {
   const required = ['GOOGLE_API_KEY'];
   const discordTokenRequired = !process.env.DISCORD_TOKEN && !process.env.DISCORD_USER_TOKEN;
-  const clientIdRequired = !process.env.DISCORD_CLIENT_ID;
+  const userIdRequired = !process.env.DISCORD_USER_ID;
 
   const missing = [];
   if (discordTokenRequired) missing.push('DISCORD_TOKEN or DISCORD_USER_TOKEN');
-  if (clientIdRequired) missing.push('DISCORD_CLIENT_ID');
+  if (userIdRequired) missing.push('DISCORD_USER_ID');
   missing.push(...required.filter(key => !process.env[key]));
 
   if (missing.length > 0) {

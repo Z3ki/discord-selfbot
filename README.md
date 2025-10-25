@@ -63,9 +63,9 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, fea
 3. Create a `.env` file:
    ```env
    DISCORD_USER_TOKEN=your_discord_user_token_here
+   DISCORD_USER_ID=your_discord_user_id_here
    GOOGLE_API_KEY=your_google_ai_api_key_here
    NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
-   ADMIN_USER_ID=your_admin_user_id_here
    LOG_LEVEL=info
    ```
 
@@ -78,9 +78,9 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, fea
 
 ### Environment Variables
 - `DISCORD_USER_TOKEN`: Your Discord user token (required)
+- `DISCORD_USER_ID`: Your Discord user ID (required)
 - `GOOGLE_API_KEY`: Google AI API key for primary AI (required)
 - `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI (optional)
-- `ADMIN_USER_ID`: Your Discord user ID for admin commands (recommended)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
 
 ### Optional Configuration
