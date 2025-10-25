@@ -164,7 +164,9 @@ function buildFinalInstructions() {
 • Plain text only - no Discord formatting
 • Tools execute automatically, never mention them in responses
 • Provide natural, conversational replies
-• IMPORTANT: Do NOT use [Thinking: ] brackets or reasoning format in regular responses - only use the reason_complex tool for structured reasoning`;
+• IMPORTANT: Do NOT use [Thinking: ] brackets or reasoning format in regular responses - only use the reason_complex tool for structured reasoning
+• For complex questions, math problems, logic puzzles, debugging, analysis, or multi-step problems, automatically use the reason_complex tool
+• The reason_complex tool will handle step-by-step reasoning with proper [Thinking: ] format`;
 }
 
 // =============================================================================
