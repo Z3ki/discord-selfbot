@@ -1069,23 +1069,48 @@ async function processMediaAsync(message, context) {
 
         if (mediaAnalysis) {
           try {
-            await message.reply(`**Media Analysis**: ${mediaAnalysis}`);
-            logger.info('Sent media analysis follow-up message', { channelId: message.channel?.id || 'unknown' });
+            // Check if message and reply method exist
+            if (message && typeof message.reply === 'function') {
+              await message.reply(`**Media Analysis**: ${mediaAnalysis}`);
+              logger.info('Sent media analysis follow-up message', { channelId: message.channel?.id || 'unknown' });
+            } else if (message && message.channel && typeof message.channel.send === 'function') {
+              await message.channel.send(`**Media Analysis**: ${mediaAnalysis}`);
+              logger.info('Sent media analysis follow-up message via channel.send', { channelId: message.channel?.id || 'unknown' });
+            } else {
+              logger.warn('Cannot send media analysis - no valid message or channel object available');
+            }
           } catch (replyError) {
             logger.error('Failed to send media analysis reply', { error: replyError.message });
-            if (message.channel && message.channel.send) {
-              await message.channel.send(`**Media Analysis**: ${mediaAnalysis}`);
+            // Try alternative method
+            try {
+              if (message && message.channel && typeof message.channel.send === 'function') {
+                await message.channel.send(`**Media Analysis**: ${mediaAnalysis}`);
+              }
+            } catch (altError) {
+              logger.error('Failed to send media analysis via alternative method', { error: altError.message });
             }
           }
         }
       } catch (error) {
         logger.error('Failed to send media analysis follow-up', { error: error.message });
         try {
-          await message.reply(`**Media Processing Error**: ${error.message}`);
+          // Check if message and reply method exist
+          if (message && typeof message.reply === 'function') {
+            await message.reply(`**Media Processing Error**: ${error.message}`);
+          } else if (message && message.channel && typeof message.channel.send === 'function') {
+            await message.channel.send(`**Media Processing Error**: ${error.message}`);
+          } else {
+            logger.warn('Cannot send media processing error - no valid message or channel object available');
+          }
         } catch (replyError) {
           logger.error('Failed to send error message', { error: replyError.message });
-          if (message.channel && message.channel.send) {
-            await message.channel.send(`**Media Processing Error**: ${error.message}`);
+          // Try alternative method
+          try {
+            if (message && message.channel && typeof message.channel.send === 'function') {
+              await message.channel.send(`**Media Processing Error**: ${error.message}`);
+            }
+          } catch (altError) {
+            logger.error('Failed to send error message via alternative method', { error: altError.message });
           }
         }
       }

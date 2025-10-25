@@ -130,11 +130,22 @@ export async function sendDM(client, userIdentifier, content) {
       }
     } catch (dmError) {
       // Selfbots may not be able to send DMs due to API restrictions
-      logger.error('DM sending failed - selfbots have limited DM capabilities', {
-        userId: user.id,
-        error: dmError.message,
-        code: dmError.code
-      });
+      const errorCode = dmError.code || dmError.status;
+      const isAccessError = errorCode === 50001 || dmError.message.includes('Missing Access');
+      
+      if (isAccessError) {
+        logger.warn('DM access denied - selfbot restrictions or user privacy settings', {
+          userId: user.id,
+          error: dmError.message,
+          code: errorCode
+        });
+      } else {
+        logger.error('DM sending failed - selfbots have limited DM capabilities', {
+          userId: user.id,
+          error: dmError.message,
+          code: errorCode
+        });
+      }
       return null;
     }
   } catch (e) {

@@ -41,11 +41,20 @@ export class ToolExecutor {
     const tool = this.registry.getTool(funcName);
 
     if (!tool) {
-      logger.warn(`Unknown tool called: ${funcName}`);
-      return `Unknown tool: ${funcName}`;
+      logger.warn(`Unknown tool called: ${funcName}`, { availableTools: Array.from(this.registry.tools.keys()) });
+      return `Unknown tool: ${funcName}. Available tools: ${Array.from(this.registry.tools.keys()).join(', ')}`;
     }
 
     try {
+      // Validate required parameters
+      if (tool.parameters && tool.parameters.required) {
+        const missingParams = tool.parameters.required.filter(param => !(param in args));
+        if (missingParams.length > 0) {
+          logger.warn(`Missing required parameters for tool ${funcName}`, { missing: missingParams, provided: Object.keys(args) });
+          return `Error: Missing required parameters for ${funcName}: ${missingParams.join(', ')}`;
+        }
+      }
+
       logger.debug('Executing tool', { funcName, args: JSON.stringify(args), clientAvailable: !!client, clientReady: client?.readyAt });
 
       // Check if tool has embedded execute function
@@ -101,8 +110,32 @@ export class ToolExecutor {
       }
 
     } catch (error) {
-      logger.error(`Error executing tool ${funcName}:`, error);
-      return `Error executing ${funcName}: ${error.message}`;
+      const errorMessage = error.message || 'Unknown error';
+      const errorCode = error.code || 'UNKNOWN';
+      
+      // Categorize errors for better handling
+      if (errorMessage.includes('Missing Access') || errorCode === 50001) {
+        logger.warn(`Access denied for tool ${funcName} - likely selfbot restriction`, { 
+          funcName, 
+          error: errorMessage, 
+          code: errorCode 
+        });
+        return `Access denied: ${funcName} cannot be executed due to Discord API restrictions. This is normal for selfbots.`;
+      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        logger.warn(`Rate limit hit for tool ${funcName}`, { funcName, error: errorMessage });
+        return `Rate limited: ${funcName} is temporarily unavailable due to rate limits. Please try again later.`;
+      } else if (errorMessage.includes('timeout')) {
+        logger.warn(`Timeout executing tool ${funcName}`, { funcName, error: errorMessage });
+        return `Timeout: ${funcName} took too long to execute. Please try again.`;
+      } else {
+        logger.error(`Error executing tool ${funcName}:`, { 
+          funcName, 
+          error: errorMessage, 
+          code: errorCode,
+          stack: error.stack 
+        });
+        return `Error executing ${funcName}: ${errorMessage}`;
+      }
     }
   }
 

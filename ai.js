@@ -77,19 +77,29 @@ function parseToolArgs(funcName, paramsStr) {
 
 export function extractToolCalls(text) {
   const toolCalls = [];
+  // Get list of valid tool names to filter out invalid ones
+  const validToolNames = new Set(toolRegistry.getAllTools().map(tool => tool.name));
+  
   // Support both TOOL: format and ```tool format
   const regex1 = /TOOL:\s*(\w+)\s+(.+?)(?:\n|$)/g;
   // Only match ```tool blocks, not regular code blocks with language identifiers
   const regex2 = /```tool\s+([\s\S]*?)```/g;
-  // Support ```funcName format
-  const regex4 = /```(\w+)\s+([\s\S]*?)```/g;
-  // Removed support for direct tool calls to prevent malformed parsing
+  // Support ```funcName format but exclude common programming languages
+  const regex4 = /```(python|javascript|js|java|cpp|c\+\+|c|go|rust|php|ruby|swift|kotlin|scala|typescript|ts|bash|shell|sh|sql|html|css|xml|json|yaml|yml|markdown|md|text|txt)\s+([\s\S]*?)```/g;
+  // Support valid tool names in backticks
+  const validToolNamesPattern = Array.from(validToolNames).join('|');
+  const regex5 = new RegExp('```(' + validToolNamesPattern + ')\\s+([\\s\\S]*?)```', 'g');
 
   // Check TOOL: format first
   let match;
   while ((match = regex1.exec(text)) !== null) {
     try {
-      toolCalls.push({ funcName: match[1], args: parseToolArgs(match[1], match[2]) });
+      const funcName = match[1];
+      if (validToolNames.has(funcName)) {
+        toolCalls.push({ funcName, args: parseToolArgs(funcName, match[2]) });
+      } else {
+        logger.warn(`Invalid tool name in TOOL: format: ${funcName}`);
+      }
     } catch (e) {
       logger.error('Failed to parse TOOL: call', { error: e.message, toolCallText: match[0] });
     }
@@ -110,29 +120,35 @@ export function extractToolCalls(text) {
         paramsStr = lines.slice(1).join(' ');
       }
 
-      if (funcName && funcName !== 'tool') { // Make sure it's not just "tool" by itself
+      if (funcName && funcName !== 'tool' && validToolNames.has(funcName)) {
         toolCalls.push({ funcName, args: parseToolArgs(funcName, paramsStr) });
+      } else if (funcName && !validToolNames.has(funcName)) {
+        logger.warn(`Invalid tool name in \`\`\`tool format: ${funcName}`);
       }
     } catch (e) {
       logger.error('Failed to parse ```tool call', { error: e.message, toolCallText: match[0] });
     }
   }
 
-  // Check ```funcName format
+  // Check for programming language code blocks and ignore them
   regex4.lastIndex = 0;
   while ((match = regex4.exec(text)) !== null) {
+    logger.debug(`Ignoring programming language code block: ${match[1]}`);
+  }
+
+  // Check ```funcName format for valid tools only
+  regex5.lastIndex = 0;
+  while ((match = regex5.exec(text)) !== null) {
     try {
       const funcName = match[1];
       const paramsStr = match[2].trim();
-      if (funcName && paramsStr) {
+      if (funcName && paramsStr && validToolNames.has(funcName)) {
         toolCalls.push({ funcName, args: parseToolArgs(funcName, paramsStr) });
       }
     } catch (e) {
       logger.error('Failed to parse ```funcName call', { error: e.message, toolCallText: match[0] });
     }
   }
-
-
 
   return toolCalls;
 }
@@ -587,6 +603,16 @@ export async function generateResponse(message, providerManager, channelMemories
           // Clean any remaining tool calls from follow-up response
           const cleanedFollowUp = finalResponse.replace(/TOOL:[^\n]*/g, '').replace(/```[\s\S]*?```/g, '').replace(/^\w+\s+.*=.*/gm, '').trim();
 
+          // Check Discord message length limit (2000 characters)
+          if (cleanedFollowUp.length > 2000) {
+            logger.warn('Follow-up response too long for Discord, truncating', { 
+              originalLength: cleanedFollowUp.length,
+              channelId: message.channel.id 
+            });
+            // Truncate to 1990 characters to leave room for "..." if needed
+            return cleanedFollowUp.substring(0, 1990) + (cleanedFollowUp.length > 1990 ? '...' : '');
+          }
+
           return cleanedFollowUp;
         } else {
           // No valid tool results, tools handled their own responses
@@ -596,11 +622,23 @@ export async function generateResponse(message, providerManager, channelMemories
     } else {
       // Clean any tool calls and attachment tags from the initial response
       const cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/```[\s\S]*?```/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
+      
       // Check if AI decided to ignore (detect [IGNORE] anywhere in response)
       if (cleanedResponse.includes('[IGNORE]')) {
         logger.debug('AI decided to ignore message in initial response');
         return null;
       }
+      
+      // Check Discord message length limit (2000 characters)
+      if (cleanedResponse.length > 2000) {
+        logger.warn('Response too long for Discord, truncating', { 
+          originalLength: cleanedResponse.length,
+          channelId: message.channel.id 
+        });
+        // Truncate to 1990 characters to leave room for "..." if needed
+        return cleanedResponse.substring(0, 1990) + (cleanedResponse.length > 1990 ? '...' : '');
+      }
+      
       return cleanedResponse;
     }
 }
