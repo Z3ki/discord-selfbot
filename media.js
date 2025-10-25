@@ -581,7 +581,7 @@ export async function processMessageImages(message) {
 }
 
 /**
- * Processes Discord message attachments, stickers, videos, and GIFs to extract and prepare media data for multimodal AI
+  * Processes Discord message attachments, stickers, videos, and GIFs to extract and prepare media data for multimodal AI
  * @param {Message} message - Discord message object
  * @param {boolean} asyncProcessing - If true, process media asynchronously and send follow-up messages
  * @returns {Promise<{hasMedia: boolean, multimodalContent: Array, fallbackText: string}>}
@@ -592,14 +592,61 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
   let fallbackText = '';
   let audioTranscription = '';
 
-  // If async processing is enabled, start background processing
+  // If async processing is enabled, start background processing for heavy media
+  // but process stickers synchronously for immediate AI response
   if (asyncProcessing) {
+    // Process stickers synchronously first
+    let stickerMultimodalContent = [];
+    let stickerFallbackText = '';
+    
+    if (message.stickers && message.stickers.size > 0) {
+      const stickers = Array.from(message.stickers.values());
+      logger.debug(`Processing ${stickers.length} stickers synchronously`);
+
+      for (const sticker of stickers) {
+        try {
+          logger.debug(`Sticker data:`, { 
+            id: sticker.id, 
+            name: sticker.name, 
+            format: sticker.format, 
+            url: sticker.url,
+            hasUrl: !!sticker.url 
+          });
+          
+          const stickerUrl = sticker.url;
+          if (stickerUrl && sticker.format !== 'LOTTIE') {
+            logger.debug(`Attempting to download sticker: ${stickerUrl}`);
+            const imageData = await downloadImageAsBase64(stickerUrl);
+            if (imageData) {
+              stickerMultimodalContent.push({
+                inlineData: {
+                  mimeType: imageData.mimeType,
+                  data: imageData.base64
+                }
+              });
+              stickerFallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+              logger.debug(`Successfully processed sticker: ${sticker.name}`);
+            }
+          } else {
+            const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+            stickerMultimodalContent.push({ text: fallback });
+            stickerFallbackText += fallback + ' ';
+          }
+        } catch (error) {
+          logger.error(`Failed to download sticker ${sticker.name}:`, error);
+          const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+          stickerMultimodalContent.push({ text: fallback });
+          stickerFallbackText += fallback + ' ';
+        }
+      }
+    }
+    
     processMediaAsync(message, context);
-    // Return basic info immediately
+    // Return sticker data immediately, process other media in background
     return {
       hasMedia: message.attachments.size > 0 || (message.stickers && message.stickers.size > 0),
-      multimodalContent: [],
-      fallbackText: '**MEDIA PROCESSING**: Analyzing attachments in background...',
+      multimodalContent: stickerMultimodalContent,
+      fallbackText: stickerFallbackText || '**MEDIA PROCESSING**: Analyzing attachments in background...',
       audioTranscription: ''
     };
   }
@@ -730,40 +777,56 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
     }
   }
 
-  // Process stickers
-  if (message.stickers && message.stickers.size > 0) {
-    hasMedia = true;
-    const stickers = Array.from(message.stickers.values());
-    
-    for (const sticker of stickers) {
-      try {
-        // Discord stickers have a URL that can be downloaded
-        const stickerUrl = sticker.url;
-        if (stickerUrl && sticker.format !== 'LOTTIE') {
-          // Only process PNG/APNG stickers as images, LOTTIE stickers are JSON
-          const imageData = await downloadImageAsBase64(stickerUrl);
-          multimodalContent.push({
-            inlineData: {
-              mimeType: imageData.mimeType,
-              data: imageData.base64
-            }
+// Process stickers
+    if (message.stickers && message.stickers.size > 0) {
+      hasMedia = true;
+      const stickers = Array.from(message.stickers.values());
+      logger.debug(`Processing ${stickers.length} stickers`);
+
+      for (const sticker of stickers) {
+        try {
+          logger.debug(`Sticker data:`, { 
+            id: sticker.id, 
+            name: sticker.name, 
+            format: sticker.format, 
+            url: sticker.url,
+            hasUrl: !!sticker.url 
           });
-          fallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
-        } else {
-          // Fallback for LOTTIE stickers or if no URL available
-          const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-          multimodalContent.push({ text: fallback });
-          fallbackText += fallback + ' ';
+          
+          // Discord stickers have a URL that can be downloaded
+          const stickerUrl = sticker.url;
+          if (stickerUrl && sticker.format !== 'LOTTIE') {
+            // Only process PNG/APNG stickers as images, LOTTIE stickers are JSON
+            logger.debug(`Attempting to download sticker: ${stickerUrl}`);
+            const imageData = await downloadImageAsBase64(stickerUrl);
+            if (imageData) {
+              multimodalContent.push({
+                inlineData: {
+                  mimeType: imageData.mimeType,
+                  data: imageData.base64
+                }
+              });
+              fallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+              logger.debug(`Successfully processed sticker: ${sticker.name}`);
+            } else {
+              logger.debug(`Failed to get image data for sticker: ${sticker.name}`);
+            }
+          } else {
+            // Fallback for LOTTIE stickers or if no URL available
+            const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+            multimodalContent.push({ text: fallback });
+            fallbackText += fallback + ' ';
+            logger.debug(`Using fallback for sticker: ${sticker.name} (no URL or LOTTIE format)`);
+          }
+         } catch (error) {
+          logger.error(`Failed to download sticker ${sticker.name}:`, error);
+          // Fallback to text description if download fails
+         const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+         multimodalContent.push({ text: fallback });
+         fallbackText += fallback + ' ';
         }
-       } catch (error) {
-         logger.error(`Failed to download sticker ${sticker.name}:`, error);
-         // Fallback to text description if download fails
-        const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-        multimodalContent.push({ text: fallback });
-        fallbackText += fallback + ' ';
       }
     }
-  }
 
 // Safety check: Limit total images to prevent API errors and context overload (model max: 32 media items)
    if (multimodalContent.length > 32) {
@@ -916,33 +979,49 @@ async function processMediaAsync(message, context) {
     if (message.stickers && message.stickers.size > 0) {
       hasMedia = true;
       const stickers = Array.from(message.stickers.values());
+      logger.debug(`Processing ${stickers.length} stickers`);
 
       for (const sticker of stickers) {
         try {
+          logger.debug(`Sticker data:`, { 
+            id: sticker.id, 
+            name: sticker.name, 
+            format: sticker.format, 
+            url: sticker.url,
+            hasUrl: !!sticker.url 
+          });
+          
           // Discord stickers have a URL that can be downloaded
           const stickerUrl = sticker.url;
           if (stickerUrl && sticker.format !== 'LOTTIE') {
             // Only process PNG/APNG stickers as images, LOTTIE stickers are JSON
+            logger.debug(`Attempting to download sticker: ${stickerUrl}`);
             const imageData = await downloadImageAsBase64(stickerUrl);
-            multimodalContent.push({
-              inlineData: {
-                mimeType: imageData.mimeType,
-                data: imageData.base64
-              }
-            });
-            fallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+            if (imageData) {
+              multimodalContent.push({
+                inlineData: {
+                  mimeType: imageData.mimeType,
+                  data: imageData.base64
+                }
+              });
+              fallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+              logger.debug(`Successfully processed sticker: ${sticker.name}`);
+            } else {
+              logger.debug(`Failed to get image data for sticker: ${sticker.name}`);
+            }
           } else {
             // Fallback for LOTTIE stickers or if no URL available
             const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
             multimodalContent.push({ text: fallback });
             fallbackText += fallback + ' ';
+            logger.debug(`Using fallback for sticker: ${sticker.name} (no URL or LOTTIE format)`);
           }
          } catch (error) {
-           logger.error(`Failed to download sticker ${sticker.name}:`, error);
-           // Fallback to text description if download fails
-          const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-          multimodalContent.push({ text: fallback });
-          fallbackText += fallback + ' ';
+          logger.error(`Failed to download sticker ${sticker.name}:`, error);
+          // Fallback to text description if download fails
+         const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+         multimodalContent.push({ text: fallback });
+         fallbackText += fallback + ' ';
         }
       }
     }

@@ -34,7 +34,7 @@ export async function resolveUserId(identifier, client, message) {
 
 export const investigateUserTool = {
   name: 'investigate_user',
-  description: 'Comprehensive user investigation tool that provides detailed information about any Discord user. Returns: Basic user info (username, display name, ID, bot status, verification status, account creation date, account age); Profile details (bio, pronouns, accent color, banner URL, avatar URL, avatar decoration); Account security (MFA/2FA status, verification status); Server membership details (nickname, display name, roles count, join date, display color); Administrative access levels and permissions breakdown; Message activity statistics (total messages found, channels checked, recent activity); And additional insights about user status and capabilities. SELFBOT LIMITATIONS: Can only investigate users in mutual servers. Bio access heavily restricted. Use this when you need to know about a user\'s profile, status, permissions, or activity. Accepts user ID, username, display name, or Discord mention.',
+  description: 'Comprehensive user investigation tool that provides detailed information about any Discord user. Returns: Basic user info (username, display name, ID, bot status, verification status, account creation date, account age); Profile details (accent color, banner URL, avatar URL, avatar decoration); Account security (MFA/2FA status, verification status); Server membership details (nickname, display name, roles count, join date, display color); Administrative access levels and permissions breakdown; Message activity statistics (total messages found, channels checked, recent activity); And additional insights about user status and capabilities. SELFBOT LIMITATIONS: Can only investigate users in mutual servers. Bio and pronouns access restricted. Use this when you need to know about a user\'s profile, status, permissions, or activity. Accepts user ID, username, display name, or Discord mention.',
   parameters: {
     type: 'object',
     properties: {
@@ -62,10 +62,8 @@ export async function executeInvestigateUser(args, client, message) {
     let info = `User Investigation for ${userId}\n\n`;
 
   // Fetch user info
-  let userBio = 'No bio set';
   let banner = 'None';
   let userFlags = 'None';
-  let pronouns = 'None';
   let premiumType = 'None';
   try {
     // Try different methods to fetch user in selfbot
@@ -75,17 +73,7 @@ export async function executeInvestigateUser(args, client, message) {
     });
 
     if (user) {
-      // Get bio from user.bio property (available in selfbot)
-      if (user.bio && user.bio !== 'No bio' && user.bio.trim()) {
-        userBio = user.bio;
-      } else {
-        userBio = 'No bio set';
-      }
-
       // Get additional profile data
-      if (user.pronouns) {
-        pronouns = user.pronouns;
-      }
 
       if (user.premiumType !== null && user.premiumType !== undefined) {
         // Discord premium types: 0 = None, 1 = Nitro Classic, 2 = Nitro, 3 = Nitro Basic
@@ -109,9 +97,6 @@ ID: ${user.id}
 Bot: ${user.bot ? 'Yes' : 'No'}
 Verified: ${user.verified ? 'Yes' : 'No'}
 Account Age: ${accountAge} days (${user.createdAt ? user.createdAt.toLocaleDateString() : 'Unknown'})
-
-Bio: ${userBio}
-Pronouns: ${pronouns}
 
 Profile Details:
 Accent Color: ${user.hexAccentColor || 'None'}
