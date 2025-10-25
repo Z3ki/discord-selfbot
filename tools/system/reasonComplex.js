@@ -25,15 +25,59 @@ export function getGlobalReasoningMode() {
 /**
  * Generate a brief summary for thinking progress
  */
-function generateBriefSummary(content, stepNumber) {
-  const summaries = [
-    'Analyzing the core problem and key elements',
-    'Breaking down the problem into components',
-    'Evaluating important factors and constraints',
-    'Developing potential solution approaches',
-    'Assessing solution viability and implications',
-    'Reaching final conclusion and recommendations'
-  ];
+function generateBriefSummary(content, stepNumber, type = 'general') {
+  const typeSummaries = {
+    math: [
+      'Setting up the mathematical equation',
+      'Applying algebraic manipulation techniques',
+      'Solving for the unknown variable',
+      'Checking solution validity and domain',
+      'Verifying the solution with substitution',
+      'Providing final answer and explanation'
+    ],
+    code: [
+      'Analyzing the code structure and logic',
+      'Identifying potential bugs or issues',
+      'Developing debugging strategies',
+      'Implementing fixes and improvements',
+      'Testing the corrected code',
+      'Documenting changes and recommendations'
+    ],
+    algorithm: [
+      'Understanding the algorithmic problem',
+      'Designing the solution approach',
+      'Analyzing time and space complexity',
+      'Implementing the algorithm steps',
+      'Optimizing for efficiency',
+      'Validating correctness and edge cases'
+    ],
+    debug: [
+      'Examining error messages and symptoms',
+      'Tracing code execution path',
+      'Identifying root cause of the issue',
+      'Developing fix strategies',
+      'Testing the resolution',
+      'Preventing future occurrences'
+    ],
+    logic: [
+      'Analyzing the logical structure',
+      'Evaluating premises and assumptions',
+      'Applying deductive reasoning',
+      'Checking for logical consistency',
+      'Drawing conclusions',
+      'Assessing argument validity'
+    ],
+    general: [
+      'Analyzing the core problem and key elements',
+      'Breaking down the problem into components',
+      'Evaluating important factors and constraints',
+      'Developing potential solution approaches',
+      'Assessing solution viability and implications',
+      'Reaching final conclusion and recommendations'
+    ]
+  };
+
+  const summaries = typeSummaries[type] || typeSummaries.general;
 
   // Use predefined summaries for first few steps, then generate from content
   if (stepNumber <= summaries.length) {
@@ -117,7 +161,7 @@ function assessProblemComplexity(problem, type) {
   
   // Calculate dynamic parameters
   const maxSteps = Math.max(2, Math.min(5, Math.floor(complexityScore + 1.5)));
-  const timeout = Math.max(15000, Math.min(60000, maxSteps * 12000)); // 12s per step min, 60s max
+  const timeout = 300000; // 5 minutes - no timeout
   
   logger.debug('Problem complexity assessed', { 
   complexityScore: complexityScore.toFixed(2), 
@@ -133,38 +177,33 @@ function assessProblemComplexity(problem, type) {
 }
 
 export async function executeReasonComplex(args, message, client, providerManager) {
-  let sessionId = '';
-  let problem = '';
-  let type = '';
-  let displayMode = 'brief';
-  let accumulatedText = '';
-  let completedThinkingProgressions = [];
-  let finalAnswer = '';
+  logger.debug('executeReasonComplex called', { args, messageId: message?.id, channelId: message?.channel?.id });
+  
+  const { problem, type = 'general' } = args;
 
-  try {
-    const argsParsed = args;
-    problem = argsParsed.problem;
-    type = argsParsed.type;
-    displayMode = 'brief'; // Always use brief mode
-    sessionId = generateSessionId();
+  if (!problem) {
+    logger.warn('No problem provided for reasoning');
+    return 'Error: No problem provided for reasoning';
+  }
 
-    // Ensure log directory exists
-    await ReasoningLogger.ensureLogDirectory();
-
-    // Check if this should be delegated to a specialized reasoning tool
-    const specializedResult = await delegateToSpecializedTool(problem, type, message, client, providerManager);
-    if (specializedResult) {
-      return specializedResult;
-    }
-
+// Generate unique session ID for this reasoning session
+    const sessionId = `reasoning-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     // Send initial thinking indicator with problem preview
     const problemPreview = problem.substring(0, 60) + (problem.length > 60 ? '...' : '');
-    const thinkingMsg = await message.reply(`Thinking... ${type} problem`);
+    const thinkingMsg = await message.reply(`Thinking... ${type} problem\n\`${problemPreview}\``);
+    
+    logger.info('Reasoning started', { 
+        sessionId, 
+        problemType: type, 
+        problemPreview,
+        messageId: thinkingMsg.id 
+      });
 
 // Assess problem complexity for timeout guidance, but let LLM choose progress
     const problemComplexity = assessProblemComplexity(problem, type);
     const timeoutMs = problemComplexity.timeout;
-    const reasoningPrompt = `IMPORTANT: Begin IMMEDIATELY with [Thinking: ] - no intro text.
+    const reasoningPrompt = `IMPORTANT: Begin IMMEDIATELY with your detailed reasoning - no intro text.
 
 Analyze this ${type} problem: ${problem}
 
@@ -176,20 +215,22 @@ YOU choose how many thinking steps to use based on the problem's needs:
 - Complex problems: 3-5 steps
 
 CRITICAL FORMAT REQUIREMENTS:
-- Use [Thinking: BRIEF_SUMMARY] where BRIEF_SUMMARY is 3-5 words max (under 20 characters total)
-- Immediately after each [Thinking: ] bracket, put your DETAILED reasoning for that step
-- Do NOT put detailed content inside the brackets - only brief summaries
+- First provide your detailed reasoning for each step
+- AFTER each reasoning block, add [Thinking: BRIEF_SUMMARY] where BRIEF_SUMMARY is 3-5 words max
+- The [Thinking: ] bracket comes AFTER the reasoning, not before
 
 Example format:
-[Thinking: Problem analysis]
 Here I provide detailed analysis of the problem, exploring all aspects...
-[Thinking: Solution approach]
-Now I detail the potential solutions and their implications...
-[Thinking: Final conclusion]
-My comprehensive final answer with all reasoning...
+[Thinking: Problem analysis]
 
-BRACKETS: Only brief 3-5 word summaries for display
-OUTSIDE BRACKETS: Your complete detailed reasoning and analysis
+Now I detail the potential solutions and their implications...
+[Thinking: Solution approach]
+
+My comprehensive final answer with all reasoning...
+[Thinking: Final conclusion]
+
+REASONING FIRST: Provide detailed analysis first
+BRACKETS SECOND: Add brief summary after each reasoning block
 `;
 
     let accumulatedText = '';
@@ -199,18 +240,52 @@ OUTSIDE BRACKETS: Your complete detailed reasoning and analysis
     let showingCurrentThinking = false;
 
     try {
+      logger.debug('Reasoning prompt sent:', { prompt: reasoningPrompt.substring(0, 200) + '...' });
+      logger.info('Starting reasoning stream', { 
+        sessionId, 
+        problemType: type, 
+        problemLength: problem.length,
+        timeout: timeoutMs 
+      });
+      
       // Get streaming response from AI with dynamic timeout
+      logger.debug('Attempting to get stream from provider');
       const stream = await providerManager.generateContentStream(reasoningPrompt);
       const startTime = Date.now();
+      logger.debug('Stream obtained', { 
+        streamType: typeof stream,
+        hasAsyncIterator: stream && typeof stream[Symbol.asyncIterator] === 'function'
+      });
 
       // Process the stream and extract steps progressively
       let lastProcessedLength = 0;
       let previousCompletedCount = 0;
+      let chunkCount = 0;
+      
+      logger.debug('Starting stream processing');
       for await (const chunk of stream) {
-        if (chunk.done) break;
+        chunkCount++;
+        logger.debug('Stream chunk received', { 
+          chunkCount,
+          chunkText: chunk.text,
+          done: chunk.done,
+          accumulatedLength: accumulatedText.length
+        });
+        
+        if (chunk.done) {
+          logger.debug('Stream marked as done, breaking');
+          break;
+        }
 
         accumulatedText += chunk.text;
         const currentTime = Date.now();
+        
+        logger.debug('Reasoning chunk received:', { 
+          chunkCount,
+          chunk: chunk.text,
+          accumulatedLength: accumulatedText.length,
+          hasThinking: accumulatedText.includes('[Thinking:')
+        });
 
         // Check for timeout
         if (currentTime - startTime > timeoutMs) {
@@ -268,31 +343,37 @@ OUTSIDE BRACKETS: Your complete detailed reasoning and analysis
           }
         }
 
-        // Only update display if we have new completed thinking steps
-        if (currentCompletedMatches.length > previousCompletedCount) {
-          // Use the currentCompletedMatches we already extracted
-          let displayText = '';
+// Only update display if we have new completed thinking steps
+         if (currentCompletedMatches.length > previousCompletedCount) {
+           // Use the currentCompletedMatches we already extracted
+           let displayText = '';
 
-          if (currentCompletedMatches.length > 0) {
-            const thinkingSteps = currentCompletedMatches.map(function(content, index) {
-              // For brief mode, show only brief summaries
-              const briefSummary = generateBriefSummary(content, index + 1);
-              return '**' + (index + 1) + '.** ' + briefSummary;
-            });
+           if (currentCompletedMatches.length > 0) {
+             const thinkingSteps = currentCompletedMatches.map(function(content, index) {
+// For brief mode, show only brief summaries with [Thinking: ] brackets
+                const type = getThinkingProgressionType(content);
+                const briefSummary = generateBriefSummary(content, index + 1, type);
+                return '[Thinking: ' + (index + 1) + '. ' + briefSummary + ']';
+             });
 
 displayText = 'Thinking...\n' + thinkingSteps.join('\n');
-          }
+           }
 
-          if (displayText) {
-            try {
-              await thinkingMsg.edit(displayText);
-              await ReasoningLogger.logDisplayUpdate(sessionId, displayText, currentCompletedMatches.length);
-              previousCompletedCount = currentCompletedMatches.length;
-            } catch (editError) {
+           if (displayText) {
+             try {
+               await thinkingMsg.edit(displayText);
+               await ReasoningLogger.logDisplayUpdate(sessionId, displayText, currentCompletedMatches.length);
+               logger.debug('Updated thinking progress', { 
+                 sessionId, 
+                 stepCount: currentCompletedMatches.length, 
+                 displayTextLength: displayText.length 
+               });
+               previousCompletedCount = currentCompletedMatches.length;
+             } catch (editError) {
 logger.warn('Failed to edit thinking message', { error: editError.message });
-            }
-          }
-        }
+             }
+           }
+         }
       }
 
 // Final extraction and display of completed thinking progressions
@@ -454,15 +535,16 @@ logger.warn('Failed to edit thinking message', { error: editError.message });
           }
         }
 
-         // Format as numbered steps (brief mode only)
-         if (thinkingMatches.length > 0) {
-           // Show only brief progress indicators without brackets
-           finalAnswer = thinkingMatches.map((match, index) => {
-             const briefSummary = generateBriefSummary(match.content, index + 1);
-             return `${index + 1}. ${briefSummary}`;
-           }).join('\n');
+          // Format as numbered steps (brief mode only)
+          if (thinkingMatches.length > 0) {
+            // Show brief progress indicators with [Thinking: ] brackets
+            finalAnswer = thinkingMatches.map((match, index) => {
+              const type = getThinkingProgressionType(match.content);
+              const briefSummary = generateBriefSummary(match.content, index + 1, type);
+              return `[Thinking: ${index + 1}. ${briefSummary}]`;
+            }).join('\n');
          } else {
-           finalAnswer = accumulatedText.length > 2000 ? accumulatedText.substring(0, 2000) + '...' : accumulatedText;
+           finalAnswer = accumulatedText.length > 2000 ? accumulatedText.substring(0, 2000) + '...\n\n*(Response truncated due to Discord limit - full reasoning available in logs with `;reasoning-log`)*' : accumulatedText;
          }
 
 // Return empty string - main AI will edit this message with its response
@@ -482,7 +564,18 @@ logger.warn('Failed to edit thinking message', { error: editError.message });
 });
 
     } catch (streamError) {
-      logger.error('Streaming failed, falling back to regular generation', { error: streamError.message });
+      logger.error('Streaming failed, falling back to regular generation', { 
+        error: streamError.message, 
+        stack: streamError.stack,
+        provider: providerManager.constructor.name 
+      });
+
+      // Update message to indicate fallback mode
+      try {
+        await thinkingMsg.edit(`Thinking... (Using fallback mode due to streaming issues)`);
+      } catch (editError) {
+        logger.warn('Failed to update thinking message for fallback', { error: editError.message });
+      }
 
       // Fallback: Use regular generation with step-by-step prompt
       let fallbackFinalAnswer = '';
@@ -531,26 +624,37 @@ logger.warn('Failed to edit thinking message', { error: editError.message });
            }
          }
 
-          const parsedThinkingProgressions = thinkingMatches.filter(thinking => thinking.length > 0);
+           const parsedThinkingProgressions = thinkingMatches.filter(thinking => thinking.length > 0);
 
-          // For brief mode, use brief summaries
-          if (parsedThinkingProgressions.length > 0) {
-            fallbackFinalAnswer = parsedThinkingProgressions.map((content, index) => {
-              const briefSummary = generateBriefSummary(content, index + 1);
-              return `${index + 1}. ${briefSummary}`;
-            }).join('\n');
-          } else {
-            fallbackFinalAnswer = fallbackText.length > 2000 ? fallbackText.substring(0, 2000) + '...' : fallbackText;
-          }
+           // Show progress during fallback processing
+           if (parsedThinkingProgressions.length > 0) {
+             const thinkingSteps = parsedThinkingProgressions.map((content, index) => {
+               const briefSummary = generateBriefSummary(content, index + 1);
+               return `**${index + 1}.** ${briefSummary}`;
+             });
 
+             const displayText = `Thinking... (Fallback mode)\n${thinkingSteps.join('\n')}`;
+             
+             try {
+               await thinkingMsg.edit(displayText);
+               await ReasoningLogger.logDisplayUpdate(sessionId, displayText, parsedThinkingProgressions.length);
+             } catch (editError) {
+               logger.warn('Failed to edit fallback thinking message', { error: editError.message });
+             }
 
-
-// Return empty string - main AI will edit this message with its response
-         try {
-           await thinkingMsg.edit(`Processing response...`);
-         } catch (editError) {
-           logger.warn('Failed to edit fallback thinking message', { error: editError.message });
-         }
+             fallbackFinalAnswer = parsedThinkingProgressions.map((content, index) => {
+               const briefSummary = generateBriefSummary(content, index + 1);
+               return `${index + 1}. ${briefSummary}`;
+             }).join('\n');
+           } else {
+             // No thinking steps found, show processing indicator
+             try {
+               await thinkingMsg.edit('Thinking... (Processing solution)');
+             } catch (editError) {
+               logger.warn('Failed to edit fallback processing message', { error: editError.message });
+             }
+             fallbackFinalAnswer = fallbackText.length > 2000 ? fallbackText.substring(0, 2000) + '...' : fallbackText;
+           }
 
         // Keep the fallback analysis visible - no auto-delete
 
@@ -561,45 +665,32 @@ logger.warn('Failed to edit thinking message', { error: editError.message });
     }
 
     // Log complete session
-    await ReasoningLogger.logReasoningSession({
-      sessionId,
-      problem,
-      type,
-      accumulatedText,
-      extractedSteps: completedThinkingProgressions,
-      complexity: problemComplexity,
-      llmChosenSteps: completedThinkingProgressions.length,
-      suggestedSteps: problemComplexity.maxSteps
-    });
+    try {
+      await ReasoningLogger.logReasoningSession({
+        sessionId,
+        problem,
+        type,
+        accumulatedText,
+        extractedSteps: completedThinkingProgressions,
+        complexity: problemComplexity,
+        llmChosenSteps: completedThinkingProgressions.length,
+        suggestedSteps: problemComplexity.maxSteps
+      });
 
-    // Extract the final answer from the accumulated text (everything after the last thinking step)
-    let finalAnswerText = '';
-    if (accumulatedText.trim()) {
-      // Find the last [Thinking: ] and take everything after it
-      const lastThinkingIndex = accumulatedText.lastIndexOf('[Thinking: ');
-      if (lastThinkingIndex !== -1) {
-        // Find the end of that thinking bracket
-        const afterLastThinking = accumulatedText.indexOf(']', lastThinkingIndex) + 1;
-        if (afterLastThinking > 0 && afterLastThinking < accumulatedText.length) {
-          finalAnswerText = accumulatedText.substring(afterLastThinking).trim();
+      // Return the full reasoning with [Thinking: ] brackets for the AI to present to the user
+      let finalAnswerText = '';
+      if (accumulatedText.trim()) {
+        // Use the full accumulated text with reasoning and [Thinking: ] brackets
+        finalAnswerText = accumulatedText.trim();
+        
+        // Limit length for AI processing
+        if (finalAnswerText.length > 2000) {
+          finalAnswerText = finalAnswerText.substring(0, 2000) + '...';
         }
       }
 
-      // If no thinking brackets found, use the whole text
-      if (!finalAnswerText) {
-        finalAnswerText = accumulatedText.trim();
-      }
-
-      // Limit length for AI processing
-      if (finalAnswerText.length > 2000) {
-        finalAnswerText = finalAnswerText.substring(0, 2000) + '...';
-      }
-    }
-
-    // Return the final answer for the AI to present to the user
-    return finalAnswerText || 'Analysis completed. The detailed reasoning is available in the logs.';
-
-  } catch (error) {
+      return finalAnswerText || 'Analysis completed. The detailed reasoning is available in the logs.';
+    } catch (error) {
     // Log error
     try {
       await ReasoningLogger.logReasoningSession({

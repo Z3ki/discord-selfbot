@@ -35,6 +35,11 @@ import { getUserProfileCompleteTool } from './investigation/getUserProfileComple
 import { handleFriendRequestTool } from './relationship/handleFriendRequest.js';
 import { checkFriendRequestsTool } from './relationship/checkFriendRequests.js';
 
+import { analyzeArgumentTool } from './reasoning/analyzeArgument.js';
+import { debugCodeTool } from './reasoning/debugCode.js';
+import { evaluateEvidenceTool } from './reasoning/evaluateEvidence.js';
+import { solveEquationTool } from './reasoning/solveEquation.js';
+
 
 // Combine all tools
 export const tools = [
@@ -68,7 +73,11 @@ export const tools = [
   getUserProfileCompleteTool,
 
   handleFriendRequestTool,
-  checkFriendRequestsTool
+  checkFriendRequestsTool,
+  analyzeArgumentTool,
+  debugCodeTool,
+  evaluateEvidenceTool,
+  solveEquationTool
 ];
 
 // Tool registry for execution
@@ -99,6 +108,7 @@ export class ToolRegistry {
       'DISCORD MANAGEMENT': ['change_presence', 'add_reaction', 'remove_reaction', 'get_reactions', 'create_thread', 'archive_thread', 'join_thread', 'leave_thread', 'pin_message', 'unpin_message', 'get_pinned_messages', 'get_channel_info', 'get_server_info', 'create_invite', 'get_invites', 'get_server_list', 'invite_to_server', 'join_server', 'leave_server', 'get_member_list', 'get_channel_permissions'],
       'INVESTIGATION': ['investigate_user', 'get_user_profile_complete'],
       'SYSTEM': ['set_prompt', 'calculate', 'reason_complex'],
+      'REASONING': ['analyze_argument', 'debug_code', 'evaluate_evidence', 'solve_equation'],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests']
     };
 

@@ -205,37 +205,61 @@ export class GoogleAIProvider extends AIProvider {
 const streamResult = await this.model.generateContentStream(formattedContent);
 
     // Debug: log what we get from Google AI
-    logger.debug('Google AI stream result analysis', { 
+    logger.debug('Google AI stream result analysis', {
       type: typeof streamResult,
-      constructor: streamResult.constructor.name,
-      hasStream: 'stream' in streamResult
+      constructor: streamResult ? streamResult.constructor.name : 'null',
+      hasAsyncIterator: streamResult && typeof streamResult[Symbol.asyncIterator] === 'function',
+      hasStreamProperty: streamResult && typeof streamResult.stream === 'object',
+      properties: streamResult ? Object.getOwnPropertyNames(streamResult) : []
     });
-    
-    // The streamResult should have a 'stream' property that's an AsyncGenerator
-    if (streamResult && typeof streamResult.stream === 'object' && streamResult.stream !== null) {
-      logger.debug('Using streamResult.stream');
-      
+
+    // Google AI returns a stream object that may have different properties
+    if (streamResult) {
+      logger.debug('Using Google AI streaming');
+
       return {
         async *[Symbol.asyncIterator]() {
-          for await (const chunk of streamResult.stream) {
-            // chunk is an EnhancedGenerateContentResponse
-            const chunkText = await chunk.text();
-            if (chunkText) {
-              yield {
-                text: chunkText,
-                done: false
-              };
+          try {
+            // Try different ways Google AI might provide streaming
+            let streamToUse = streamResult;
+
+            // If it has a stream property, use that
+            if (streamResult.stream && typeof streamResult.stream[Symbol.asyncIterator] === 'function') {
+              streamToUse = streamResult.stream;
             }
+
+            // If it's directly iterable, use it
+            if (typeof streamResult[Symbol.asyncIterator] === 'function') {
+              streamToUse = streamResult;
+            }
+
+            for await (const chunk of streamToUse) {
+              // chunk is an EnhancedGenerateContentResponse
+              const chunkText = chunk.text ? await chunk.text() : String(chunk);
+              if (chunkText) {
+                yield {
+                  text: chunkText,
+                  done: false
+                };
+              }
+            }
+            yield {
+              text: '',
+              done: true
+            };
+          } catch (streamError) {
+            logger.warn('Google AI streaming failed during iteration', { error: streamError.message });
+            // Return empty to signal end
+            yield {
+              text: '',
+              done: true
+            };
           }
-          yield {
-            text: '',
-            done: true
-          };
         }
       };
     } else {
       // Fallback: try to get response as text
-      logger.debug('Using fallback - getting response as text');
+      logger.debug('Google AI streaming not available, using fallback - getting response as text');
       const response = await this.model.generateContent(formattedContent);
       const text = response.text();
       

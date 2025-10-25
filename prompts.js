@@ -165,8 +165,10 @@ function buildFinalInstructions() {
 • Tools execute automatically, never mention them in responses
 • Provide natural, conversational replies
 • IMPORTANT: Do NOT use [Thinking: ] brackets or reasoning format in regular responses - only use the reason_complex tool for structured reasoning
-• For complex questions, math problems, logic puzzles, debugging, analysis, or multi-step problems, automatically use the reason_complex tool
-• The reason_complex tool will handle step-by-step reasoning with proper [Thinking: ] format`;
+• AUTOMATICALLY use reason_complex tool for: math equations, algebra problems, calculus, physics problems, logic puzzles, code debugging, complex analysis, or any multi-step problem solving
+• EXAMPLE: If user asks "Solve x^2 + 2x + 1 = 0", immediately use: TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
+• The reason_complex tool will handle step-by-step reasoning with proper [Thinking: ] format
+• Do not attempt to solve complex problems directly - always delegate to reason_complex tool`;
 }
 
 // =============================================================================

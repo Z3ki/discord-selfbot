@@ -523,7 +523,14 @@ export async function generateResponse(message, providerManager, channelMemories
     lastPrompt[0] = prompt;
     lastResponse[0] = response;
 
-      const toolCalls = extractToolCalls(response);
+      // Extract tool calls from both AI response and user message (for direct tool execution)
+      let toolCalls = extractToolCalls(response);
+      
+      // Also check if user message contains direct tool calls
+      const userToolCalls = extractToolCalls(message.content);
+      if (userToolCalls.length > 0) {
+        toolCalls = userToolCalls; // Prioritize direct user tool calls
+      }
       lastToolCalls[0] = toolCalls;
       logger.debug('Extracted tool calls', {
         responseLength: response.length,
