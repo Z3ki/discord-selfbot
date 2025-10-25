@@ -663,9 +663,17 @@ export class ProviderManager {
       triedPrimary = true;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
+          logger.debug('Attempting primary provider', { provider: this.primaryProvider.name, attempt, maxRetries });
           const result = await this.primaryProvider.generateContent(content);
+          logger.debug('Primary provider succeeded', { provider: this.primaryProvider.name });
           return result;
         } catch (error) {
+          logger.warn('Primary provider failed, trying fallback', {
+            primary: this.primaryProvider.name,
+            attempt,
+            maxRetries,
+            error: error.message
+          });
           if (attempt < maxRetries) {
             // Stealth: Use random timing instead of fixed exponential backoff
             const delay = CONFIG.stealth.randomDelays ?
@@ -680,10 +688,16 @@ export class ProviderManager {
     // Try fallback provider with retries
     if (this.fallbackProvider && this.fallbackProvider.isProviderAvailable()) {
       triedFallback = true;
+      logger.info('Switching to fallback provider due to primary failure', {
+        primary: this.primaryProvider?.name || 'none',
+        fallback: this.fallbackProvider.name
+      });
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          logger.debug('Using fallback provider', { name: this.fallbackProvider.name, attempt, maxRetries });
-          return await this.fallbackProvider.generateContent(content);
+          logger.debug('Attempting fallback provider', { provider: this.fallbackProvider.name, attempt, maxRetries });
+          const result = await this.fallbackProvider.generateContent(content);
+          logger.info('Fallback provider succeeded', { provider: this.fallbackProvider.name });
+          return result;
         } catch (error) {
           logger.warn('Fallback provider attempt failed', {
             fallback: this.fallbackProvider.name,

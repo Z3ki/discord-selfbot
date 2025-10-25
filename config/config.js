@@ -64,6 +64,7 @@ export const CONFIG = {
 
 export function validateConfig() {
   const required = ['GOOGLE_API_KEY'];
+  const optional = ['NVIDIA_NIM_API_KEY'];
   const discordTokenRequired = !process.env.DISCORD_TOKEN && !process.env.DISCORD_USER_TOKEN;
 
   const missing = [];
@@ -73,6 +74,15 @@ export function validateConfig() {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+
+  // Log optional API keys status
+  optional.forEach(key => {
+    if (process.env[key]) {
+      logger.info(`Optional API key found: ${key}`);
+    } else {
+      logger.warn(`Optional API key missing: ${key} - fallback provider may not work`);
+    }
+  });
 
   // Validate numeric values
   if (isNaN(CONFIG.ai.nvidia.maxTokens) || CONFIG.ai.nvidia.maxTokens <= 0) {
