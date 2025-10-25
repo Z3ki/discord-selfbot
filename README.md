@@ -15,10 +15,10 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 - Context-aware responses with conversation memory
 
 ### Advanced Tool System
-- 22 integrated tools for Discord interactions
+- 17 consolidated tools for Discord interactions
 - Real-time reasoning with progressive thinking display
-- Shell command execution with approval system
 - Comprehensive investigation and analysis tools
+- Consolidated tool architecture for better maintainability
 
 ### Intelligent Reasoning
 - Progressive reasoning display with brief indicators
@@ -33,14 +33,15 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 - Cross-server presence monitoring
 
 ### Discord Integration
-- Thread management (create, join, archive)
-- Message management (pin, reactions, permissions)
+- Consolidated reaction management (add, remove, get)
+- Thread management (create, join, archive, leave)
+- Message management (pin, unpin)
 - Server analytics and member information
-- Invite link management
+- Invite link management (create, join, get invites)
+- Enhanced server joining with fallback methods
 
 ### System Tools
-- Mathematical calculations
-- Shell command execution (with manual approval)
+- Advanced reasoning and analysis
 - Prompt customization
 - Health monitoring and diagnostics
 
@@ -163,21 +164,20 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - `send_dm` - Send direct messages with context tracking
 - `update_context` - Update user context for personalized responses
 
-### Discord Integration (19 tools)
-- Message management (pin, reactions, threads)
-- Server information and analytics
-- Permission checking and user investigation
-- Invite and member management
-- Server blacklisting for ignored responses
+### Discord Integration (6 tools)
+- `reaction_manager` - Add, remove, and get reactions
+- `message_manager` - Pin/unpin messages, thread management
+- `server_utils` - Server info, channel info, member lists
+- `invite_manager` - Create/join invites, get server invites
+- `get_server_list` - List all servers bot is in
+- `leave_server` - Leave specified servers
 
 ### Investigation (2 tools)
 - `investigate_user` - Comprehensive user analysis
 - `get_user_profile_complete` - Full profile information
 
-### System (3 tools)
-- `calculate` - Mathematical expression evaluation
+### System (1 tool)
 - `reason_complex` - Advanced reasoning and analysis
-- `set_prompt` - Customize AI behavior
 
 ### Relationships (2 tools)
 - `check_friend_requests` - Check incoming friend requests
@@ -188,7 +188,7 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 ### Core Components
 - **Bot Service**: Main orchestrator with data persistence and stability features
 - **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 22 integrated tools
+- **Tool Executor**: Modular tool system with 17 consolidated tools
 - **Reasoning Engine**: Progressive thinking with logging and subagent delegation
 - **Memory System**: LRU-cached conversation context with automatic cleanup
 - **Queue System**: Request management with rate limiting and spam detection
@@ -289,6 +289,7 @@ discord-selfbot/
 3. Add execution function to `ToolExecutor.js`
 4. Register in `tools/index.js`
 5. Update documentation
+6. Consider consolidating similar functionality into existing tools
 
 ### Code Quality
 - Run `npm run lint` for ESLint checking

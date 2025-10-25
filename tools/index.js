@@ -3,29 +3,12 @@ import { updateContextTool } from './communication/updateContext.js';
 
 import { changePresenceTool } from './discord/changePresence.js';
 
-import { addReactionTool } from './discord/addReaction.js';
-import { removeReactionTool } from './discord/removeReaction.js';
-import { getReactionsTool } from './discord/getReactions.js';
-import { createThreadTool } from './discord/createThread.js';
-import { archiveThreadTool } from './discord/archiveThread.js';
-import { joinThreadTool } from './discord/joinThread.js';
-import { leaveThreadTool } from './discord/leaveThread.js';
-import { getMemberListTool } from './discord/getMemberList.js';
-import { getChannelPermissionsTool } from './discord/getChannelPermissions.js';
-import { pinMessageTool } from './discord/pinMessage.js';
-import { unpinMessageTool } from './discord/unpinMessage.js';
-import { getPinnedMessagesTool } from './discord/getPinnedMessages.js';
-import { getChannelInfoTool } from './discord/getChannelInfo.js';
-import { getServerInfoTool } from './discord/getServerInfo.js';
-
-import { createInviteTool } from './discord/createInvite.js';
-import { getInvitesTool } from './discord/getInvites.js';
+import { reactionManagerTool } from './discord/reactionManager.js';
+import { inviteManagerTool } from './discord/inviteManager.js';
+import { serverUtilsTool } from './discord/serverUtils.js';
+import { messageManagerTool } from './discord/messageManager.js';
 import { getServerListTool } from './discord/getServerList.js';
-import { inviteToServerTool } from './discord/inviteToServer.js';
-import { joinServerTool } from './discord/joinServer.js';
 import { leaveServerTool } from './discord/leaveServer.js';
-import { setPromptTool } from './system/setPrompt.js';
-import { calculateTool } from './system/calculate.js';
 import { reasonComplexTool } from './system/reasonComplex.js';
 import { investigateUserTool } from './investigation/investigateUser.js';
 
@@ -46,32 +29,15 @@ export const tools = [
   sendDMTool,
   updateContextTool,
   changePresenceTool,
-  addReactionTool,
-  removeReactionTool,
-  getReactionsTool,
-  createThreadTool,
-  archiveThreadTool,
-  joinThreadTool,
-  leaveThreadTool,
-  getMemberListTool,
-  getChannelPermissionsTool,
-  pinMessageTool,
-  unpinMessageTool,
-  getPinnedMessagesTool,
-  getChannelInfoTool,
-  getServerInfoTool,
-  createInviteTool,
-  getInvitesTool,
+  reactionManagerTool,
+  inviteManagerTool,
+  serverUtilsTool,
+  messageManagerTool,
   getServerListTool,
-  inviteToServerTool,
-  joinServerTool,
   leaveServerTool,
-   setPromptTool,
-   calculateTool,
-   reasonComplexTool,
-   investigateUserTool,
+  reasonComplexTool,
+  investigateUserTool,
   getUserProfileCompleteTool,
-
   handleFriendRequestTool,
   checkFriendRequestsTool,
   analyzeArgumentTool,
@@ -105,9 +71,9 @@ export class ToolRegistry {
     // Group tools by category
     const categories = {
       'COMMUNICATION': ['send_dm', 'update_context'],
-      'DISCORD MANAGEMENT': ['change_presence', 'add_reaction', 'remove_reaction', 'get_reactions', 'create_thread', 'archive_thread', 'join_thread', 'leave_thread', 'pin_message', 'unpin_message', 'get_pinned_messages', 'get_channel_info', 'get_server_info', 'create_invite', 'get_invites', 'get_server_list', 'invite_to_server', 'join_server', 'leave_server', 'get_member_list', 'get_channel_permissions'],
+      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'get_server_list', 'leave_server'],
       'INVESTIGATION': ['investigate_user', 'get_user_profile_complete'],
-      'SYSTEM': ['set_prompt', 'calculate', 'reason_complex'],
+      'SYSTEM': ['reason_complex'],
       'REASONING': ['analyze_argument', 'debug_code', 'evaluate_evidence', 'solve_equation'],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests']
     };

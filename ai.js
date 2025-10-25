@@ -550,7 +550,7 @@ export async function generateResponse(message, providerManager, channelMemories
         // Only generate follow-up if there are valid tool results
         if (validToolResults.length > 0) {
           // Build follow-up prompt with tool results
-          const toolResultsText = validToolResults.map(r => `✅ ${r.tool.toUpperCase()}: ${r.result}`).join('\n');
+          const toolResultsText = validToolResults.map(r => `${r.tool.toUpperCase()}: ${r.result}`).join('\n');
           const followUpPrompt = buildFollowUpContent(
             typeof prompt === 'string' ? prompt : prompt[0].text,
             toolResultsText,

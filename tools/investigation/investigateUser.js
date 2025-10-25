@@ -215,7 +215,7 @@ Video: ${member.voice.selfVideo ? 'Yes' : 'No'}`;
         }
       }
     } catch (error) {
-      info += '\n\n❌ Member info: Could not fetch member details';
+      info += '\n\nMember info: Could not fetch member details';
     }
   }
 

@@ -17,7 +17,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
   // Admin check for all commands except help
   const adminId = process.env.ADMIN_USER_ID;
   if (command !== 'help' && (!adminId || message.author.id !== adminId)) {
-    await message.reply('❌ Access denied. This command is restricted to administrators only.');
+    await message.reply('Access denied. This command is restricted to administrators only.');
     return;
   }
 
@@ -25,7 +25,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
     switch (command) {
       case 'help': {
         const helpText = `**Commands**
-📝 Commands
+Commands
 \`;help\` - Show commands
 \`;debug\` - Debug info
 \`;functions\` - List available tools
@@ -175,7 +175,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
           };
 
           if (!verifyCleared()) {
-            await message.reply('⚠️ Memory may not have cleared properly. Please try again.');
+            await message.reply('Memory may not have cleared properly. Please try again.');
             return;
           }
 
@@ -238,7 +238,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
               };
 
               if (!verifyCleared()) {
-                await message.reply('⚠️ Memory may not have cleared properly. Prompt not updated.');
+                await message.reply('Memory may not have cleared properly. Prompt not updated.');
                 return;
               }
 
@@ -246,7 +246,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
               await fs.promises.writeFile('globalPrompt.txt', newPrompt);
               globalPrompt[0] = newPrompt;
 
-              await message.reply('✅ Memory cleared and global prompt updated successfully!');
+              await message.reply('Memory cleared and global prompt updated successfully!');
             } catch (error) {
               await message.reply('Failed to clear memory and update prompt: ' + error.message);
             }
@@ -278,7 +278,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
         }
 
         try {
-          await message.reply('🤖 *Using NVIDIA NIM provider...*');
+          await message.reply('*Using NVIDIA NIM provider...*');
 
           // Process media attachments for NVIDIA NIM
           const { multimodalContent } = await processMessageMedia(message);
@@ -289,7 +289,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
           await message.reply(response);
         } catch (error) {
           logger.error('NVIDIA NIM command failed', { error: error.message });
-          await message.reply('❌ NVIDIA NIM provider failed: ' + error.message);
+          await message.reply('NVIDIA NIM provider failed: ' + error.message);
         }
         break;
       }
@@ -307,12 +307,12 @@ async function handleCommand(message, channelMemories, client, providerManager, 
          }
           const metrics = getHealthMetrics(client);
           await logHealthMetrics(metrics); // Log every time health is checked
-         const memoryStatus = metrics.memory.heapUsed > 100 ? '🔴 HIGH' : metrics.memory.heapUsed > 50 ? '🟡 MEDIUM' : '🟢 LOW';
+         const memoryStatus = metrics.memory.heapUsed > 100 ? 'HIGH' : metrics.memory.heapUsed > 50 ? 'MEDIUM' : 'LOW';
          const healthText = `**Bot Health Status**
-⏱️ **Uptime:** ${metrics.uptime}
-🧠 **Memory Usage:** RSS ${metrics.memory.rss}MB, Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
-📡 **API Latency:** ${metrics.apiLatency}ms
-❌ **Last Error:** ${metrics.lastError}`;
+**Uptime:** ${metrics.uptime}
+**Memory Usage:** RSS ${metrics.memory.rss}MB, Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
+**API Latency:** ${metrics.apiLatency}ms
+**Last Error:** ${metrics.lastError}`;
          await message.reply(healthText);
           break;
         }

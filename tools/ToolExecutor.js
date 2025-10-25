@@ -9,28 +9,12 @@ import { executeUpdateContext } from './communication/updateContext.js';
 
 import { executeChangePresence } from './discord/changePresence.js';
 
-import { executeAddReaction } from './discord/addReaction.js';
-import { executeRemoveReaction } from './discord/removeReaction.js';
-import { executeGetReactions } from './discord/getReactions.js';
-import { executeCreateThread } from './discord/createThread.js';
-import { executeArchiveThread } from './discord/archiveThread.js';
-import { executeJoinThread } from './discord/joinThread.js';
-import { executeLeaveThread } from './discord/leaveThread.js';
-import { executeGetMemberList } from './discord/getMemberList.js';
-import { executeGetChannelPermissions } from './discord/getChannelPermissions.js';
-import { executePinMessage } from './discord/pinMessage.js';
-import { executeUnpinMessage } from './discord/unpinMessage.js';
-import { executeGetPinnedMessages } from './discord/getPinnedMessages.js';
-import { executeGetChannelInfo } from './discord/getChannelInfo.js';
-import { executeGetServerInfo } from './discord/getServerInfo.js';
-import { executeCreateInvite } from './discord/createInvite.js';
-import { executeGetInvites } from './discord/getInvites.js';
+import { executeReactionManager } from './discord/reactionManager.js';
+import { executeInviteManager } from './discord/inviteManager.js';
+import { executeServerUtils } from './discord/serverUtils.js';
+import { executeMessageManager } from './discord/messageManager.js';
 import { executeGetServerList } from './discord/getServerList.js';
-import { executeInviteToServer } from './discord/inviteToServer.js';
-import { executeJoinServer } from './discord/joinServer.js';
 import { executeLeaveServer } from './discord/leaveServer.js';
-import { executeSetPrompt } from './system/setPrompt.js';
-import { executeCalculate } from './system/calculate.js';
 import { executeReasonComplex } from './system/reasonComplex.js';
 import { executeInvestigateUser } from './investigation/investigateUser.js';
 
@@ -78,50 +62,18 @@ export class ToolExecutor {
 
         case 'change_presence':
           return await executeChangePresence(args, client);
-        case 'add_reaction':
-          return await executeAddReaction(args, client);
-        case 'remove_reaction':
-          return await executeRemoveReaction(args, client, message);
-        case 'get_reactions':
-          return await executeGetReactions(args, client);
-        case 'create_thread':
-          return await executeCreateThread(args, client);
-        case 'archive_thread':
-          return await executeArchiveThread(args, client);
-        case 'join_thread':
-          return await executeJoinThread(args, client);
-        case 'leave_thread':
-          return await executeLeaveThread(args, client);
-        case 'get_member_list':
-          return await executeGetMemberList(args, client, message);
-        case 'get_channel_permissions':
-          return await executeGetChannelPermissions(args, client, message);
-        case 'pin_message':
-          return await executePinMessage(args, client);
-        case 'unpin_message':
-          return await executeUnpinMessage(args, client);
-        case 'get_pinned_messages':
-          return await executeGetPinnedMessages(args, client);
-        case 'get_channel_info':
-          return await executeGetChannelInfo(args, client);
-        case 'get_server_info':
-          return await executeGetServerInfo(args, message);
-        case 'create_invite':
-          return await executeCreateInvite(args, client);
-        case 'get_invites':
-          return await executeGetInvites(args, message);
+        case 'reaction_manager':
+          return await executeReactionManager(args, client, message);
+        case 'invite_manager':
+          return await executeInviteManager(args, client);
+        case 'server_utils':
+          return await executeServerUtils(args, client, message);
+        case 'message_manager':
+          return await executeMessageManager(args, client);
         case 'get_server_list':
           return await executeGetServerList(args, client);
-        case 'invite_to_server':
-          return await executeInviteToServer(args, client);
-        case 'join_server':
-          return await executeJoinServer(args, client);
         case 'leave_server':
           return await executeLeaveServer(args, client);
-        case 'set_prompt':
-          return await executeSetPrompt(args, globalPrompt);
-        case 'calculate':
-          return await executeCalculate(args);
         case 'reason_complex':
           return await executeReasonComplex(args, message, client, providerManager);
         case 'investigate_user':
