@@ -517,9 +517,13 @@ export async function generateResponse(message, providerManager, channelMemories
         // Legacy string response
         logger.debug('Legacy AI response received (string format)');
       } else {
-        // Unexpected response type, convert to string
+        // Unexpected response type, convert to string properly
         logger.warn('Unexpected AI response type, converting to string', { type: typeof response, value: response });
-        response = String(response || 'Error: Invalid AI response');
+        if (response && typeof response === 'object') {
+          response = JSON.stringify(response);
+        } else {
+          response = String(response || 'Error: Invalid AI response');
+        }
       }
     } catch (error) {
       logger.error('AI generation failed', { error: error.message });
@@ -595,9 +599,13 @@ export async function generateResponse(message, providerManager, channelMemories
           if (typeof followUpResponse === 'object' && followUpResponse.text) {
             finalResponse = followUpResponse.text;
           } else if (typeof followUpResponse !== 'string') {
-            // Unexpected response type, convert to string
+            // Unexpected response type, convert to string properly
             logger.warn('Unexpected follow-up AI response type, converting to string', { type: typeof followUpResponse, value: followUpResponse });
-            finalResponse = String(followUpResponse || 'Error: Invalid AI follow-up response');
+            if (followUpResponse && typeof followUpResponse === 'object') {
+              finalResponse = JSON.stringify(followUpResponse);
+            } else {
+              finalResponse = String(followUpResponse || 'Error: Invalid AI follow-up response');
+            }
           }
 
           // Clean any remaining tool calls from follow-up response
