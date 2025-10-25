@@ -1,4 +1,4 @@
-this is the shitty code that i made with ai and everything that you will see its the ais fault not mine 🥰
+this is the shitty code that i made with ai and everything that you will see its the ai's fault not mine 🥰
 
 # Discord Selfbot
 
