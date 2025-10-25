@@ -4,43 +4,43 @@ this is the shitty code that i made with ai and everything that you will see its
 
 A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model, featuring advanced reasoning capabilities, tool integration, and intelligent conversation management.
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 **This is a selfbot. Selfbots violate Discord's Terms of Service. Use at your own risk. The developers are not responsible for any consequences of using this software.**
 
 ## Features
 
-### 🤖 AI-Powered Conversations
+### AI-Powered Conversations
 - Powered by Google's Gemma 3-27B-IT model
 - Automatic fallback to NVIDIA NIM for reliability
 - Multimodal support (images, videos, GIFs, stickers)
 - Context-aware responses with conversation memory
 
-### 🛠️ Advanced Tool System
+### Advanced Tool System
 - 40+ integrated tools for Discord interactions
 - Real-time reasoning with progressive thinking display
 - Shell command execution with approval system
 - Comprehensive investigation and analysis tools
 
-### 🧠 Intelligent Reasoning
+### Intelligent Reasoning
 - Progressive reasoning display with brief indicators
 - Full reasoning logged for detailed analysis
 - Specialized reasoning for code, math, logic, and more
 - Complexity assessment and adaptive processing
 
-### 💬 Communication Tools
+### Communication Tools
 - Direct message management with context tracking
 - User investigation and profile analysis
 - Friend request handling
 - Cross-server presence monitoring
 
-### 🎯 Discord Integration
+### Discord Integration
 - Thread management (create, join, archive)
 - Message management (pin, reactions, permissions)
 - Server analytics and member information
 - Invite link management
 
-### 🔧 System Tools
+### System Tools
 - Mathematical calculations
 - Shell command execution (with manual approval)
 - Prompt customization
