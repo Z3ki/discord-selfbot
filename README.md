@@ -15,14 +15,18 @@ A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring ad
 - Context-aware responses with conversation memory
 
 ### Advanced Tool System
-- 15 consolidated tools for Discord interactions and system operations
+- 16 consolidated tools for Discord interactions and system operations
 - Comprehensive investigation and analysis tools
 - Consolidated tool architecture for better maintainability
+- Live progress updates during tool execution
+- Dynamic tool availability based on server permissions
 
 ### System Intelligence
 - Progressive reasoning display with brief indicators
 - Full reasoning logged for detailed analysis
 - Complexity assessment and adaptive processing
+- Configurable reasoning modes (brief/full display)
+- Reasoning activity logs with timestamps
 
 ### Communication Tools
 - Direct message management with context tracking
@@ -42,6 +46,8 @@ A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring ad
 - Complex reasoning and analysis
 - Server-specific and global prompt customization
 - Health monitoring and diagnostics
+- Safe mode for family-friendly responses
+- Reasoning log viewing and management
 
 ## Audio Transcription
 The bot includes a Python-based transcription service using OpenAI's Whisper model for processing audio messages and video audio tracks.
@@ -81,7 +87,8 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 - Execute Linux terminal commands in an isolated Docker container
 - Network diagnostics (ping, traceroute, nslookup, dig)
 - File operations and system information
-- 10-second timeout protection for infinite commands
+- AI-controlled timeout selection based on command type
+- Live progress updates during command execution
 - Per-server access control (disabled by default)
 
 ### Security & Access Control
@@ -89,7 +96,8 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 - **Per-server toggle** using `;shell` command (admin only)
 - **No persistence** - settings reset on bot restart
 - **Isolated execution** in Docker container
-- **Timeout protection** prevents hanging commands
+- **AI-controlled timeouts** prevents hanging commands
+- **Live progress feedback** during execution
 
 ### Usage
 1. Enable shell access: `;shell` (in the desired server)
@@ -98,6 +106,11 @@ The bot includes optional Docker shell execution capabilities for advanced syste
    - `curl -I https://example.com` - HTTP header inspection
    - `ls -la /etc` - Directory listing
    - `ps aux | head -10` - Process information
+
+The AI automatically selects appropriate timeouts:
+- **5-10 seconds** for quick commands (ls, ps, cat)
+- **15-30 seconds** for network tests (ping, traceroute, curl)
+- **30-60 seconds** for downloads/installations
 
 ### Requirements
 - Docker installed and running on host system
@@ -111,6 +124,7 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 - npm or yarn
 - Python 3.8+ with pip
 - FFmpeg (for media processing)
+- Docker (for shell access functionality)
 - Discord user token (⚠️ **Never share this**)
 
 ### Setup
@@ -124,6 +138,8 @@ The bot includes optional Docker shell execution capabilities for advanced syste
    ```bash
    pip install torch faster-whisper
    ```
+
+   **Note**: The bot uses a persistent transcription service with a virtual environment at `/root/whisper_venv/bin/python3`. Ensure this path exists or modify the transcription service configuration.
 
 4. Create a `.env` file:
    ```env
@@ -172,8 +188,13 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 - `;blacklist` - Manage blacklisted servers (admin only)
 - `;shell` - Toggle Docker shell access (admin only)
 - `;prompt` - Set server-specific or global AI prompt
-- `;nvidia` - Toggle NVIDIA AI provider
+- `;nvidia` - Send message to NVIDIA AI provider
 - `;testqueue` - Test queue system
+
+### Advanced Commands
+- `;reasoning-log` - View recent reasoning activity logs
+- `;reasoning-mode brief` - Set reasoning display to brief mode
+- `;safemode` - Toggle safe mode for family-friendly responses
 
 
 ### Prompt Commands
@@ -185,9 +206,11 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 
 ### System Commands
 - Use `TOOL: reason_complex problem="..." type="..."` for complex analysis
-- Use `TOOL: docker_exec command="ping example.com"` for shell commands (when shell access enabled)
+- Use `TOOL: docker_exec command="..." timeout="..."` for shell commands (when shell access enabled)
 - Use `TOOL: send_friend_request userId="..."` to send friend requests
 - Use `TOOL: investigate_user userId="..."` to investigate users
+
+**Note**: The `docker_exec` tool now requires a timeout parameter. The AI will automatically select appropriate timeouts based on command type.
 
 ### AI Interaction
 The bot responds to:
@@ -246,8 +269,8 @@ TOOL: investigate_user userId="123456789"
 
 
 ### System (2 tools)
-- `reason_complex` - Complex reasoning and analysis
-- `docker_exec` - Execute shell commands in Docker container (when shell access enabled)
+- `reason_complex` - Complex reasoning and analysis with configurable display modes
+- `docker_exec` - Execute shell commands in Docker container with AI-controlled timeouts (when shell access enabled)
 
 ### Relationships (3 tools)
 - `check_friend_requests` - Check incoming friend requests
@@ -259,18 +282,19 @@ TOOL: investigate_user userId="123456789"
 ### Core Components
 - **Bot Service**: Main orchestrator with data persistence and stability features
 - **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 14 consolidated tools
-- **Reasoning System**: Progressive thinking with logging
+- **Tool Executor**: Modular tool system with 16 consolidated tools and live progress updates
+- **Reasoning System**: Progressive thinking with configurable display modes and detailed logging
 - **Memory System**: LRU-cached conversation context with automatic cleanup
 - **Queue System**: Request management with rate limiting and spam detection
 - **Media Processor**: Multimodal content handling (images, videos, audio, GIFs)
-- **Transcription Service**: Python-based Whisper audio processing
+- **Transcription Service**: Persistent Python-based Whisper audio processing
 - **Security Layer**: Command validation, file type checking, and rate limiting
 
 ### Data Persistence
 - JSON-based storage in `data-selfbot/` directory
 - LRU caches for memory efficiency (50 channels, 100 DM contexts)
 - Server-specific and global prompt storage
+- Server-specific safe mode and shell access settings
 - Automatic cleanup and memory management
 - Conversation history and user contexts
 - Cross-session continuity with periodic saving
@@ -279,7 +303,8 @@ TOOL: investigate_user userId="123456789"
 - Structured logging with rotation
 - Multiple log levels and files
 - Performance monitoring and debugging
-- Reasoning activity logs
+- Reasoning activity logs with timestamps and detailed analysis
+- Health metrics tracking
 
 ## Security & Privacy
 
@@ -312,16 +337,41 @@ TOOL: investigate_user userId="123456789"
 Check logs in the `logs/` directory (created automatically):
 - `bot.log` - General activity
 - `errors.log` - Error messages
-- `reasoning.log` - Reasoning activity
+- `reasoning.log` - Reasoning activity with timestamps
 - `debug.log` - Debug information
 - `health.log` - Health metrics
 - `rate_limits.log` - Rate limiting events
+
+Use `;reasoning-log` command to view recent reasoning activity directly in Discord.
 
 ### Performance
 - Monitor with `;health` command
 - Check memory usage and API calls
 - Review logs for bottlenecks
 - Adjust configuration as needed
+
+## Recent Updates
+
+### Docker Shell Access Improvements
+- **AI-Controlled Timeouts**: Removed auto-detection logic, AI now chooses appropriate timeouts based on command type
+- **Live Progress Updates**: Real-time feedback during command execution with status indicators
+- **Enhanced Error Handling**: Better timeout management and error reporting
+
+### New Commands
+- **`;reasoning-log`**: View recent reasoning activity with timestamps directly in Discord
+- **`;reasoning-mode brief`**: Configure reasoning display to show brief indicators only
+- **`;safemode`**: Toggle family-friendly response mode per server
+
+### Enhanced Features
+- **Persistent Transcription Service**: Improved Python service with virtual environment support
+- **Live Tool Updates**: Real-time progress feedback during tool execution
+- **Enhanced Logging**: Better structured logs with detailed reasoning activity tracking
+- **New Dependencies**: Added `duck-duck-scrape` for web search capabilities
+
+### Tool System Updates
+- **16 Total Tools**: Updated tool count including docker_exec
+- **Dynamic Tool Availability**: Tools shown based on server permissions and settings
+- **Progress Callbacks**: Live updates during long-running operations
 
 ## Development
 
