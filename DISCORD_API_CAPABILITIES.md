@@ -3,13 +3,12 @@
 ## Overview
 This document outlines Discord API features and data that we're not currently utilizing in the Maxwell selfbot.
 
-## Currently Implemented Discord Tools (24 tools)
+## Currently Implemented Discord Tools (14 tools)
 - send_dm, update_context
-- investigate_user, change_presence, send_embed, add_reaction, remove_reaction
-- get_reactions, create_thread, archive_thread, join_thread, leave_thread
-- get_member_list, get_channel_permissions, set_prompt, calculate
-- pin_message, unpin_message, get_pinned_messages, get_channel_info
-- get_server_info, create_invite, get_invites, get_server_list, invite_to_server
+- investigate_user, change_presence, reaction_manager, message_manager
+- server_utils, invite_manager, get_server_list, leave_server
+- get_user_profile_complete, reason_complex
+- check_friend_requests, handle_friend_request
 
 ## Missing Discord API Features
 

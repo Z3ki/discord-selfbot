@@ -24,12 +24,17 @@ export class DataManager {
       const filePath = this.getFilePath(filename);
       if (fs.existsSync(filePath)) {
         const data = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+        // If data is an array, return it as-is
+        if (Array.isArray(data)) {
+          logger.debug('Loaded array data from file', { filename, length: data.length });
+          return data;
+        }
         const map = new Map();
         Object.entries(data).forEach(([key, value]) => {
           map.set(key, value);
         });
-        logger.debug('Loaded data from file', { 
-      filename, 
+        logger.debug('Loaded data from file', {
+      filename,
       entries: map.size,
       rawDataKeys: Object.keys(data).length,
       sampleKeys: Object.keys(data).slice(0, 3)
@@ -38,6 +43,20 @@ export class DataManager {
       }
     } catch (error) {
       logger.error('Error loading data', { filename, error: error.message });
+    }
+    return defaultValue;
+  }
+
+  async loadObject(filename, defaultValue = {}) {
+    try {
+      const filePath = this.getFilePath(filename);
+      if (fs.existsSync(filePath)) {
+        const data = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+        logger.debug('Loaded object data from file', { filename, keys: Object.keys(data) });
+        return data;
+      }
+    } catch (error) {
+      logger.error('Error loading object data', { filename, error: error.message });
     }
     return defaultValue;
   }

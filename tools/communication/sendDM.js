@@ -22,7 +22,7 @@ export const sendDMTool = {
       if (dmMessage) {
         // Save DM metadata for context tracking
         await saveDMMetadata(dmMessage.channel.id, {
-          originalChannelId: message.channel.id,
+          originalChannelId: message.channel?.id || message.channelId,
           originalMessageId: message.id,
           triggerMessage: message.content,
           reason: args.reason || 'No reason provided',
@@ -31,12 +31,12 @@ export const sendDMTool = {
         });
 
         // Set dmOrigins to link DM channel to original channel
-        context.dmOrigins.set(dmMessage.channel.id, message.channel.id);
+        context.dmOrigins.set(dmMessage.channel.id, message.channel?.id || message.channelId);
 
         logger.info('DM sent successfully', {
           targetUserId: args.userId,
           reason: args.reason,
-          originalChannel: message.channel.id,
+          originalChannel: message.channel?.id || message.channelId,
           dmChannel: dmMessage.channel.id
         });
 
@@ -64,7 +64,7 @@ export async function executeSendDM(args, client, message, dmOrigins) {
     if (dmMessage) {
       // Save DM metadata for context tracking
       await saveDMMetadata(dmMessage.channel.id, {
-        originalChannelId: message.channel.id,
+        originalChannelId: message.channel?.id || message.channelId,
         originalMessageId: message.id,
         triggerMessage: message.content,
         reason: args.reason || 'No reason provided',
@@ -75,13 +75,13 @@ export async function executeSendDM(args, client, message, dmOrigins) {
       // Set dmOrigins to link DM channel to original channel
       // Note: dmOrigins is passed as parameter in executeSendDM
       if (dmOrigins) {
-        dmOrigins.set(dmMessage.channel.id, message.channel.id);
+        dmOrigins.set(dmMessage.channel.id, message.channel?.id || message.channelId);
       }
 
       logger.info('DM sent successfully', {
         targetUserId: args.userId,
         reason: args.reason,
-        originalChannel: message.channel.id,
+        originalChannel: message.channel?.id || message.channelId,
         dmChannel: dmMessage.channel.id
       });
 

@@ -23,10 +23,7 @@ import { executeGetUserProfileComplete } from './investigation/getUserProfileCom
 import { executeHandleFriendRequest } from './relationship/handleFriendRequest.js';
 import { executeCheckFriendRequests } from './relationship/checkFriendRequests.js';
 
-import { executeAnalyzeArgument } from './reasoning/analyzeArgument.js';
-import { executeDebugCode } from './reasoning/debugCode.js';
-import { executeEvaluateEvidence } from './reasoning/evaluateEvidence.js';
-import { executeSolveEquation } from './reasoning/solveEquation.js';
+
 
 export class ToolExecutor {
   constructor() {
@@ -95,14 +92,7 @@ export class ToolExecutor {
         case 'check_friend_requests':
           return await executeCheckFriendRequests(args, client);
 
-        case 'analyze_argument':
-          return await executeAnalyzeArgument(args, message, client, providerManager);
-        case 'debug_code':
-          return await executeDebugCode(args, message, client, providerManager);
-        case 'evaluate_evidence':
-          return await executeEvaluateEvidence(args, message, client, providerManager);
-        case 'solve_equation':
-          return await executeSolveEquation(args, message, client, providerManager);
+        
 
         default:
           logger.warn(`No execution function found for tool: ${funcName}`);

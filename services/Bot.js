@@ -239,7 +239,7 @@ export class Bot {
       this.lastResponse,
       this.lastToolCalls,
       this.lastToolResults,
-      (message, bot) => generateResponse(
+      (message) => generateResponse(
         message,
         this.providerManager,
         this.channelMemories,
@@ -252,7 +252,7 @@ export class Bot {
         this.lastToolCalls,
         this.lastToolResults,
         this.apiResourceManager,
-        bot || this
+        this
       ),
       this.providerManager,
       this // Pass bot instance

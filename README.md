@@ -15,15 +15,13 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 - Context-aware responses with conversation memory
 
 ### Advanced Tool System
-- 16 consolidated tools for Discord interactions
-- Real-time reasoning with progressive thinking display
+- 14 consolidated tools for Discord interactions
 - Comprehensive investigation and analysis tools
 - Consolidated tool architecture for better maintainability
 
-### Intelligent Reasoning
+### System Intelligence
 - Progressive reasoning display with brief indicators
 - Full reasoning logged for detailed analysis
-- Specialized reasoning for code, math, logic, and more
 - Complexity assessment and adaptive processing
 
 ### Communication Tools
@@ -41,7 +39,7 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 - Enhanced server joining with fallback methods
 
 ### System Tools
-- Advanced reasoning and analysis
+- Complex reasoning and analysis
 - Server-specific and global prompt customization
 - Health monitoring and diagnostics
 
@@ -145,8 +143,7 @@ The bot processes various media types for AI analysis:
 - `;prompt` - Set server-specific or global AI prompt
 - `;nvidia` - Toggle NVIDIA AI provider
 - `;testqueue` - Test queue system
-- `;reasoning-log` - Show reasoning activity logs
-- `;reasoning-mode` - Set reasoning display mode (brief/full)
+
 
 ### Prompt Commands
 - `;prompt <text>` - Set server-specific prompt (default behavior)
@@ -155,8 +152,7 @@ The bot processes various media types for AI analysis:
 - `;prompt clear all <text>` - Clear memory + set global prompt
 - `;prompt` - View current server and global prompts
 
-### Reasoning Commands
-- `;reasoning-mode brief` - Set reasoning display mode
+### System Commands
 - Use `TOOL: reason_complex problem="..." type="..."` for complex analysis
 
 ### AI Interaction
@@ -212,14 +208,10 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - `investigate_user` - Comprehensive user analysis (public data only)
 - `get_user_profile_complete` - Full profile information (public data only)
 
-### Reasoning (4 tools)
-- `analyze_argument` - Analyze arguments and logic
-- `debug_code` - Debug code issues
-- `evaluate_evidence` - Evaluate evidence and claims
-- `solve_equation` - Solve mathematical equations
+
 
 ### System (1 tool)
-- `reason_complex` - Advanced reasoning and analysis
+- `reason_complex` - Complex reasoning and analysis
 
 ### Relationships (2 tools)
 - `check_friend_requests` - Check incoming friend requests
@@ -230,8 +222,8 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 ### Core Components
 - **Bot Service**: Main orchestrator with data persistence and stability features
 - **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 16 consolidated tools
-- **Reasoning Engine**: Progressive thinking with logging and subagent delegation
+- **Tool Executor**: Modular tool system with 14 consolidated tools
+- **Reasoning System**: Progressive thinking with logging
 - **Memory System**: LRU-cached conversation context with automatic cleanup
 - **Queue System**: Request management with rate limiting and spam detection
 - **Media Processor**: Multimodal content handling (images, videos, audio, GIFs)
@@ -304,7 +296,7 @@ maxwell-selfbot/
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
 │   ├── investigation/       # User analysis tools
-│   ├── reasoning/           # Analysis and debugging tools
+
 │   ├── relationship/        # Friend management tools
 │   └── system/              # System and calculation tools
 ├── utils/                    # Utilities and helpers
