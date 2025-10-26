@@ -212,8 +212,8 @@ export async function generateResponse(message, providerManager, channelMemories
       // Single pass to build optimal memory from most recent
       let memoryText = '';
       for (const msg of targetMessages.slice().reverse()) { // Start from most recent
-        // Add clearer user identification with separators
-        const msgText = `[USER: ${msg.user}]: ${msg.message}`;
+        // Add clearer user identification with separators and format explanation
+        const msgText = `[HISTORICAL_USER: ${msg.user}]: ${msg.message}`;
         const newText = msgText + '\n---\n' + memoryText;
         if (newText.length <= maxLength) {
           memoryText = newText;
@@ -224,7 +224,7 @@ export async function generateResponse(message, providerManager, channelMemories
       return memoryText.trim();
     }
 
-    // Filter and prepare target messages
+    // Filter and prepare target messages - prioritize current user
     let targetMessages = memory.slice(-50).filter(m => m.user !== 'SYSTEM');
 
     // If replying to bot, keep the most recent bot message for context but filter out older ones
@@ -233,15 +233,15 @@ export async function generateResponse(message, providerManager, channelMemories
       const recentBotMessages = targetMessages.filter(m => m.user.includes(client.user.id));
       const mostRecentBotMessage = recentBotMessages.length > 0 ? recentBotMessages[recentBotMessages.length - 1] : null;
 
-      // Keep only non-bot messages plus the most recent bot message
+      // Keep only non-bot messages plus the most recent bot message (filter out self)
       targetMessages = targetMessages.filter(m => !m.user.includes(client.user.id));
       if (mostRecentBotMessage) {
         targetMessages.push(mostRecentBotMessage);
-        // Sort by timestamp to maintain chronological order
+        // Sort by timestamp to maintain chronological order - BOT MESSAGE IS CONTEXT
         targetMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       }
 
-      logger.debug('Kept most recent bot message in context for reply', {
+      logger.debug('Kept most recent bot message in context for reply - SELF CONTEXT', {
         channelId: message.channel?.id || message.channelId,
         totalMessages: targetMessages.length,
         keptBotMessage: !!mostRecentBotMessage
@@ -297,7 +297,7 @@ export async function generateResponse(message, providerManager, channelMemories
           ? userContext.preferences.substring(0, 2000) + '...'
           : userContext.preferences || 'None';
         const displayName = userContext.displayName || 'Unknown';
-        contextText += `\n\nUSER CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
+        contextText += `\n\nCURRENT_USER_CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
       }
 
       if (originalChannelId) {
@@ -305,12 +305,12 @@ export async function generateResponse(message, providerManager, channelMemories
         const recentChannelMemory = channelMemory.slice(-10); // Increased to 10 messages for 32k token context
         const channelMemoryText = recentChannelMemory.map(m => {
           // Truncate individual messages (32k tokens ~ 128k chars)
-          const msg = `${m.user}: ${m.message}`;
+          const msg = `[CHANNEL_USER: ${m.user}]: ${m.message}`;
           return msg.length > 5000 ? msg.substring(0, 5000) + '...' : msg;
         }).join('\n');
-        finalMemoryText = `Recent channel context:\n${channelMemoryText}\n\nDM conversation:\n${memoryText}${contextText}`;
+        finalMemoryText = `=== ORIGINAL CHANNEL CONTEXT ===\n${channelMemoryText}\n\n=== DM CONVERSATION ===\n${memoryText}${contextText}`;
       } else {
-        finalMemoryText = `DM conversation:\n${memoryText}${contextText}`;
+        finalMemoryText = `=== DM CONVERSATION ===\n${memoryText}${contextText}`;
       }
     }
 
@@ -330,7 +330,7 @@ export async function generateResponse(message, providerManager, channelMemories
       userRole = ' (SERVER ADMIN)';
     }
     
-    const currentUserInfo = `Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}${userRole}`;
+    const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}${userRole}`;
     const currentTime = new Date().toLocaleString('en-US', {
       timeZone: 'UTC',
       year: 'numeric',
@@ -347,11 +347,11 @@ export async function generateResponse(message, providerManager, channelMemories
     let mentionedUsersInfo = '';
     if (message.mentions?.users?.size > 0) {
       const mentionedUsers = message.mentions.users.map(user => `${user.username} (ID: ${user.id})`).join(', ');
-      mentionedUsersInfo = ` Mentioned users: ${mentionedUsers}`;
+      mentionedUsersInfo = ` TARGET_USERS (mentioned for actions): ${mentionedUsers}`;
     }
 
     const replyInfo = message.isReplyToBot ? 'This message is a reply to one of your previous messages.' : 'This message is not a reply to you.';
-    const messageInfo = `Current message ID: ${message.id}, Channel ID: ${message.channel?.id || message.channelId} (this is a channel, not a user), Channel Type: ${message.channel?.type || 'unknown'}, Time: ${currentTime} UTC. ${mentionInfo}${mentionedUsersInfo} ${replyInfo}`;
+    const messageInfo = `=== MESSAGE INFO ===\nCurrent message ID: ${message.id}, Channel ID: ${message.channel?.id || message.channelId} (this is a channel, not a user), Channel Type: ${message.channel?.type || 'unknown'}, Time: ${currentTime} UTC. ${mentionInfo}${mentionedUsersInfo} ${replyInfo}`;
     
 
     
@@ -663,7 +663,7 @@ export async function generateResponse(message, providerManager, channelMemories
         // Only generate follow-up if there are valid tool results
         if (validToolResults.length > 0) {
           // Build follow-up prompt with tool results
-          const toolResultsText = validToolResults.map(r => `${r.tool.toUpperCase()}: ${r.result}`).join('\n');
+          const toolResultsText = validToolResults.map(r => `TOOL_RESULT_${r.tool.toUpperCase()}: ${r.result}`).join('\n');
           const followUpPrompt = buildFollowUpContent(
             typeof prompt === 'string' ? prompt : prompt[0].text,
             toolResultsText,
@@ -671,7 +671,7 @@ export async function generateResponse(message, providerManager, channelMemories
             multimodalContent
           );
 
-          logger.debug('Built follow-up prompt with tool results', {
+          logger.debug('Built follow-up prompt with tool results - USER DISTINCTION ACTIVE', {
             toolResultsCount: validToolResults.length,
             toolResultsText: toolResultsText,
             followUpPromptPreview: typeof followUpPrompt === 'string' ? followUpPrompt.substring(0, 500) : followUpPrompt[0]?.text?.substring(0, 500) || 'N/A',
@@ -681,7 +681,7 @@ export async function generateResponse(message, providerManager, channelMemories
           // Generate follow-up response
           const followUpResponse = await generateWithRetry(providerManager, followUpPrompt);
 
-          logger.debug('Generated follow-up response', {
+          logger.debug('Generated follow-up response - CHECKING USER CONFUSION', {
             followUpResponseType: typeof followUpResponse,
             followUpResponseLength: typeof followUpResponse === 'string' ? followUpResponse.length : followUpResponse?.text?.length || 0,
             followUpResponsePreview: typeof followUpResponse === 'string' ? followUpResponse.substring(0, 100) : followUpResponse?.text?.substring(0, 100) || 'N/A'
