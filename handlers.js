@@ -970,6 +970,12 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
           let response;
           try {
+            logger.debug('About to call generateResponse', { 
+              bot: !!bot,
+              botType: typeof bot,
+              hasServerPrompts: bot?.serverPrompts?.size > 0,
+              guildId: message.guild?.id
+            });
             response = await generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, bot);
          } catch (error) {
           logger.error('Message processing failed', {
