@@ -303,10 +303,24 @@ export class ToolExecutor {
             content = content.substring(0, 1990) + '`\n... (truncated)';
           }
 
-          await statusMessage.edit(content);
-        } catch (error) {
+          try {
+            await statusMessage.edit(content);
+          } catch (error) {
+            if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
+              logger.warn('Discord message too long, truncating further', { originalLength: content.length });
+              const truncatedContent = content.substring(0, 1950) + '`\n... (output too long for Discord)';
+              await statusMessage.edit(truncatedContent);
+            } else {
+              throw error;
+            }
+          }
+} catch (error) {
+        if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
+          logger.warn('Progress update too long for Discord, skipping update', { error: error.message });
+        } else {
           logger.warn('Failed to update progress', { error: error.message });
         }
+      }
       }
     };
 
@@ -346,9 +360,29 @@ export class ToolExecutor {
           finalContent = finalContent.substring(0, 1990) + '`\n... (truncated)';
         }
 
-        await statusMessage.edit(finalContent);
+        try {
+          await statusMessage.edit(finalContent);
+        } catch (error) {
+          if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
+            logger.warn('Final Discord message too long, truncating further', { originalLength: finalContent.length });
+            const truncatedContent = finalContent.substring(0, 1950) + '`\n... (output too long for Discord)';
+            await statusMessage.edit(truncatedContent);
+          } else {
+            throw error;
+          }
+        }
       } catch (error) {
-        logger.warn('Failed to send final update', { error: error.message });
+        if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
+          logger.warn('Final update too long for Discord, sending truncated version', { error: error.message });
+          const shortContent = 'Command completed but output was too long for Discord. Use shorter commands or request specific information.';
+          try {
+            await statusMessage.edit(shortContent);
+          } catch (fallbackError) {
+            logger.error('Failed to send fallback message', { error: fallbackError.message });
+          }
+        } else {
+          logger.warn('Failed to send final update', { error: error.message });
+        }
       }
     }
 
