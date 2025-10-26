@@ -523,8 +523,30 @@ export async function generateResponse(message, providerManager, channelMemories
     
     // Get server-specific prompt if available
     let serverPrompt = null;
+    logger.debug('Bot instance check', { 
+      bot: !!bot,
+      botType: typeof bot,
+      hasServerPrompts: bot?.serverPrompts?.size > 0,
+      guildId: message.guild?.id
+    });
     if (bot && bot.serverPrompts && message.guild?.id) {
       serverPrompt = bot.serverPrompts.get(message.guild.id) || null;
+      logger.debug('Server prompt lookup', { 
+        guildId: message.guild.id,
+        hasServerPrompts: !!bot.serverPrompts,
+        serverPromptsSize: bot.serverPrompts.size,
+        serverPromptKeys: Array.from(bot.serverPrompts.keys()),
+        foundServerPrompt: !!serverPrompt,
+        serverPromptLength: serverPrompt ? serverPrompt.length : 0,
+        serverPromptPreview: serverPrompt ? serverPrompt.substring(0, 100) : null
+      });
+    } else {
+      logger.debug('Server prompt lookup failed', { 
+        hasBot: !!bot,
+        hasServerPrompts: bot?.serverPrompts?.size > 0,
+        hasGuildId: !!message.guild?.id,
+        guildId: message.guild?.id
+      });
     }
     
     const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, botDisplayName, message.repliedMessageContent, serverPrompt);
