@@ -16,18 +16,7 @@ export const dockerExecTool = {
 export async function executeDockerExec(args, progressCallback = null) {
   const { command, timeout } = args;
 
-  // Default timeout if AI doesn't specify one
-  let defaultTimeout = 15; // Conservative default
-
-  // Light auto-detection as fallback (AI should specify timeouts)
-  const cmd = command.toLowerCase();
-  if (cmd.includes('apt') || cmd.includes('yum') || cmd.includes('install') || cmd.includes('make')) {
-    defaultTimeout = 45; // Long operations
-  } else if (cmd.includes('ping') || cmd.includes('curl') || cmd.includes('wget')) {
-    defaultTimeout = 25; // Network operations
-  }
-
-  const finalTimeout = timeout || defaultTimeout;
+  const finalTimeout = timeout || 15;
   
   if (!command) {
     return 'Error: No command provided for docker execution';
