@@ -161,17 +161,14 @@ function assessProblemComplexity(problem, type) {
   
   // Calculate dynamic parameters
   const maxSteps = Math.max(2, Math.min(5, Math.floor(complexityScore + 1.5)));
-  const timeout = 300000; // 5 minutes - no timeout
   
   logger.debug('Problem complexity assessed', { 
   complexityScore: complexityScore.toFixed(2), 
-  maxSteps, 
-  timeout 
+  maxSteps
 });
   
   return {
     maxSteps,
-    timeout,
     complexityScore: Math.round(complexityScore * 10) / 10
   };
 }
@@ -200,14 +197,13 @@ export async function executeReasonComplex(args, message, client, providerManage
         messageId: thinkingMsg.id 
       });
 
-// Assess problem complexity for timeout guidance, but let LLM choose progress
+// Assess problem complexity for step guidance, but let LLM choose progress
     const problemComplexity = assessProblemComplexity(problem, type);
-    const timeoutMs = problemComplexity.timeout;
     const reasoningPrompt = `IMPORTANT: Begin IMMEDIATELY with your detailed reasoning - no intro text.
 
 Analyze this ${type} problem: ${problem}
 
-Problem complexity: ${problemComplexity.complexityScore}/5 (suggested: ${problemComplexity.maxSteps} thinking steps, ${Math.round(timeoutMs/1000)}s timeout)
+Problem complexity: ${problemComplexity.complexityScore}/5 (suggested: ${problemComplexity.maxSteps} thinking steps)
 
 YOU choose how many thinking steps to use based on the problem's needs:
 - Simple problems: 1-2 steps
@@ -244,14 +240,12 @@ BRACKETS SECOND: Add brief summary after each reasoning block
       logger.info('Starting reasoning stream', { 
         sessionId, 
         problemType: type, 
-        problemLength: problem.length,
-        timeout: timeoutMs 
+        problemLength: problem.length
       });
       
-      // Get streaming response from AI with dynamic timeout
+      // Get streaming response from AI
       logger.debug('Attempting to get stream from provider');
       const stream = await providerManager.generateContentStream(reasoningPrompt);
-      const startTime = Date.now();
       logger.debug('Stream obtained', { 
         streamType: typeof stream,
         hasAsyncIterator: stream && typeof stream[Symbol.asyncIterator] === 'function'
@@ -278,7 +272,6 @@ BRACKETS SECOND: Add brief summary after each reasoning block
         }
 
         accumulatedText += chunk.text;
-        const currentTime = Date.now();
         
         logger.debug('Reasoning chunk received:', { 
           chunkCount,
@@ -286,12 +279,6 @@ BRACKETS SECOND: Add brief summary after each reasoning block
           accumulatedLength: accumulatedText.length,
           hasThinking: accumulatedText.includes('[Thinking:')
         });
-
-        // Check for timeout
-        if (currentTime - startTime > timeoutMs) {
-          logger.warn('Reasoning timeout', { timeout: timeoutMs });
-          break;
-        }
 
         // Only log and process if new content was added
         if (accumulatedText.length > lastProcessedLength) {
