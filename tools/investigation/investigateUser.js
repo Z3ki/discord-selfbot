@@ -34,7 +34,7 @@ export async function resolveUserId(identifier, client, message) {
 
 export const investigateUserTool = {
   name: 'investigate_user',
-  description: 'Comprehensive user investigation tool that provides detailed information about any Discord user. Returns: Basic user info (username, display name, ID, bot status, verification status, account creation date, account age); Profile details (accent color, banner URL, avatar URL, avatar decoration); Account security (MFA/2FA status, verification status); Server membership details (nickname, display name, roles count, join date, display color); Administrative access levels and permissions breakdown; Message activity statistics (total messages found, channels checked, recent activity); And additional insights about user status and capabilities. SELFBOT LIMITATIONS: Can only investigate users in mutual servers. Bio and pronouns access restricted. Use this when you need to know about a user\'s profile, status, permissions, or activity. Accepts user ID, username, display name, or Discord mention.',
+  description: 'Comprehensive user investigation tool that provides detailed information about any Discord user. Returns: Basic user info (username, display name, ID, bot status, account creation date, account age); Profile details (accent color, banner URL, avatar URL, avatar decoration); Server membership details (nickname, display name, roles count, join date, display color); Administrative access levels and permissions breakdown; Message activity statistics (total messages found, channels checked, recent activity); And additional insights about user status and capabilities. SELFBOT LIMITATIONS: Can only investigate users in mutual servers. Cannot access private info like MFA, verification status, email, or bio. Use this when you need to know about a user\'s profile, status, permissions, or activity. Accepts user ID, username, display name, or Discord mention.',
   parameters: {
     type: 'object',
     properties: {
@@ -95,7 +95,6 @@ Display Name: ${user.displayName || 'None'}
 Tag: ${user.tag}
 ID: ${user.id}
 Bot: ${user.bot ? 'Yes' : 'No'}
-Verified: ${user.verified ? 'Yes' : 'No'}
 Account Age: ${accountAge} days (${user.createdAt ? user.createdAt.toLocaleDateString() : 'Unknown'})
 
 Profile Details:
@@ -105,8 +104,7 @@ Avatar: ${user.displayAvatarURL({ size: 128 })}
 Avatar Decoration: ${user.avatarDecoration ? 'Has decoration' : 'None'}
 
 Account Flags: ${userFlags}
-System: ${user.system ? 'Yes' : 'No'}
-MFA Enabled: ${user.mfaEnabled ? 'Yes' : 'No'}`;
+System: ${user.system ? 'Yes' : 'No'}`;
 
     // Add presence/status information (limited in selfbot context)
     try {

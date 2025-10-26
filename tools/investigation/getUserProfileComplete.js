@@ -1,6 +1,6 @@
 export const getUserProfileCompleteTool = {
   name: 'get_user_profile_complete',
-  description: 'Get complete user profile information including banner image URL, accent color, Discord badges, Nitro subscription status, and premium features. Provides detailed profile customization data and subscription information. SELFBOT LIMITATIONS: Can only profile users in mutual servers. Bio access is heavily restricted - typically only available for the bot\'s own profile due to Discord API limitations. Use this when you need to know about a user\'s profile appearance, badges, or premium status.',
+  description: 'Get user profile information including banner, accent color, Discord badges, and Nitro status. SELFBOT LIMITATIONS: Can only profile users in mutual servers. Bio access is heavily restricted - typically only available for the bot\'s own profile. Cannot see private info like MFA, verification status, or email. Use this when you need to know about a user\'s profile appearance, badges, or premium status.',
   parameters: {
     type: 'object',
     properties: {
@@ -58,8 +58,6 @@ export async function executeGetUserProfileComplete(args, client, message) {
       status: {
         bot: user.bot,
         system: user.system,
-        verified: user.verified,
-        mfaEnabled: user.mfaEnabled,
         flags: user.flags ? user.flags.toArray().join(', ') : 'None'
       },
       nitro: {
@@ -87,8 +85,6 @@ Hex Accent Color: ${profileData.appearance.hexAccentColor}
 Account Status:
 Bot: ${profileData.status.bot ? 'Yes' : 'No'}
 System: ${profileData.status.system ? 'Yes' : 'No'}
-Verified: ${profileData.status.verified ? 'Yes' : 'No'}
-MFA Enabled: ${profileData.status.mfaEnabled ? 'Yes' : 'No'}
 Flags: ${profileData.status.flags}
 
 Nitro Status:
