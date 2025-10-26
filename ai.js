@@ -555,12 +555,6 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
     
-    logger.debug('About to call buildPromptContent', {
-      serverPromptType: typeof serverPrompt,
-      serverPromptLength: serverPrompt ? serverPrompt.length : 0,
-      serverPromptPreview: serverPrompt ? serverPrompt.substring(0, 100) : 'null',
-      globalPromptLength: globalPrompt[0] ? globalPrompt[0].length : 0
-    });
     const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt);
     logger.debug('Built prompt', { promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal', hasMedia, multimodalCount: multimodalContent.length });
     

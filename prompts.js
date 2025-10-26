@@ -181,9 +181,6 @@ function buildFinalInstructions() {
  * @returns {string|Array} Prompt content (string for text-only, array for multimodal)
  */
 export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null) {
-  // Debug logging for server prompt
-  console.log('DEBUG: buildPromptContent received serverPrompt:', serverPrompt ? serverPrompt.substring(0, 100) + '...' : 'null');
-
   // Calculate dynamic allocation
   const allocation = allocatePromptSpace(TOTAL_PROMPT_LIMIT, hasMedia);
 
@@ -199,10 +196,7 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
   // Add server prompt as separate section if available
   let serverPromptSection = '';
   if (serverPrompt) {
-    console.log('DEBUG: Using server prompt:', serverPrompt.substring(0, 100) + '...');
     serverPromptSection = `\n\n=== SERVER PROMPT ===\n${serverPrompt}`;
-  } else {
-    console.log('DEBUG: No server prompt, using global prompt only');
   }
   const finalInstructions = buildFinalInstructions();
 
