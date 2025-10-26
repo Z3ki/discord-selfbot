@@ -2,40 +2,29 @@ import { logger } from '../../utils/logger.js';
 
 export const dockerExecTool = {
   name: 'docker_exec',
-  description: 'Execute Linux terminal commands in a Docker container. Perfect for: network diagnostics (ping, traceroute, nslookup, dig), downloading files (curl, wget), system info (ifconfig, netstat, ps, ls), and any shell command. Use this when you need to run terminal commands that aren\'t available as Discord tools. Automatically chooses appropriate timeouts: 10s for quick commands, 25s for network tests, 30s for downloads, 60s for installations. You can override with the timeout parameter (max 60s).',
+  description: 'Execute Linux terminal commands in a Docker container. Perfect for: network diagnostics (ping, traceroute, nslookup, dig), downloading files (curl, wget), system info (ifconfig, netstat, ps, ls), and any shell command. Use this when you need to run terminal commands that aren\'t available as Discord tools. YOU MUST choose an appropriate timeout based on the command: 5-10s for quick commands, 15-30s for network tests, 30-60s for downloads/installations. Always specify a timeout parameter to prevent timeouts.',
   parameters: {
     type: 'object',
     properties: {
       command: { type: 'string', description: 'The command to execute within the Docker container' },
-      timeout: { type: 'number', description: 'Optional timeout in seconds (default: 10, max: 60)' }
+      timeout: { type: 'number', description: 'REQUIRED: Timeout in seconds based on command type (5-10 for quick, 15-30 for network, 30-60 for downloads/installs)' }
     },
-    required: ['command']
+    required: ['command', 'timeout']
   }
 };
 
 export async function executeDockerExec(args, progressCallback = null) {
   const { command, timeout } = args;
 
-  // Auto-detect appropriate timeout based on command
-  let defaultTimeout = 10;
+  // Default timeout if AI doesn't specify one
+  let defaultTimeout = 15; // Conservative default
 
+  // Light auto-detection as fallback (AI should specify timeouts)
   const cmd = command.toLowerCase();
-  if (cmd.includes('ping') && !cmd.includes('-c')) {
-    defaultTimeout = 15; // Ping without count (can run longer)
-  } else if (cmd.includes('ping') && cmd.includes('-c')) {
-    defaultTimeout = 10; // Ping with count (quick)
-  } else if (cmd.startsWith('nc') || cmd.includes('netcat') || cmd.includes('telnet') || cmd.includes('nmap')) {
-    defaultTimeout = 25; // Network connection/scanning tests
-  } else if (cmd.includes('curl') || cmd.includes('wget') || cmd.includes('wget2')) {
-    defaultTimeout = 30; // Downloads
-  } else if (cmd.includes('ssh') || cmd.includes('scp')) {
-    defaultTimeout = 20; // SSH connections
-  } else if (cmd.includes('apt') || cmd.includes('yum') || cmd.includes('dnf') || cmd.includes('pacman') || cmd.includes('brew')) {
-    defaultTimeout = 60; // Package management
-  } else if (cmd.includes('git clone') || cmd.includes('npm install') || cmd.includes('pip install') || cmd.includes('composer')) {
-    defaultTimeout = 45; // Software installation
-  } else if (cmd.includes('make') || cmd.includes('cmake') || cmd.includes('configure')) {
-    defaultTimeout = 60; // Compilation
+  if (cmd.includes('apt') || cmd.includes('yum') || cmd.includes('install') || cmd.includes('make')) {
+    defaultTimeout = 45; // Long operations
+  } else if (cmd.includes('ping') || cmd.includes('curl') || cmd.includes('wget')) {
+    defaultTimeout = 25; // Network operations
   }
 
   const finalTimeout = timeout || defaultTimeout;
