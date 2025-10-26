@@ -252,7 +252,6 @@ export class Bot {
         this.lastToolCalls,
         this.lastToolResults,
         this.apiResourceManager,
-        this.subagentCoordinator,
         bot || this
       ),
       this.providerManager,
