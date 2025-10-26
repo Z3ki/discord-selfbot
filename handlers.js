@@ -627,46 +627,98 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         username: relationship.user?.username || 'Unknown'
       });
 
-      // Automatically accept the friend request
-      try {
-        logger.info('Automatically accepting friend request', { 
-          userId: relationship.id,
-          username: relationship.user?.username || 'Unknown'
-        });
-
-        // Accept the friend request using API method
-        await client.api.users('@me').relationships[relationship.id].put({
-          type: 1
-        });
-
-        logger.info('Friend request accepted successfully', { 
-          userId: relationship.id,
-          username: relationship.user?.username || 'Unknown'
-        });
-
-        // Optional: Send a welcome message
+      // Check if we have sent a friend request to this user (outgoing request type 2)
+      // or if we should accept from anyone
+      const shouldAccept = true; // Accept from any user
+      
+      if (shouldAccept) {
+        // Automatically accept the friend request
         try {
-          const user = await client.users.fetch(relationship.id);
-          if (user) {
-            await user.send('Hello! Thanks for the friend request! 👋');
-            logger.info('Welcome message sent', { userId: relationship.id });
-          }
-        } catch (msgError) {
-          logger.warn('Could not send welcome message', { 
-            userId: relationship.id, 
-            error: msgError.message 
+          logger.info('Automatically accepting friend request', { 
+            userId: relationship.id,
+            username: relationship.user?.username || 'Unknown'
           });
-        }
 
-      } catch (error) {
-        logger.error('Failed to accept friend request', { 
-          userId: relationship.id, 
-          error: error.message 
+          // Accept the friend request using API method
+          await client.api.users('@me').relationships[relationship.id].put({
+            type: 1
+          });
+
+          logger.info('Friend request accepted successfully', { 
+            userId: relationship.id,
+            username: relationship.user?.username || 'Unknown'
+          });
+
+          // Send a welcome message
+          try {
+            const user = await client.users.fetch(relationship.id);
+            if (user) {
+              await user.send('Hello! Thanks for the friend request! 👋');
+              logger.info('Welcome message sent', { userId: relationship.id });
+            }
+          } catch (msgError) {
+            logger.warn('Could not send welcome message', { 
+              userId: relationship.id, 
+              error: msgError.message 
+            });
+          }
+
+        } catch (error) {
+          logger.error('Failed to accept friend request', { 
+            userId: relationship.id, 
+            error: error.message 
+          });
+
+          // Fallback to AI processing if auto-accept fails
+          const mockMessage = {
+            content: `Friend request from ${relationship.user?.username || 'Unknown user'} (${relationship.id}). Auto-accept failed, should I accept, decline, or ignore this request?`,
+            author: { 
+              id: relationship.id,
+              username: relationship.user?.username || 'Unknown',
+              discriminator: relationship.user?.discriminator || '0000'
+            },
+            channel: { 
+              id: 'friend-request',
+              type: 'DM'
+            },
+            id: `fr-${relationship.id}`,
+            mentions: new Set(),
+            reference: null,
+            attachments: new Map(),
+            stickers: new Map()
+          };
+
+          try {
+            await generateResponse(
+              mockMessage,
+              providerManager,
+              channelMemories,
+              dmOrigins,
+              client,
+              globalPrompt,
+              lastPrompt,
+              lastResponse,
+              lastToolCalls,
+              lastToolResults,
+              apiResourceManager,
+              bot
+            );
+          } catch (aiError) {
+            logger.error('AI processing also failed', { 
+              userId: relationship.id, 
+              error: aiError.message 
+            });
+          }
+        }
+      } else {
+        logger.info('Not auto-accepting friend request', { 
+          userId: relationship.id,
+          username: relationship.user?.username || 'Unknown'
         });
 
-        // Fallback to AI processing if auto-accept fails
+        // Process through AI for decision
         const mockMessage = {
-          content: `Friend request from ${relationship.user?.username || 'Unknown user'} (${relationship.id}). Auto-accept failed, should I accept, decline, or ignore this request?`,
+          content: `Friend request from ${relationship.user?.username || 'Unknown user'} (${relationship.id}). Should I accept, decline, or ignore this request?`,
           author: { 
             id: relationship.id,
             username: relationship.user?.username || 'Unknown',
@@ -698,11 +750,8 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             apiResourceManager,
             bot
           );
-        } catch (aiError) {
-          logger.error('AI processing also failed', { 
-            userId: relationship.id, 
-            error: aiError.message 
-          });
+        } catch (error) {
+          logger.error('Error handling friend request:', error);
         }
       }
     }
