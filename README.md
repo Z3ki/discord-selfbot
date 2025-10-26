@@ -1,6 +1,6 @@
-this is the shitty code that i made with ai and everything that you will see its the ai's fault not mine 🥰
+# Maxwell Discord Selfbot
 
-A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring advanced reasoning capabilities, tool integration, and intelligent conversation management.
+A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring advanced reasoning capabilities, comprehensive tool integration, and intelligent conversation management.
 
 ## Disclaimer
 
@@ -79,6 +79,7 @@ The bot processes various media types for AI analysis:
 - Node.js 18+
 - npm or yarn
 - Python 3.8+ with pip
+- FFmpeg (for media processing)
 - Discord user token (⚠️ **Never share this**)
 
 ### Setup
@@ -110,23 +111,21 @@ The bot processes various media types for AI analysis:
 ## Configuration
 
 ### Environment Variables
-- `DISCORD_USER_TOKEN`: Your Discord user token (required, user ID auto-detected)
-- `DISCORD_USER_ID`: Your Discord user ID (optional, auto-detected from token)
+
+#### Required
+- `DISCORD_USER_TOKEN`: Your Discord user token (required)
 - `GOOGLE_API_KEY`: Google AI API key for primary AI (required)
+
+#### Optional
+- `DISCORD_USER_ID`: Your Discord user ID (auto-detected from token)
 - `GOOGLE_AI_MODEL`: Google AI model (default: models/gemma-3-27b-it)
-- `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI (optional)
+- `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI
 - `NVIDIA_NIM_BASE_URL`: NVIDIA NIM endpoint (default: https://integrate.api.nvidia.com/v1)
 - `NVIDIA_NIM_MODEL`: NVIDIA NIM model (default: google/gemma-3-27b-it)
 - `NVIDIA_NIM_MAX_TOKENS`: Max tokens for NVIDIA (default: 32768)
 - `NVIDIA_NIM_TEMPERATURE`: Temperature for NVIDIA (default: 0.7)
-- `DISCORD_USER_ID`: Your Discord user ID for admin privileges (optional, auto-detected from token)
+- `ADMIN_USER_ID`: User ID with admin privileges (auto-detected from token)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
-
-### Optional Configuration
-- `DISCORD_USER_ID`: User ID with admin privileges (auto-detected from token)
-- `LOG_LEVEL`: Set logging level
-- `NVIDIA_NIM_BASE_URL`: Custom NVIDIA NIM endpoint
-- `NVIDIA_NIM_MODEL`: Custom NVIDIA NIM model
 
 ## Usage
 
@@ -154,6 +153,8 @@ The bot processes various media types for AI analysis:
 
 ### System Commands
 - Use `TOOL: reason_complex problem="..." type="..."` for complex analysis
+- Use `TOOL: send_friend_request userId="..."` to send friend requests
+- Use `TOOL: investigate_user userId="..."` to investigate users
 
 ### AI Interaction
 The bot responds to:
@@ -213,9 +214,10 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 ### System (1 tool)
 - `reason_complex` - Complex reasoning and analysis
 
-### Relationships (2 tools)
+### Relationships (3 tools)
 - `check_friend_requests` - Check incoming friend requests
 - `handle_friend_request` - Accept or decline friend requests
+- `send_friend_request` - Send friend requests to users
 
 ## Architecture
 
