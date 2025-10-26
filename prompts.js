@@ -219,8 +219,8 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
   const globalSection = buildGlobalSection(effectivePrompt, allocation.globalPrompt);
   const finalInstructions = buildFinalInstructions();
 
-  // Assemble complete system prompt - server prompt comes before response rules to take precedence
-  let systemPrompt = messageSection + globalSection + responseRules + toolsSection + historySection + finalInstructions;
+  // Assemble complete system prompt - server prompt comes LAST to ensure it takes precedence
+  let systemPrompt = messageSection + responseRules + toolsSection + historySection + finalInstructions + globalSection;
   
   // Add final character limit warning
   systemPrompt += "\n\nFINAL REMINDER: YOUR RESPONSE MUST BE UNDER 2000 CHARACTERS!";
