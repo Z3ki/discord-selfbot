@@ -219,6 +219,12 @@ export class Bot {
   }
 
   setupEventHandlers() {
+    logger.debug('About to call setupHandlers', { 
+      bot: !!this,
+      botType: typeof this,
+      hasServerPrompts: this?.serverPrompts?.size > 0,
+      serverPromptsSize: this?.serverPrompts?.size || 0
+    });
     setupHandlers(
       this.client,
       this.requestQueue,
