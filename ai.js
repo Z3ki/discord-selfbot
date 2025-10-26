@@ -608,8 +608,8 @@ export async function generateResponse(message, providerManager, channelMemories
             }
           }
 
-          // Clean any remaining tool calls from follow-up response
-          const cleanedFollowUp = finalResponse.replace(/TOOL:[^\n]*/g, '').replace(/```[\s\S]*?```/g, '').replace(/^\w+\s+.*=.*/gm, '').trim();
+          // Clean any remaining tool calls from follow-up response (but preserve code blocks)
+          const cleanedFollowUp = finalResponse.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').trim();
 
           // Check Discord message length limit (2000 characters)
           if (cleanedFollowUp.length > 2000) {
@@ -628,8 +628,8 @@ export async function generateResponse(message, providerManager, channelMemories
           return null;
         }
     } else {
-      // Clean any tool calls and attachment tags from the initial response
-      const cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/```[\s\S]*?```/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
+      // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
+      const cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
       
       // Check if AI decided to ignore (detect [IGNORE] anywhere in response)
       if (cleanedResponse.includes('[IGNORE]')) {
