@@ -15,7 +15,7 @@ A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring ad
 - Context-aware responses with conversation memory
 
 ### Advanced Tool System
-- 14 consolidated tools for Discord interactions
+- 15 consolidated tools for Discord interactions and system operations
 - Comprehensive investigation and analysis tools
 - Consolidated tool architecture for better maintainability
 
@@ -71,7 +71,38 @@ The bot processes various media types for AI analysis:
 - Video frame extraction with dynamic parameters
 - Audio transcription using Whisper
 - Base64 encoding for AI input
-- Security validation and file type checking
+ - Security validation and file type checking
+
+## Docker Shell Access
+
+The bot includes optional Docker shell execution capabilities for advanced system operations.
+
+### Features
+- Execute Linux terminal commands in an isolated Docker container
+- Network diagnostics (ping, traceroute, nslookup, dig)
+- File operations and system information
+- 10-second timeout protection for infinite commands
+- Per-server access control (disabled by default)
+
+### Security & Access Control
+- **Disabled by default** for security
+- **Per-server toggle** using `;shell` command (admin only)
+- **No persistence** - settings reset on bot restart
+- **Isolated execution** in Docker container
+- **Timeout protection** prevents hanging commands
+
+### Usage
+1. Enable shell access: `;shell` (in the desired server)
+2. AI can now execute commands like:
+   - `ping example.com` - Network connectivity testing
+   - `curl -I https://example.com` - HTTP header inspection
+   - `ls -la /etc` - Directory listing
+   - `ps aux | head -10` - Process information
+
+### Requirements
+- Docker installed and running on host system
+- `mcp-shell` container available (auto-started by bot)
+- Admin privileges to enable shell access
 
 ## Installation
 
@@ -139,6 +170,7 @@ The bot processes various media types for AI analysis:
 - `;refresh` - Refresh bot state
 - `;servers` - List all servers the bot is in
 - `;blacklist` - Manage blacklisted servers (admin only)
+- `;shell` - Toggle Docker shell access (admin only)
 - `;prompt` - Set server-specific or global AI prompt
 - `;nvidia` - Toggle NVIDIA AI provider
 - `;testqueue` - Test queue system
@@ -153,6 +185,7 @@ The bot processes various media types for AI analysis:
 
 ### System Commands
 - Use `TOOL: reason_complex problem="..." type="..."` for complex analysis
+- Use `TOOL: docker_exec command="ping example.com"` for shell commands (when shell access enabled)
 - Use `TOOL: send_friend_request userId="..."` to send friend requests
 - Use `TOOL: investigate_user userId="..."` to investigate users
 
@@ -186,8 +219,9 @@ The bot supports server-specific and global prompts:
 Tools are invoked automatically by the AI or manually:
 ```
 TOOL: send_dm userId="123456" content="Hello!" reason="Greeting"
-TOOL: calculate expression="2 + 2"
+TOOL: docker_exec command="ping example.com"
 TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
+TOOL: investigate_user userId="123456789"
 ```
 
 ## Tool Categories
@@ -211,8 +245,9 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 
 
 
-### System (1 tool)
+### System (2 tools)
 - `reason_complex` - Complex reasoning and analysis
+- `docker_exec` - Execute shell commands in Docker container (when shell access enabled)
 
 ### Relationships (3 tools)
 - `check_friend_requests` - Check incoming friend requests
@@ -298,9 +333,10 @@ maxwell-selfbot/
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
 │   ├── investigation/       # User analysis tools
-
 │   ├── relationship/        # Friend management tools
 │   └── system/              # System and calculation tools
+│       ├── dockerExec.js    # Docker shell execution tool
+│       ├── reasonComplex.js # Complex reasoning tool
 ├── utils/                    # Utilities and helpers
 ├── config/                   # Configuration management
 ├── logs/                     # Log files (created automatically)
