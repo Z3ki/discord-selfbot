@@ -82,7 +82,10 @@ export async function executeDockerExec(args, progressCallback = null) {
       progressCallback({ status: 'Executing command...' });
     }
 
-    const execProcess = spawn('docker', ['exec', containerName, 'bash', '-c', command], {
+    // Set environment variables for simple terminal output
+    const envCommand = `export TERM=dumb && export NO_COLOR=1 && ${command}`;
+    
+    const execProcess = spawn('docker', ['exec', containerName, 'bash', '-c', envCommand], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
