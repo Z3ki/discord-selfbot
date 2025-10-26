@@ -657,29 +657,36 @@ Commands
 break;
         }
 
-       case 'shell': {
-         if (!message.guild) {
-           await message.reply('Shell access can only be toggled in servers, not DMs.');
-           break;
-         }
+case 'shell': {
+          if (message.guild) {
+            // Server shell access
+            const serverId = message.guild.id;
 
-         const serverId = message.guild.id;
+            // Initialize shell access map if it doesn't exist
+            if (!bot.shellAccessServers) {
+              bot.shellAccessServers = new Map();
+            }
 
-         // Initialize shell access map if it doesn't exist
-         if (!bot.shellAccessServers) {
-           bot.shellAccessServers = new Map();
-         }
+            // Toggle shell access for this server (default: off)
+            const currentMode = bot.shellAccessServers.get(serverId) || false;
+            const newMode = !currentMode;
+            bot.shellAccessServers.set(serverId, newMode);
 
-         // Toggle shell access for this server (default: off)
-         const currentMode = bot.shellAccessServers.get(serverId) || false;
-         const newMode = !currentMode;
-         bot.shellAccessServers.set(serverId, newMode);
+            const modeText = newMode ? 'ENABLED' : 'DISABLED';
+            const statusText = newMode ? 'Docker shell commands are now available' : 'Docker shell commands are now disabled';
+            await message.reply(`Shell access ${modeText} for this server. ${statusText}.`);
+          } else {
+            // DM shell access
+            const currentMode = bot.shellAccessDMs || false;
+            const newMode = !currentMode;
+            bot.shellAccessDMs = newMode;
 
-         const modeText = newMode ? 'ENABLED' : 'DISABLED';
-         const statusText = newMode ? 'Docker shell commands are now available' : 'Docker shell commands are now disabled';
-         await message.reply(`Shell access ${modeText} for this server. ${statusText}.`);
-         break;
-       }
+            const modeText = newMode ? 'ENABLED' : 'DISABLED';
+            const statusText = newMode ? 'Docker shell commands are now available in DMs' : 'Docker shell commands are now disabled in DMs';
+            await message.reply(`Shell access ${modeText} for DMs. ${statusText}.`);
+          }
+          break;
+        }
 
        case 'safemode': {
          if (!message.guild) {

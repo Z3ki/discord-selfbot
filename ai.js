@@ -317,7 +317,7 @@ export async function generateResponse(message, providerManager, channelMemories
     // Include all available tools
     const serverId = message.guild?.id;
     const toolsText = toolRegistry.getToolsText(serverId, bot);
-    const shellAccessEnabled = serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId);
+    const shellAccessEnabled = (serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId)) || (!serverId && bot && bot.shellAccessDMs);
 
     logger.debug('Built tools text', { toolCount: toolRegistry.getAllTools().length, toolsTextLength: toolsText.length });
 

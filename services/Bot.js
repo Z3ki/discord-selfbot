@@ -48,6 +48,9 @@ export class Bot {
 
     // Shell access settings per server (default: off)
     this.shellAccessServers = new Map();
+    
+    // Shell access for DMs (default: off)
+    this.shellAccessDMs = false;
 
     // Blacklist for servers
     this.blacklist = new Set();
