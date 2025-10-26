@@ -17,30 +17,10 @@ async function handleCommand(message, channelMemories, client, providerManager, 
   // Import admin manager for admin checks
   const { adminManager } = await import('./utils/adminManager.js');
 
-  // Special case: if no admins exist, allow first user to use ;admin add to set themselves up
-  const hasAdmins = adminManager.getAdminCount() > 0;
-  
   // Admin check for all commands except help and admin (admin command handles its own permissions)
   if (command !== 'help' && command !== 'admin' && !adminManager.isAdmin(message.author.id)) {
     await message.reply('Access denied. This command is restricted to administrators only.');
     return;
-  }
-
-  // Allow ;admin add <own_id> if no admins exist (initial setup)
-  let isFirstAdminSetup = false;
-  if (command === 'admin' && !hasAdmins) {
-    const action = args[0]?.toLowerCase();
-    const userId = args[1];
-    
-    if (action === 'add' && userId === message.author.id) {
-      // Allow self-setup as first admin
-      const result = adminManager.toggleAdmin(userId);
-      if (result.success) {
-        await message.reply(`**First Admin Setup Complete!**\n\n**User ID:** ${userId}\n**Status:** Now an admin\n\nYou can now use all admin commands including managing other admins.`);
-        return;
-      }
-    }
-    isFirstAdminSetup = true;
   }
 
   try {
@@ -73,9 +53,9 @@ Commands
       }
 
       case 'admin': {
-        // Only existing admins can manage other admins (unless it's first admin setup)
-        if (!isFirstAdminSetup && !adminManager.isAdmin(message.author.id)) {
-          await message.reply('Access denied. Only existing administrators can manage admin access.\n\n**Initial Setup:** If no admins exist, use `;admin add <your_user_id>` to set yourself as the first admin.');
+        // Only existing admins can manage other admins
+        if (!adminManager.isAdmin(message.author.id)) {
+          await message.reply('Access denied. Only existing administrators can manage admin access.');
           return;
         }
 
