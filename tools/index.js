@@ -12,6 +12,7 @@ import { leaveServerTool } from './discord/leaveServer.js';
 
  import { reasonComplexTool } from './system/reasonComplex.js';
  import { dockerExecTool } from './system/dockerExec.js';
+ import { adminManagerTool } from './system/adminManager.js';
  import { investigateUserTool } from './investigation/investigateUser.js';
 
 import { getUserProfileCompleteTool } from './investigation/getUserProfileComplete.js';
@@ -37,6 +38,7 @@ export const tools = [
   leaveServerTool,
    reasonComplexTool,
    dockerExecTool,
+   adminManagerTool,
    investigateUserTool,
   getUserProfileCompleteTool,
   handleFriendRequestTool,
@@ -72,7 +74,7 @@ export class ToolRegistry {
       'COMMUNICATION': ['send_dm', 'update_context'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'get_server_list', 'leave_server'],
       'INVESTIGATION': ['investigate_user', 'get_user_profile_complete'],
-      'SYSTEM': ['reason_complex'],
+      'SYSTEM': ['reason_complex', 'admin_manager'],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
     };
 
