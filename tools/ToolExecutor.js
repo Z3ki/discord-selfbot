@@ -15,7 +15,7 @@ import { executeServerUtils } from './discord/serverUtils.js';
 import { executeMessageManager } from './discord/messageManager.js';
 import { executeGetServerList } from './discord/getServerList.js';
 import { executeLeaveServer } from './discord/leaveServer.js';
-import { executeJoinServer } from './discord/joinServer.js';
+
 import { executeReasonComplex } from './system/reasonComplex.js';
 import { executeInvestigateUser } from './investigation/investigateUser.js';
 
@@ -82,8 +82,7 @@ export class ToolExecutor {
           return await executeGetServerList(args, client);
         case 'leave_server':
           return await executeLeaveServer(args, client);
-        case 'join_server':
-          return await executeJoinServer(args, client);
+        
         case 'reason_complex':
           return await executeReasonComplex(args, message, client, providerManager);
         case 'investigate_user':
