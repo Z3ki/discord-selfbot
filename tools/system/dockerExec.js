@@ -156,18 +156,27 @@ export async function executeDockerExec(args, progressCallback = null) {
     
     logger.info('Docker command executed', { command, exitCode, stdoutLength: stdout.length, stderrLength: stderr.length });
     
-    // Format the output with some color for better readability
-    let formattedOutput = '```json\n';
-    formattedOutput += JSON.stringify(result, null, 2);
-    formattedOutput += '\n```';
+    // Format the output like a real terminal
+    let formattedOutput = '';
     
-    // Add some visual indicators
     if (exitCode === 0) {
-      formattedOutput = '\n✅ **Docker command executed successfully**\n' + formattedOutput;
+      formattedOutput = '';
     } else {
-      formattedOutput = '\n❌ **Docker command failed (exit code: ' + exitCode + ')**\n' + formattedOutput;
+      formattedOutput = 'Command failed (exit code: ' + exitCode + ')\n';
     }
     
+    // Show stdout if there is any
+    if (stdout.trim()) {
+      formattedOutput += stdout;
+    }
+    
+    // Show stderr if there is any
+    if (stderr.trim()) {
+      if (formattedOutput) formattedOutput += '\n';
+      formattedOutput += stderr;
+    }
+    
+    // Return plain text output (no code blocks, no JSON)
     return formattedOutput;
     
   } catch (error) {
@@ -179,6 +188,6 @@ export async function executeDockerExec(args, progressCallback = null) {
       exit_code: -1
     };
     
-    return '\n💥 **Docker execution error**\n```json\n' + JSON.stringify(errorResult, null, 2) + '\n```';
+    return 'Docker execution error: ' + error.message;
   }
 }
