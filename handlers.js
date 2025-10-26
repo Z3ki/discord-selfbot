@@ -566,12 +566,12 @@ break;
          await bot.saveData();
          
          const modeText = newMode ? 'ENABLED' : 'DISABLED';
-         await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`);
-         break;
-       }
+await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`);
+          break;
+        }
 
-       default:
-         await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
+        default:
+          await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
     }
   } catch (error) {
     logger.error('Error handling command', { command, error: error.message, userId: message.author.id });

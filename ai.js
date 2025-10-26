@@ -511,7 +511,6 @@ export async function generateResponse(message, providerManager, channelMemories
     ];
 
     const hasIdentityClaim = identityClaimPatterns.some(pattern => pattern.test(message.content));
-    const adminUserIds = process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [process.env.DISCORD_USER_ID];
     const isActualOwner = adminUserIds.includes(message.author.id);
     
     if (hasIdentityClaim && !isActualOwner) {

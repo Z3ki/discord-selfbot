@@ -16,8 +16,8 @@ import { executeMessageManager } from './discord/messageManager.js';
 import { executeGetServerList } from './discord/getServerList.js';
 import { executeLeaveServer } from './discord/leaveServer.js';
 
-import { executeReasonComplex } from './system/reasonComplex.js';
-import { executeInvestigateUser } from './investigation/investigateUser.js';
+ import { executeReasonComplex } from './system/reasonComplex.js';
+ import { executeInvestigateUser } from './investigation/investigateUser.js';
 
 import { executeGetUserProfileComplete } from './investigation/getUserProfileComplete.js';
 
@@ -83,9 +83,9 @@ export class ToolExecutor {
         case 'leave_server':
           return await executeLeaveServer(args, client);
         
-        case 'reason_complex':
-          return await executeReasonComplex(args, message, client, providerManager);
-        case 'investigate_user':
+         case 'reason_complex':
+           return await executeReasonComplex(args, message, client, providerManager);
+         case 'investigate_user':
           return await executeInvestigateUser(args, client, message);
         case 'get_user_profile_complete':
           return await executeGetUserProfileComplete(args, client, message);
