@@ -84,7 +84,7 @@ function buildMessageSection(messageInfo, messageContent, audioTranscription, me
  * @returns {string} Formatted response rules
  */
 
-function buildResponseRules(messageInfo, safeMode = false) {
+function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = false) {
   let rules;
   
   if (safeMode) {
@@ -118,6 +118,13 @@ function buildResponseRules(messageInfo, safeMode = false) {
 
   if (messageInfo.includes('DM')) {
     rules += '\n- In DMs: respond directly, use send_dm only for other users';
+  }
+
+  // Add shell access information
+  if (shellAccessEnabled) {
+    rules += '\n- SHELL ACCESS ENABLED: You can use docker_exec to run Linux commands (ping, install packages, system operations)';
+  } else {
+    rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands. If users ask for shell operations, tell them to ask a bot admin to enable shell access with ";shell" command';
   }
 
   return rules;
@@ -195,13 +202,13 @@ return `\n\n=== SYSTEM REQUIREMENTS ===
  * @param {string} serverPrompt - Server-specific prompt (optional)
  * @returns {string|Array} Prompt content (string for text-only, array for multimodal)
  */
-export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null, safeMode = false) {
+export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null, safeMode = false, shellAccessEnabled = false) {
   // Calculate dynamic allocation
   const allocation = allocatePromptSpace(TOTAL_PROMPT_LIMIT, hasMedia);
 
   // Build prompt sections
   const messageSection = buildMessageSection(messageInfo, messageContent, audioTranscription, allocation.message, repliedMessageContent);
-  const responseRules = buildResponseRules(messageInfo, safeMode);
+  const responseRules = buildResponseRules(messageInfo, safeMode, shellAccessEnabled);
   const toolsSection = buildToolsSection(toolsText, allocation.tools);
   const historySection = buildHistorySection(memoryText, allocation.memory);
   

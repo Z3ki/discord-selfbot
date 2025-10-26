@@ -317,6 +317,7 @@ export async function generateResponse(message, providerManager, channelMemories
     // Include all available tools
     const serverId = message.guild?.id;
     const toolsText = toolRegistry.getToolsText(serverId, bot);
+    const shellAccessEnabled = serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId);
 
     logger.debug('Built tools text', { toolCount: toolRegistry.getAllTools().length, toolsTextLength: toolsText.length });
 
@@ -579,7 +580,7 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
     
-    const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt, safeMode);
+    const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt, safeMode, shellAccessEnabled);
     logger.debug('Built prompt', { promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal', hasMedia, multimodalCount: multimodalContent.length });
     
     // Special debugging for number-related queries - log the actual prompt
