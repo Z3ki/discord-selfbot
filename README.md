@@ -9,13 +9,13 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 ## Features
 
 ### AI-Powered Conversations
-- Powered by Google's Gemini AI model (primary)
+- Powered by Google's Gemma 3-27B-IT model (primary)
 - Automatic fallback to NVIDIA NIM for reliability
 - Multimodal support (images, videos, GIFs, stickers)
 - Context-aware responses with conversation memory
 
 ### Advanced Tool System
-- 17 consolidated tools for Discord interactions
+- 16 consolidated tools for Discord interactions
 - Real-time reasoning with progressive thinking display
 - Comprehensive investigation and analysis tools
 - Consolidated tool architecture for better maintainability
@@ -115,18 +115,17 @@ The bot processes various media types for AI analysis:
 - `DISCORD_USER_TOKEN`: Your Discord user token (required, user ID auto-detected)
 - `DISCORD_USER_ID`: Your Discord user ID (optional, auto-detected from token)
 - `GOOGLE_API_KEY`: Google AI API key for primary AI (required)
-- `GOOGLE_AI_MODEL`: Google AI model (default: models/gemini-pro)
+- `GOOGLE_AI_MODEL`: Google AI model (default: models/gemma-3-27b-it)
 - `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI (optional)
 - `NVIDIA_NIM_BASE_URL`: NVIDIA NIM endpoint (default: https://integrate.api.nvidia.com/v1)
 - `NVIDIA_NIM_MODEL`: NVIDIA NIM model (default: google/gemma-3-27b-it)
 - `NVIDIA_NIM_MAX_TOKENS`: Max tokens for NVIDIA (default: 32768)
 - `NVIDIA_NIM_TEMPERATURE`: Temperature for NVIDIA (default: 0.7)
-- `ADMIN_USER_ID`: Admin user ID for restricted commands (optional)
+- `DISCORD_USER_ID`: Your Discord user ID for admin privileges (optional, auto-detected from token)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
 
 ### Optional Configuration
-- `ADMIN_USER_ID`: User ID with admin privileges
-- `STEALTH_ENABLED`: Enable stealth features (default: false)
+- `DISCORD_USER_ID`: User ID with admin privileges (auto-detected from token)
 - `LOG_LEVEL`: Set logging level
 - `NVIDIA_NIM_BASE_URL`: Custom NVIDIA NIM endpoint
 - `NVIDIA_NIM_MODEL`: Custom NVIDIA NIM model
@@ -135,10 +134,19 @@ The bot processes various media types for AI analysis:
 
 ### Basic Commands
 - `;help` - Show all available commands
+- `;debug` - Show debug information and system status
+- `;functions` - List all available tools
 - `;info` - Get bot information
 - `;health` - Show system health (admin only)
 - `;restart` - Restart the bot (admin only)
+- `;refresh` - Refresh bot state
+- `;servers` - List all servers the bot is in
 - `;blacklist` - Manage blacklisted servers (admin only)
+- `;prompt` - Set custom AI prompt
+- `;nvidia` - Toggle NVIDIA AI provider
+- `;testqueue` - Test queue system
+- `;reasoning-log` - Show reasoning activity logs
+- `;reasoning-mode` - Set reasoning display mode (brief/full)
 
 ### Reasoning Commands
 - `;reasoning-mode brief` - Set reasoning display mode
@@ -164,17 +172,24 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - `send_dm` - Send direct messages with context tracking
 - `update_context` - Update user context for personalized responses
 
-### Discord Integration (6 tools)
+### Discord Integration (7 tools)
 - `reaction_manager` - Add, remove, and get reactions
 - `message_manager` - Pin/unpin messages, thread management
 - `server_utils` - Server info, channel info, member lists
 - `invite_manager` - Create/join invites, get server invites
 - `get_server_list` - List all servers bot is in
 - `leave_server` - Leave specified servers
+- `change_presence` - Change bot presence status
 
 ### Investigation (2 tools)
 - `investigate_user` - Comprehensive user analysis
 - `get_user_profile_complete` - Full profile information
+
+### Reasoning (4 tools)
+- `analyze_argument` - Analyze arguments and logic
+- `debug_code` - Debug code issues
+- `evaluate_evidence` - Evaluate evidence and claims
+- `solve_equation` - Solve mathematical equations
 
 ### System (1 tool)
 - `reason_complex` - Advanced reasoning and analysis
@@ -188,7 +203,7 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 ### Core Components
 - **Bot Service**: Main orchestrator with data persistence and stability features
 - **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 17 consolidated tools
+- **Tool Executor**: Modular tool system with 16 consolidated tools
 - **Reasoning Engine**: Progressive thinking with logging and subagent delegation
 - **Memory System**: LRU-cached conversation context with automatic cleanup
 - **Queue System**: Request management with rate limiting and spam detection
@@ -254,7 +269,7 @@ Check logs in the `logs/` directory (created automatically):
 
 ### Project Structure
 ```
-discord-selfbot/
+maxwell-selfbot/
 ├── services/                 # Core services (Bot, DataManager, TranscriptionService)
 ├── tools/                    # Tool modules and executor
 │   ├── communication/        # DM and context tools
@@ -280,14 +295,20 @@ discord-selfbot/
 ├── apiResourceManager.js    # API quota management
 ├── transcription_service.py # Python audio transcription
 ├── bot.js                   # Main entry point
-└── globalPrompt.txt         # Global AI prompt
+├── globalPrompt.txt         # Global AI prompt
+├── .env.example             # Environment variables template
+├── .eslintrc.cjs            # ESLint configuration
+├── .gitignore               # Git ignore rules
+├── API_CAPABILITIES.md      # API capabilities documentation
+├── DISCORD_API_CAPABILITIES.md # Discord API capabilities
+└── README.md                # This file
 ```
 
 ### Adding Tools
 1. Create tool file in appropriate `tools/` subdirectory
 2. Export tool definition with name, description, parameters
 3. Add execution function to `ToolExecutor.js`
-4. Register in `tools/index.js`
+4. Register tool in `tools/index.js`
 5. Update documentation
 6. Consider consolidating similar functionality into existing tools
 
