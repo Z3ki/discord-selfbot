@@ -659,17 +659,23 @@ export async function generateResponse(message, providerManager, channelMemories
         let allToolResults = [];
         let maxRounds = 5; // Prevent infinite loops
         let round = 0;
+        let sharedStatusMessage = null;
 
         // Multi-round tool execution loop
         while (toolCalls.length > 0 && round < maxRounds) {
           round++;
           logger.debug(`Tool execution round ${round}`, { toolCallsCount: toolCalls.length });
 
-          // Execute current batch of tools
-          const toolResults = await toolExecutor.executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager);
+          // Execute current batch of tools with shared status message
+          const executionResult = await toolExecutor.executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, sharedStatusMessage);
+          
+          // Update shared status message for next round
+          if (executionResult.statusMessage) {
+            sharedStatusMessage = executionResult.statusMessage;
+          }
           
           // Filter out tools that returned null (indicating they handled their own response)
-          const validToolResults = toolResults.filter(r => r.result != null);
+          const validToolResults = executionResult.results.filter(r => r.result != null);
           allToolResults.push(...validToolResults);
 
           // If no valid tool results, we're done

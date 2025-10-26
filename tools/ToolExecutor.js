@@ -164,17 +164,24 @@ export class ToolExecutor {
   /**
    * Execute multiple tool calls
    */
-  async executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager) {
+  async executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, sharedStatusMessage = null) {
     const results = [];
+    let dockerStatusMessage = sharedStatusMessage;
 
     for (const toolCall of toolCalls) {
       try {
         // Special handling for docker_exec with live updates
         if (toolCall.funcName === 'docker_exec') {
-          const result = await this.executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+          const executionResult = await this.executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, dockerStatusMessage);
+          
+          // Store the status message for reuse in subsequent docker_exec calls
+          if (!dockerStatusMessage && executionResult.statusMessage) {
+            dockerStatusMessage = executionResult.statusMessage;
+          }
+          
           results.push({
             tool: toolCall.funcName,
-            result: result
+            result: executionResult.result
           });
         } else {
           const result = await this.executeTool(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
@@ -192,31 +199,42 @@ export class ToolExecutor {
       }
     }
 
-    return results;
+    return { results, statusMessage: dockerStatusMessage };
   }
 
   /**
    * Execute docker_exec with live message updates
    */
-  async executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager) {
+  async executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, existingStatusMessage = null) {
     const { args } = toolCall;
     const { command } = args;
 
-    // Send initial status message
-    let statusMessage;
-    try {
-      const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
-      const initialContent = `**Executing:** \`${command}\`\n**Status:** Starting...`;
+    // Use existing status message or create new one
+    let statusMessage = existingStatusMessage;
+    if (!statusMessage) {
+      try {
+        const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+        const initialContent = `\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
 
-      if (isDM) {
-        statusMessage = await message.channel.send(initialContent);
-      } else {
-        statusMessage = await message.reply(initialContent);
+        if (isDM) {
+          statusMessage = await message.channel.send(initialContent);
+        } else {
+          statusMessage = await message.reply(initialContent);
+        }
+
+        logger.debug('Sent initial tool status message', { messageId: statusMessage.id });
+      } catch (error) {
+        logger.warn('Failed to send initial status message', { error: error.message });
       }
-
-      logger.debug('Sent initial tool status message', { messageId: statusMessage.id });
-    } catch (error) {
-      logger.warn('Failed to send initial status message', { error: error.message });
+    } else {
+      // Update existing message with new command
+      try {
+        const currentContent = statusMessage.content;
+        const newContent = currentContent.replace(/\`\`\`$/, '') + `$ ${command}\n[Executing...]\n\`\`\``;
+        await statusMessage.edit(newContent);
+      } catch (error) {
+        logger.warn('Failed to update existing status message', { error: error.message });
+      }
     }
 
     // Execute the docker command with progress updates
@@ -260,33 +278,29 @@ export class ToolExecutor {
         lastUpdate = now;
 
         try {
-          let content = `**Executing:** \`${command}\`\n`;
-
-          if (progress.status) {
-            content += `**Status:** ${progress.status}\n`;
-          }
+          let content = `\`\`\`\n$ ${command}\n`;
 
           if (progress.stdout && progress.stdout.length > 0) {
-            const preview = progress.stdout.length > 800 ? progress.stdout.substring(0, 800) + '...' : progress.stdout;
-            content += `**Output:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+            content += progress.stdout;
           }
 
           if (progress.stderr && progress.stderr.length > 0) {
-            const preview = progress.stderr.length > 300 ? progress.stderr.substring(0, 300) + '...' : progress.stderr;
-            content += `**Errors:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+            content += progress.stderr;
           }
 
           if (progress.completed) {
             if (progress.timed_out) {
-              content += `**Timed out after ${args.timeout || 10}s**`;
-            } else {
-              content += progress.exit_code === 0 ? '**Completed successfully**' : `**Failed (exit code: ${progress.exit_code})**`;
+              content += `\n[Command timed out after ${args.timeout || 10}s]`;
+            } else if (progress.exit_code !== 0) {
+              content += `\n[Exit code: ${progress.exit_code}]`;
             }
           }
 
+          content += `\n\`\`\``;
+
           // Ensure content doesn't exceed Discord limit
-          if (content.length > 1900) {
-            content = content.substring(0, 1900) + '\n... (truncated)';
+          if (content.length > 1990) {
+            content = content.substring(0, 1990) + '`\n... (truncated)';
           }
 
           await statusMessage.edit(content);
@@ -303,18 +317,20 @@ export class ToolExecutor {
     if (statusMessage) {
       try {
         // Parse the result to get clean output
-        let finalContent = `**Command completed:** \`${command}\`\n`;
+        let finalContent = `\`\`\`\n$ ${command}\n`;
 
         if (typeof result === 'string' && result.includes('stdout')) {
           try {
             const parsed = JSON.parse(result.replace(/```json\n?|\n?```/g, ''));
             if (parsed.stdout) {
-              finalContent += `**Output:**\n\`\`\`\n${parsed.stdout}\n\`\`\`\n`;
+              finalContent += parsed.stdout;
             }
             if (parsed.stderr) {
-              finalContent += `**Errors:**\n\`\`\`\n${parsed.stderr}\n\`\`\`\n`;
+              finalContent += parsed.stderr;
             }
-            finalContent += parsed.exit_code === 0 ? '**Success**' : `**Failed (code: ${parsed.exit_code})**`;
+            if (parsed.exit_code !== 0) {
+              finalContent += `\n[Exit code: ${parsed.exit_code}]`;
+            }
           } catch (e) {
             // Fallback to raw result
             finalContent += result;
@@ -323,9 +339,11 @@ export class ToolExecutor {
           finalContent += result;
         }
 
+        finalContent += `\n\`\`\``;
+
         // Ensure final content doesn't exceed Discord limit
-        if (finalContent.length > 1900) {
-          finalContent = finalContent.substring(0, 1900) + '\n... (truncated)';
+        if (finalContent.length > 1990) {
+          finalContent = finalContent.substring(0, 1990) + '`\n... (truncated)';
         }
 
         await statusMessage.edit(finalContent);
@@ -334,6 +352,6 @@ export class ToolExecutor {
       }
     }
 
-    return result;
+    return { result, statusMessage };
   }
 }
