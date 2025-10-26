@@ -9,6 +9,7 @@ import { serverUtilsTool } from './discord/serverUtils.js';
 import { messageManagerTool } from './discord/messageManager.js';
 import { getServerListTool } from './discord/getServerList.js';
 import { leaveServerTool } from './discord/leaveServer.js';
+import { joinServerTool } from './discord/joinServer.js';
 import { reasonComplexTool } from './system/reasonComplex.js';
 import { investigateUserTool } from './investigation/investigateUser.js';
 
@@ -33,6 +34,7 @@ export const tools = [
   messageManagerTool,
   getServerListTool,
   leaveServerTool,
+  joinServerTool,
   reasonComplexTool,
   investigateUserTool,
   getUserProfileCompleteTool,
@@ -67,7 +69,7 @@ export class ToolRegistry {
     // Group tools by category
     const categories = {
       'COMMUNICATION': ['send_dm', 'update_context'],
-      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'get_server_list', 'leave_server'],
+      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'get_server_list', 'leave_server', 'join_server'],
       'INVESTIGATION': ['investigate_user', 'get_user_profile_complete'],
       'SYSTEM': ['reason_complex'],
       
