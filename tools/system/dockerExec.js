@@ -2,18 +2,19 @@ import { logger } from '../../utils/logger.js';
 
 export const dockerExecTool = {
   name: 'docker_exec',
-  description: 'Execute Linux terminal commands in a Docker container. Perfect for: network diagnostics (ping, traceroute, nslookup, dig), downloading files (curl, wget), system info (ifconfig, netstat, ps, ls), and any shell command. Use this when you need to run terminal commands that aren\'t available as Discord tools.',
+  description: 'Execute Linux terminal commands in a Docker container. Perfect for: network diagnostics (ping, traceroute, nslookup, dig), downloading files (curl, wget), system info (ifconfig, netstat, ps, ls), and any shell command. Use this when you need to run terminal commands that aren\'t available as Discord tools. You can specify a timeout in seconds (default 10s, max 60s) for long-running commands.',
   parameters: {
     type: 'object',
     properties: {
-      command: { type: 'string', description: 'The command to execute within the Docker container' }
+      command: { type: 'string', description: 'The command to execute within the Docker container' },
+      timeout: { type: 'number', description: 'Optional timeout in seconds (default: 10, max: 60)' }
     },
     required: ['command']
   }
 };
 
 export async function executeDockerExec(args, progressCallback = null) {
-  const { command } = args;
+  const { command, timeout = 10 } = args;
   
   if (!command) {
     return 'Error: No command provided for docker execution';
@@ -108,14 +109,15 @@ export async function executeDockerExec(args, progressCallback = null) {
       }
     });
 
-    // Add timeout to prevent infinite commands
+    // Add timeout to prevent infinite commands (max 60 seconds)
+    const timeoutMs = Math.min(timeout * 1000, 60000); // Convert to ms, max 60s
     let timedOut = false;
-    const timeout = setTimeout(() => {
+    const timeoutHandle = setTimeout(() => {
       execProcess.kill('SIGKILL');
       timedOut = true;
       if (progressCallback) {
         progressCallback({
-          status: 'Command timed out (10s limit)',
+          status: `Command timed out (${timeout}s limit)`,
           stdout: stdout,
           stderr: stderr,
           completed: true,
@@ -123,11 +125,11 @@ export async function executeDockerExec(args, progressCallback = null) {
           timed_out: true
         });
       }
-    }, 10000); // 10 second timeout
+    }, timeoutMs);
 
     const exitCode = await new Promise((resolve) => {
       execProcess.on('close', (code) => {
-        clearTimeout(timeout);
+        clearTimeout(timeoutHandle);
         resolve(code);
       });
     });
