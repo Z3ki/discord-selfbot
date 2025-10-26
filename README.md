@@ -42,7 +42,7 @@ A sophisticated Discord selfbot powered by Google's Gemini AI model, featuring a
 
 ### System Tools
 - Advanced reasoning and analysis
-- Prompt customization
+- Server-specific and global prompt customization
 - Health monitoring and diagnostics
 
 ## Audio Transcription
@@ -142,11 +142,18 @@ The bot processes various media types for AI analysis:
 - `;refresh` - Refresh bot state
 - `;servers` - List all servers the bot is in
 - `;blacklist` - Manage blacklisted servers (admin only)
-- `;prompt` - Set custom AI prompt
+- `;prompt` - Set server-specific or global AI prompt
 - `;nvidia` - Toggle NVIDIA AI provider
 - `;testqueue` - Test queue system
 - `;reasoning-log` - Show reasoning activity logs
 - `;reasoning-mode` - Set reasoning display mode (brief/full)
+
+### Prompt Commands
+- `;prompt <text>` - Set server-specific prompt (default behavior)
+- `;prompt all <text>` - Set global prompt across all servers
+- `;prompt clear <text>` - Clear memory + set server prompt
+- `;prompt clear all <text>` - Clear memory + set global prompt
+- `;prompt` - View current server and global prompts
 
 ### Reasoning Commands
 - `;reasoning-mode brief` - Set reasoning display mode
@@ -157,6 +164,26 @@ The bot responds to:
 - Direct mentions (@bot)
 - Replies to bot messages
 - Direct messages
+
+### Prompt System
+The bot supports server-specific and global prompts:
+
+#### Server-Specific Prompts
+- `;prompt <text>` - Sets a prompt for the current server only
+- Affects all conversations in that server
+- Overrides global prompt when set
+- Stored per-server in `data-selfbot/serverPrompts.json`
+
+#### Global Prompts
+- `;prompt all <text>` - Sets a prompt across all servers
+- `;prompt <text>` in DMs also sets global prompt
+- Used as fallback when no server prompt is set
+- Stored in `globalPrompt.txt`
+
+#### Memory Management
+- `;prompt clear <text>` - Clears channel memory + sets server prompt
+- `;prompt clear all <text>` - Clears channel memory + sets global prompt
+- Memory clearing affects the current channel only
 
 ### Tool Usage
 Tools are invoked automatically by the AI or manually:
@@ -182,8 +209,8 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - `change_presence` - Change bot presence status
 
 ### Investigation (2 tools)
-- `investigate_user` - Comprehensive user analysis
-- `get_user_profile_complete` - Full profile information
+- `investigate_user` - Comprehensive user analysis (public data only)
+- `get_user_profile_complete` - Full profile information (public data only)
 
 ### Reasoning (4 tools)
 - `analyze_argument` - Analyze arguments and logic
@@ -214,6 +241,7 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 ### Data Persistence
 - JSON-based storage in `data-selfbot/` directory
 - LRU caches for memory efficiency (50 channels, 100 DM contexts)
+- Server-specific and global prompt storage
 - Automatic cleanup and memory management
 - Conversation history and user contexts
 - Cross-session continuity with periodic saving
@@ -232,6 +260,7 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - Sensitive information never logged
 - Environment variables for secrets
 - File type validation and command allowlisting
+- Investigation tools only access public user data (no MFA, verification status, or private info)
 
 ### API Safety
 - Rate limiting and request queuing (10 req/min per user)
