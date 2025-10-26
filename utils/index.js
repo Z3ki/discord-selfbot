@@ -118,22 +118,43 @@ export async function sendDM(client, userIdentifier, content) {
       return null;
     }
 
-    // Attempt to send DM - selfbots may have restrictions
+    // Attempt to send DM - try multiple approaches
     try {
-      // For selfbots, try to create DM channel first
+      // Method 1: Direct send (like regular bots)
+      try {
+        const message = await user.send(content);
+        logger.info('DM sent successfully via direct send', { userId: user.id });
+        return message;
+      } catch (directError) {
+        logger.debug('Direct send failed, trying DM channel approach', { 
+          userId: user.id, 
+          error: directError.message 
+        });
+      }
+
+      // Method 2: Create DM channel then send (selfbot approach)
       const dmChannel = await user.createDM();
       if (dmChannel) {
         const message = await dmChannel.send(content);
+        logger.info('DM sent successfully via DM channel', { userId: user.id });
         return message;
       } else {
         throw new Error('Could not create DM channel');
       }
     } catch (dmError) {
-      // Selfbots may not be able to send DMs due to API restrictions
+      // Handle various error types
       const errorCode = dmError.code || dmError.status;
       const isAccessError = errorCode === 50001 || dmError.message.includes('Missing Access');
+      const isCaptchaError = errorCode === 500 || dmError.message.includes('CAPTCHA') || dmError.message.includes('captcha');
       
-      if (isAccessError) {
+      if (isCaptchaError) {
+        logger.warn('DM blocked by CAPTCHA requirement - Discord anti-abuse protection', {
+          userId: user.id,
+          error: dmError.message,
+          code: errorCode,
+          suggestion: 'Try sending DM from a regular bot account or wait and retry'
+        });
+      } else if (isAccessError) {
         logger.warn('DM access denied - selfbot restrictions or user privacy settings', {
           userId: user.id,
           error: dmError.message,

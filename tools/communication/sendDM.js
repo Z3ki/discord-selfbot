@@ -52,6 +52,9 @@ export const sendDMTool = {
       if (error.message.includes('fetch') || error.message.includes('resolve')) {
         return `Could not find user ${args.userId}. Make sure the user is in a server that the bot is also in. Selfbots cannot DM users not in mutual servers.`;
       }
+      if (error.message.includes('CAPTCHA') || error.code === 500) {
+        return `DM blocked by Discord's anti-abuse protection (CAPTCHA required). Selfbots cannot solve CAPTCHAs. Try using a regular bot account or wait and retry.`;
+      }
       return `Error sending DM: ${error.message}`;
     }
   }
@@ -96,6 +99,9 @@ export async function executeSendDM(args, client, message, dmOrigins) {
     }
     if (error.message.includes('fetch') || error.message.includes('resolve')) {
       return `Could not find user ${args.userId}. Make sure the user is in a server that the bot is also in. Selfbots cannot DM users not in mutual servers.`;
+    }
+    if (error.message.includes('CAPTCHA') || error.code === 500) {
+      return `DM blocked by Discord's anti-abuse protection (CAPTCHA required). Selfbots cannot solve CAPTCHAs. Try using a regular bot account or wait and retry.`;
     }
     return `Error sending DM: ${error.message}`;
   }
