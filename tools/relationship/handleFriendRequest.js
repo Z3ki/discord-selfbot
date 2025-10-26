@@ -50,13 +50,40 @@ export async function executeHandleFriendRequest(args, client) {
     
     switch (action) {
       case 'accept': {
-        // Check if already friends
+        // Check current relationship status
         const relationship = client.relationships.cache.get(userId);
-        if (relationship && relationship.type === 3) { // 3 = friend
+        if (relationship) {
+          switch (relationship.type) {
+            case 1: // incoming friend request
+              break; // proceed to accept
+            case 2: // outgoing friend request
+              return {
+                success: false,
+                error: `You have already sent a friend request to user ${userId}`,
+                alreadySent: true
+              };
+            case 3: // friend
+              return {
+                success: true,
+                message: `Already friends with user ${userId}`,
+                alreadyFriends: true
+              };
+            case 4: // blocked
+              return {
+                success: false,
+                error: `Cannot accept friend request from ${userId} - blocked relationship`,
+                blocked: true
+              };
+            default:
+              return {
+                success: false,
+                error: `Unknown relationship type ${relationship.type} with user ${userId}`
+              };
+          }
+        } else {
           return {
-            success: true,
-            message: `Already friends with user ${userId}`,
-            alreadyFriends: true
+            success: false,
+            error: `No incoming friend request found from user ${userId}`
           };
         }
         
@@ -77,17 +104,44 @@ export async function executeHandleFriendRequest(args, client) {
       }
         
       case 'decline': {
-        // Check if already friends
+        // Check current relationship status
         const existingRelationship = client.relationships.cache.get(userId);
-        if (existingRelationship && existingRelationship.type === 3) { // 3 = friend
+        if (existingRelationship) {
+          switch (existingRelationship.type) {
+            case 1: // incoming friend request
+              break; // proceed to decline
+            case 2: // outgoing friend request
+              return {
+                success: false,
+                error: `Cannot decline outgoing friend request to user ${userId}`,
+                alreadySent: true
+              };
+            case 3: // friend
+              return {
+                success: false,
+                error: `Already friends with user ${userId} - cannot decline`,
+                alreadyFriends: true
+              };
+            case 4: // blocked
+              return {
+                success: true,
+                message: `User ${userId} is already blocked`,
+                alreadyBlocked: true
+              };
+            default:
+              return {
+                success: false,
+                error: `Unknown relationship type ${existingRelationship.type} with user ${userId}`
+              };
+          }
+        } else {
           return {
-            success: true,
-            message: `Already friends with user ${userId} - cannot decline`,
-            alreadyFriends: true
+            success: false,
+            error: `No incoming friend request found from user ${userId}`
           };
         }
         
-        // Decline/ignore friend request
+        // Decline friend request
         try {
           result = await client.relationships.delete(userId);
           return {

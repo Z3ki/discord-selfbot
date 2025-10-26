@@ -17,6 +17,7 @@ import { getUserProfileCompleteTool } from './investigation/getUserProfileComple
 
 import { handleFriendRequestTool } from './relationship/handleFriendRequest.js';
 import { checkFriendRequestsTool } from './relationship/checkFriendRequests.js';
+import { sendFriendRequestTool } from './relationship/sendFriendRequest.js';
 
 
 
@@ -37,6 +38,7 @@ export const tools = [
   getUserProfileCompleteTool,
   handleFriendRequestTool,
   checkFriendRequestsTool,
+  sendFriendRequestTool,
   
 ];
 
@@ -69,7 +71,7 @@ export class ToolRegistry {
       'INVESTIGATION': ['investigate_user', 'get_user_profile_complete'],
       'SYSTEM': ['reason_complex'],
       
-      'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests']
+      'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
     };
 
     const sections = [];

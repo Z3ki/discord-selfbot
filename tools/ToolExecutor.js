@@ -22,6 +22,7 @@ import { executeGetUserProfileComplete } from './investigation/getUserProfileCom
 
 import { executeHandleFriendRequest } from './relationship/handleFriendRequest.js';
 import { executeCheckFriendRequests } from './relationship/checkFriendRequests.js';
+import { executeSendFriendRequest } from './relationship/sendFriendRequest.js';
 
 
 
@@ -91,6 +92,8 @@ export class ToolExecutor {
           return await executeHandleFriendRequest(args, client);
         case 'check_friend_requests':
           return await executeCheckFriendRequests(args, client);
+        case 'send_friend_request':
+          return await executeSendFriendRequest(args, client);
 
         
 
