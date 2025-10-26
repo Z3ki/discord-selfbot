@@ -12,7 +12,7 @@ export const dockerExecTool = {
   }
 };
 
-export async function executeDockerExec(args) {
+export async function executeDockerExec(args, progressCallback = null) {
   const { command } = args;
   
   if (!command) {
@@ -51,10 +51,14 @@ export async function executeDockerExec(args) {
     // Start container if not running
     if (!containerStatus.trim()) {
       logger.info('Starting Docker container', { containerName });
+      if (progressCallback) {
+        progressCallback({ status: 'Starting Docker container...' });
+      }
+
       const startProcess = spawn('docker', ['start', containerName], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
-      
+
       await new Promise((resolve, reject) => {
         startProcess.on('close', (code) => {
           if (code === 0) {
@@ -64,37 +68,80 @@ export async function executeDockerExec(args) {
           }
         });
       });
+
+      if (progressCallback) {
+        progressCallback({ status: 'Docker container started' });
+      }
     }
     
     // Execute the command in the container
+    if (progressCallback) {
+      progressCallback({ status: 'Executing command...' });
+    }
+
     const execProcess = spawn('docker', ['exec', containerName, 'bash', '-c', command], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     let stdout = '';
     let stderr = '';
-    
+
     execProcess.stdout.on('data', (data) => {
       stdout += data.toString();
+      if (progressCallback) {
+        progressCallback({
+          status: 'Running...',
+          stdout: stdout,
+          stderr: stderr
+        });
+      }
     });
-    
+
     execProcess.stderr.on('data', (data) => {
       stderr += data.toString();
+      if (progressCallback) {
+        progressCallback({
+          status: 'Running...',
+          stdout: stdout,
+          stderr: stderr
+        });
+      }
     });
-    
+
     // Add timeout to prevent infinite commands
     let timedOut = false;
     const timeout = setTimeout(() => {
       execProcess.kill('SIGKILL');
       timedOut = true;
+      if (progressCallback) {
+        progressCallback({
+          status: 'Command timed out (10s limit)',
+          stdout: stdout,
+          stderr: stderr,
+          completed: true,
+          exit_code: -1,
+          timed_out: true
+        });
+      }
     }, 10000); // 10 second timeout
-    
+
     const exitCode = await new Promise((resolve) => {
       execProcess.on('close', (code) => {
         clearTimeout(timeout);
         resolve(code);
       });
     });
+
+    if (progressCallback) {
+      progressCallback({
+        status: timedOut ? 'Timed out' : 'Completed',
+        stdout: stdout,
+        stderr: stderr,
+        completed: true,
+        exit_code: exitCode,
+        timed_out: timedOut
+      });
+    }
     
     const result = {
       stdout: stdout.trim(),

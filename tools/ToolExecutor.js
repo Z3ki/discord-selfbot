@@ -169,11 +169,20 @@ export class ToolExecutor {
 
     for (const toolCall of toolCalls) {
       try {
-        const result = await this.executeTool(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
-        results.push({
-          tool: toolCall.funcName,
-          result: result
-        });
+        // Special handling for docker_exec with live updates
+        if (toolCall.funcName === 'docker_exec') {
+          const result = await this.executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+          results.push({
+            tool: toolCall.funcName,
+            result: result
+          });
+        } else {
+          const result = await this.executeTool(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+          results.push({
+            tool: toolCall.funcName,
+            result: result
+          });
+        }
       } catch (error) {
         logger.error(`Tool execution failed for ${toolCall.funcName}`, { error: error.message });
         results.push({
@@ -184,5 +193,107 @@ export class ToolExecutor {
     }
 
     return results;
+  }
+
+  /**
+   * Execute docker_exec with live message updates
+   */
+  async executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager) {
+    const { args } = toolCall;
+    const { command } = args;
+
+    // Send initial status message
+    let statusMessage;
+    try {
+      const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+      const initialContent = `🔧 **Executing shell command:** \`${command}\`\n⏳ **Status:** Starting...`;
+
+      if (isDM) {
+        statusMessage = await message.channel.send(initialContent);
+      } else {
+        statusMessage = await message.reply(initialContent);
+      }
+
+      logger.debug('Sent initial tool status message', { messageId: statusMessage.id });
+    } catch (error) {
+      logger.warn('Failed to send initial status message', { error: error.message });
+    }
+
+    // Execute the docker command with progress updates
+    try {
+      const result = await this.executeDockerExecWithProgress(toolCall, message, client, statusMessage);
+      return result;
+    } catch (error) {
+      logger.error('Docker exec with updates failed', { error: error.message });
+
+      // Update status message with error
+      if (statusMessage) {
+        try {
+          const errorContent = `❌ **Command failed:** \`${command}\`\n💥 **Error:** ${error.message}`;
+          await statusMessage.edit(errorContent);
+        } catch (editError) {
+          logger.warn('Failed to update error status', { error: editError.message });
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Execute docker_exec with progress updates
+   */
+  async executeDockerExecWithProgress(toolCall, message, client, statusMessage) {
+    const { args } = toolCall;
+    const { command } = args;
+
+    // Import the docker exec function
+    const { executeDockerExec } = await import('./system/dockerExec.js');
+
+    // Execute with progress callback
+    const progressCallback = async (progress) => {
+      if (statusMessage && progress) {
+        try {
+          let content = `🔧 **Executing shell command:** \`${command}\`\n`;
+
+          if (progress.status) {
+            content += `📊 **Status:** ${progress.status}\n`;
+          }
+
+          if (progress.stdout && progress.stdout.length > 0) {
+            const preview = progress.stdout.length > 500 ? progress.stdout.substring(0, 500) + '...' : progress.stdout;
+            content += `📄 **Output:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+          }
+
+          if (progress.stderr && progress.stderr.length > 0) {
+            const preview = progress.stderr.length > 200 ? progress.stderr.substring(0, 200) + '...' : progress.stderr;
+            content += `⚠️ **Errors:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+          }
+
+          if (progress.completed) {
+            content += progress.exit_code === 0 ? '✅ **Completed successfully**' : `❌ **Failed (exit code: ${progress.exit_code})**`;
+          }
+
+          await statusMessage.edit(content);
+        } catch (error) {
+          logger.warn('Failed to update progress', { error: error.message });
+        }
+      }
+    };
+
+    // Execute with progress updates
+    const result = await executeDockerExec(args, progressCallback);
+
+    // Final update
+    if (statusMessage) {
+      try {
+        const finalContent = `🔧 **Command completed:** \`${command}\`\n${result}`;
+        await statusMessage.edit(finalContent);
+      } catch (error) {
+        logger.warn('Failed to send final update', { error: error.message });
+      }
+    }
+
+    return result;
   }
 }
