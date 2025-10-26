@@ -190,18 +190,14 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
   const toolsSection = buildToolsSection(toolsText, allocation.tools);
   const historySection = buildHistorySection(memoryText, allocation.memory);
   
-  // Always include global prompt
-  const globalSection = buildGlobalSection(globalPrompt, allocation.globalPrompt);
+  // Use server prompt if available, otherwise use global prompt
+  const effectivePrompt = serverPrompt || globalPrompt;
+  const globalSection = buildGlobalSection(effectivePrompt, allocation.globalPrompt);
 
-  // Add server prompt as separate section if available
-  let serverPromptSection = '';
-  if (serverPrompt) {
-    serverPromptSection = `\n\n=== SERVER PROMPT ===\n${serverPrompt}`;
-  }
   const finalInstructions = buildFinalInstructions();
 
-  // Assemble complete system prompt - server prompt comes LAST to ensure it takes precedence
-  let systemPrompt = messageSection + responseRules + toolsSection + historySection + finalInstructions + globalSection + serverPromptSection;
+  // Assemble complete system prompt
+  let systemPrompt = messageSection + responseRules + toolsSection + historySection + finalInstructions + globalSection;
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
