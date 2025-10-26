@@ -654,74 +654,101 @@ export async function generateResponse(message, providerManager, channelMemories
       });
 
       if (toolCalls.length > 0) {
-        // Execute tools
         const toolExecutor = new ToolExecutor();
-        const toolResults = await toolExecutor.executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager);
-        lastToolResults[0] = toolResults;
+        let currentPrompt = typeof prompt === 'string' ? prompt : prompt[0].text;
+        let allToolResults = [];
+        let maxRounds = 5; // Prevent infinite loops
+        let round = 0;
 
-        // Filter out tools that returned null (indicating they handled their own response)
-        const validToolResults = toolResults.filter(r => r.result != null);
+        // Multi-round tool execution loop
+        while (toolCalls.length > 0 && round < maxRounds) {
+          round++;
+          logger.debug(`Tool execution round ${round}`, { toolCallsCount: toolCalls.length });
 
-        // Only generate follow-up if there are valid tool results
-        if (validToolResults.length > 0) {
-          // Build follow-up prompt with tool results
+          // Execute current batch of tools
+          const toolResults = await toolExecutor.executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager);
+          
+          // Filter out tools that returned null (indicating they handled their own response)
+          const validToolResults = toolResults.filter(r => r.result != null);
+          allToolResults.push(...validToolResults);
+
+          // If no valid tool results, we're done
+          if (validToolResults.length === 0) {
+            logger.debug('No valid tool results in this round, ending tool execution');
+            break;
+          }
+
+          // Build tool results text for this round
           const toolResultsText = validToolResults.map(r => `TOOL_RESULT_${r.tool.toUpperCase()}: ${r.result}`).join('\n');
+          
+          // Build follow-up prompt with accumulated tool results
           const followUpPrompt = buildFollowUpContent(
-            typeof prompt === 'string' ? prompt : prompt[0].text,
+            currentPrompt,
             toolResultsText,
             hasMedia,
             multimodalContent
           );
 
-          logger.debug('Built follow-up prompt with tool results - USER DISTINCTION ACTIVE', {
+          logger.debug('Built follow-up prompt for multi-round execution', {
+            round: round,
             toolResultsCount: validToolResults.length,
-            toolResultsText: toolResultsText,
-            followUpPromptPreview: typeof followUpPrompt === 'string' ? followUpPrompt.substring(0, 500) : followUpPrompt[0]?.text?.substring(0, 500) || 'N/A',
             followUpPromptLength: typeof followUpPrompt === 'string' ? followUpPrompt.length : followUpPrompt[0]?.text?.length || 0
           });
 
           // Generate follow-up response
           const followUpResponse = await generateWithRetry(providerManager, followUpPrompt);
 
-          logger.debug('Generated follow-up response - CHECKING USER CONFUSION', {
-            followUpResponseType: typeof followUpResponse,
-            followUpResponseLength: typeof followUpResponse === 'string' ? followUpResponse.length : followUpResponse?.text?.length || 0,
-            followUpResponsePreview: typeof followUpResponse === 'string' ? followUpResponse.substring(0, 100) : followUpResponse?.text?.substring(0, 100) || 'N/A'
-          });
-
           // Handle enhanced response format
-          let finalResponse = followUpResponse;
+          let responseText = followUpResponse;
           if (typeof followUpResponse === 'object' && followUpResponse.text) {
-            finalResponse = followUpResponse.text;
+            responseText = followUpResponse.text;
           } else if (typeof followUpResponse !== 'string') {
-            // Unexpected response type, convert to string properly
             logger.warn('Unexpected follow-up AI response type, converting to string', { type: typeof followUpResponse, value: followUpResponse });
             if (followUpResponse && typeof followUpResponse === 'object') {
-              finalResponse = JSON.stringify(followUpResponse);
+              responseText = JSON.stringify(followUpResponse);
             } else {
-              finalResponse = String(followUpResponse || 'Error: Invalid AI follow-up response');
+              responseText = String(followUpResponse || 'Error: Invalid AI follow-up response');
             }
           }
 
-          // Clean any remaining tool calls from follow-up response (but preserve code blocks)
-          const cleanedFollowUp = finalResponse.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').trim();
+          // Extract new tool calls from the follow-up response
+          toolCalls = extractToolCalls(responseText);
+          
+          // Update current prompt for next round (include the response text)
+          currentPrompt = responseText;
 
-          // Check Discord message length limit (2000 characters)
-          if (cleanedFollowUp.length > 2000) {
-            logger.warn('Follow-up response too long for Discord, truncating', { 
-              originalLength: cleanedFollowUp.length,
-              channelId: message.channel.id 
-            });
-            // Truncate to 1990 characters to leave room for "..." if needed
-            return cleanedFollowUp.substring(0, 1990) + (cleanedFollowUp.length > 1990 ? '...' : '');
-          }
-
-          return cleanedFollowUp;
-        } else {
-          // No valid tool results, tools handled their own responses
-          logger.debug('No valid tool results, skipping follow-up response');
-          return null;
+          logger.debug('Extracted tool calls from follow-up response', {
+            round: round,
+            newToolCallsCount: toolCalls.length,
+            toolCalls: toolCalls.map(t => ({ funcName: t.funcName, args: t.args }))
+          });
         }
+
+        // Store all tool results
+        lastToolResults[0] = allToolResults;
+
+        // If we hit max rounds, warn and clean the last response
+        if (round >= maxRounds) {
+          logger.warn('Tool execution hit maximum rounds limit', { maxRounds, totalToolCalls: allToolResults.length });
+        }
+
+        // Get the final response (last response text)
+        let finalResponse = currentPrompt;
+
+        // Clean any remaining tool calls from final response (but preserve code blocks)
+        const cleanedFollowUp = finalResponse.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').trim();
+
+        // Check Discord message length limit (2000 characters)
+        if (cleanedFollowUp.length > 2000) {
+          logger.warn('Follow-up response too long for Discord, truncating', { 
+            originalLength: cleanedFollowUp.length,
+            channelId: message.channel.id 
+          });
+          // Truncate to 1990 characters to leave room for "..." if needed
+          return cleanedFollowUp.substring(0, 1990) + (cleanedFollowUp.length > 1990 ? '...' : '');
+        }
+
+        return cleanedFollowUp;
     } else {
       // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
       let cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
