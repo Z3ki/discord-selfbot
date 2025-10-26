@@ -16,10 +16,12 @@ A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring ad
 
 ### Advanced Tool System
 - 16 consolidated tools for Discord interactions and system operations
+- **Multi-Round Tool Execution**: AI can make multiple sequential tool calls in a single conversation turn for complex operations
 - Comprehensive investigation and analysis tools
 - Consolidated tool architecture for better maintainability
 - Live progress updates during tool execution
 - Dynamic tool availability based on server permissions
+- **Shared Message Editing**: Multiple tool calls edit the same Discord message for cleaner user experience
 
 ### System Intelligence
 - Progressive reasoning display with brief indicators
@@ -85,6 +87,7 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 
 ### Features
 - Execute Linux terminal commands in an isolated Docker container
+- **Clean Terminal Output**: Commands display in clean terminal format instead of JSON, showing just command and output like a real terminal
 - Network diagnostics (ping, traceroute, nslookup, dig)
 - File operations and system information
 - AI-controlled timeout selection based on command type
@@ -210,7 +213,7 @@ The AI automatically selects appropriate timeouts:
 - Use `TOOL: send_friend_request userId="..."` to send friend requests
 - Use `TOOL: investigate_user userId="..."` to investigate users
 
-**Note**: The `docker_exec` tool now requires a timeout parameter. The AI will automatically select appropriate timeouts based on command type.
+**Note**: The `docker_exec` tool now requires a timeout parameter. The AI will automatically select appropriate timeouts based on command type. When multiple tool calls are made in sequence, they will edit the same message for a cleaner experience.
 
 ### AI Interaction
 The bot responds to:
@@ -247,6 +250,13 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 TOOL: investigate_user userId="123456789"
 ```
 
+**Multi-Round Execution**: The AI can execute multiple tools in sequence within a single response, enabling complex workflows like:
+1. Investigating a user
+2. Sending them a DM based on the investigation
+3. Updating their context for future interactions
+
+All sequential tool calls will edit the same Discord message, providing a clean, consolidated output instead of multiple separate messages.
+
 ## Tool Categories
 
 ### Communication (2 tools)
@@ -270,7 +280,7 @@ TOOL: investigate_user userId="123456789"
 
 ### System (2 tools)
 - `reason_complex` - Complex reasoning and analysis with configurable display modes
-- `docker_exec` - Execute shell commands in Docker container with AI-controlled timeouts (when shell access enabled)
+- `docker_exec` - Execute shell commands in Docker container with AI-controlled timeouts and clean terminal output (when shell access enabled)
 
 ### Relationships (3 tools)
 - `check_friend_requests` - Check incoming friend requests
@@ -282,7 +292,7 @@ TOOL: investigate_user userId="123456789"
 ### Core Components
 - **Bot Service**: Main orchestrator with data persistence and stability features
 - **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 16 consolidated tools and live progress updates
+- **Tool Executor**: Modular tool system with 16 consolidated tools, multi-round execution, and shared message editing
 - **Reasoning System**: Progressive thinking with configurable display modes and detailed logging
 - **Memory System**: LRU-cached conversation context with automatic cleanup
 - **Queue System**: Request management with rate limiting and spam detection
@@ -352,6 +362,11 @@ Use `;reasoning-log` command to view recent reasoning activity directly in Disco
 
 ## Recent Updates
 
+### Latest Features
+- **Multi-Round Tool Execution**: AI can now execute multiple sequential tool calls in a single conversation turn, enabling complex multi-step operations
+- **Clean Terminal Output**: Docker shell commands now display in clean terminal format instead of JSON, showing just the command and its output like a real terminal
+- **Shared Message Editing**: When the AI makes multiple tool calls (especially docker_exec commands), it edits the same Discord message instead of creating new messages for each round, providing a cleaner experience
+
 ### Docker Shell Access Improvements
 - **AI-Controlled Timeouts**: Removed auto-detection logic, AI now chooses appropriate timeouts based on command type
 - **Live Progress Updates**: Real-time feedback during command execution with status indicators
@@ -372,6 +387,7 @@ Use `;reasoning-log` command to view recent reasoning activity directly in Disco
 - **16 Total Tools**: Updated tool count including docker_exec
 - **Dynamic Tool Availability**: Tools shown based on server permissions and settings
 - **Progress Callbacks**: Live updates during long-running operations
+- **Multi-Round Execution**: Sequential tool calls with shared message editing for cleaner UX
 
 ## Development
 
