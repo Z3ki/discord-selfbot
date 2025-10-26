@@ -561,6 +561,11 @@ const SPAM_THRESHOLD = 1000; // 1 second between messages
 const spamWarnings = new Map(); // userId -> channelId -> warningCount
 
 export function setupHandlers(client, requestQueue, apiResourceManager, channelMemories, dmContexts, dmOrigins, globalDMQueue, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, providerManager, bot) {
+  logger.debug('Setup handlers received bot', { 
+    bot: !!bot,
+    botType: typeof bot,
+    hasServerPrompts: bot?.serverPrompts?.size > 0
+  });
 
   // Typing start handler - ignore bot's own typing
   client.on('typingStart', (typing) => {
