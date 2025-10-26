@@ -14,6 +14,52 @@ The Admin Manager provides a secure way to manage bot administrators through Dis
 
 ### Discord Bot Commands
 
+#### Method 1: Direct Commands (Recommended)
+Use `;admin` command with the following actions:
+
+#### Initial Setup (First Admin)
+```
+;admin add <your_user_id>
+```
+- Only works when no admins exist
+- Sets yourself as the first administrator
+
+#### Add Admin
+```
+;admin add <user_id>
+```
+- Adds user as admin
+- Error if already admin
+
+#### Remove Admin
+```
+;admin remove <user_id>
+```
+- Removes admin status
+- Error if not admin
+
+#### Toggle Admin Status
+```
+;admin toggle <user_id>
+```
+- Adds user if not admin
+- Removes user if already admin
+
+#### List Admins
+```
+;admin list
+```
+- Shows all current administrators
+- Displays total count
+
+#### Clear All Admins
+```
+;admin clear
+```
+- ⚠️ **Dangerous**: Removes all admins
+- Only existing admins can use
+
+#### Method 2: Tool Commands
 Use the `admin_manager` tool with the following actions:
 
 #### Toggle Admin Status
@@ -82,38 +128,63 @@ node admin_cli.js clear
 
 ## Examples
 
-### Adding an Admin
+### Initial Setup (First Admin)
 ```
-User: Make 123456789012345678 an admin
-Bot: 🔧 **Admin Management**
+User: ;admin add 123456789012345678
+Bot: 🎉 **First Admin Setup Complete!**
 
 **User ID:** 123456789012345678
-**Action:** ➕ Added
 **Status:** Now an admin
-**Total Admins:** 1
+
+You can now use all admin commands including managing other admins.
+```
+
+### Adding an Admin
+```
+User: ;admin add 987654321098765432
+Bot: ➕ **Admin Added**
+
+**User ID:** 987654321098765432
+**Total Admins:** 2
 ```
 
 ### Removing an Admin
 ```
-User: Remove 123456789012345678 as admin
-Bot: 🔧 **Admin Management**
+User: ;admin remove 987654321098765432
+Bot: ➖ **Admin Removed**
 
-**User ID:** 123456789012345678
-**Action:** ➖ Removed
+**User ID:** 987654321098765432
+**Total Admins:** 1
+```
+
+### Toggling Admin Status
+```
+User: ;admin toggle 987654321098765432
+Bot: ➖ **Admin Status Toggled**
+
+**User ID:** 987654321098765432
+**Action:** removed
 **Status:** No longer an admin
-**Total Admins:** 0
+**Total Admins:** 1
 ```
 
 ### Listing Admins
 ```
-User: Show all admins
+User: ;admin list
 Bot: 👑 **Bot Administrators**
 
-**Total Admins:** 2
+**Total Admins:** 1
 
 **Admin IDs:**
 1. 123456789012345678
-2. 987654321098765432
+```
+
+### Non-Admin Access Denied
+```
+User: ;admin list
+Bot: ❌ Access denied. Only existing administrators can manage admin access.
+
+Initial Setup: If no admins exist, use `;admin add <your_user_id>` to set yourself as the first admin.
 ```
 
 ## Integration
