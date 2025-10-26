@@ -221,9 +221,6 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
 
   // Assemble complete system prompt - server prompt comes LAST to ensure it takes precedence
   let systemPrompt = messageSection + responseRules + toolsSection + historySection + finalInstructions + globalSection;
-  
-  // Add final character limit warning
-  systemPrompt += "\n\nFINAL REMINDER: YOUR RESPONSE MUST BE UNDER 2000 CHARACTERS!";
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
