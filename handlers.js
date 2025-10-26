@@ -15,8 +15,8 @@ async function handleCommand(message, channelMemories, client, providerManager, 
   const command = args.shift().toLowerCase();
 
   // Admin check for all commands except help
-  const adminId = process.env.ADMIN_USER_ID;
-  if (command !== 'help' && (!adminId || message.author.id !== adminId)) {
+  const adminIds = process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [];
+  if (command !== 'help' && (adminIds.length === 0 || !adminIds.includes(message.author.id))) {
     await message.reply('Access denied. This command is restricted to administrators only.');
     return;
   }

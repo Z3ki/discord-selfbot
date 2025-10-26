@@ -64,6 +64,6 @@ export async function logHealthMetrics(metrics) {
  * @returns {boolean}
  */
 export function hasHealthPermission(message) {
-  const adminId = process.env.ADMIN_USER_ID;
-  return adminId && message.author.id === adminId;
+  const adminIds = process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [];
+  return adminIds.length > 0 && adminIds.includes(message.author.id);
 }
