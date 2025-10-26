@@ -531,7 +531,9 @@ export async function generateResponse(message, providerManager, channelMemories
       hasServerPrompts: bot?.serverPrompts?.size > 0,
       serverPromptsSize: bot?.serverPrompts?.size || 0,
       guildId: message.guild?.id,
-      botString: String(bot)
+      botString: String(bot),
+      serverPromptsKeys: bot?.serverPrompts ? Array.from(bot.serverPrompts.keys()) : [],
+      hasThisServerPrompt: bot?.serverPrompts?.has(message.guild?.id)
     });
     if (bot && bot.serverPrompts && message.guild?.id) {
       serverPrompt = bot.serverPrompts.get(message.guild.id) || null;
