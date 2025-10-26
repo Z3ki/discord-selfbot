@@ -36,7 +36,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
       // Allow self-setup as first admin
       const result = adminManager.toggleAdmin(userId);
       if (result.success) {
-        await message.reply(`🎉 **First Admin Setup Complete!**\n\n**User ID:** ${userId}\n**Status:** Now an admin\n\nYou can now use all admin commands including managing other admins.`);
+        await message.reply(`**First Admin Setup Complete!**\n\n**User ID:** ${userId}\n**Status:** Now an admin\n\nYou can now use all admin commands including managing other admins.`);
         return;
       }
     }
@@ -75,7 +75,7 @@ Commands
       case 'admin': {
         // Only existing admins can manage other admins (unless it's first admin setup)
         if (!isFirstAdminSetup && !adminManager.isAdmin(message.author.id)) {
-          await message.reply('❌ Access denied. Only existing administrators can manage admin access.\n\n**Initial Setup:** If no admins exist, use `;admin add <your_user_id>` to set yourself as the first admin.');
+          await message.reply('Access denied. Only existing administrators can manage admin access.\n\n**Initial Setup:** If no admins exist, use `;admin add <your_user_id>` to set yourself as the first admin.');
           return;
         }
 
@@ -83,7 +83,7 @@ Commands
         const userId = args[1];
 
         if (!action) {
-          const adminHelp = `🔧 **Admin Management**
+          const adminHelp = `**Admin Management**
 
 **Usage:**
 \`;admin <action> [userId]\`
@@ -93,7 +93,7 @@ Commands
 • \`remove <userId>\` - Remove admin from user
 • \`toggle <userId>\` - Toggle admin status
 • \`list\` - Show all administrators
-• \`clear\` - Remove all admins ⚠️
+• \`clear\` - Remove all admins
 
 **Examples:**
 \`;admin add 123456789012345678\`
@@ -109,52 +109,51 @@ Commands
           switch (action) {
             case 'add':
               if (!userId) {
-                await message.reply('❌ User ID required for add action\nUsage: `;admin add <userId>`');
+                await message.reply('User ID required for add action\nUsage: `;admin add <userId>`');
                 return;
               }
               const addResult = adminManager.toggleAdmin(userId);
               if (addResult.success && addResult.action === 'added') {
-                await message.reply(`➕ **Admin Added**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`);
+                await message.reply(`**Admin Added**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`);
               } else if (addResult.success && addResult.action === 'removed') {
-                await message.reply(`⚠️ **User was already admin** - removed instead\n\n**User ID:** ${userId}`);
+                await message.reply(`**User was already admin** - removed instead\n\n**User ID:** ${userId}`);
               } else {
-                await message.reply(`❌ **Error:** ${addResult.error}`);
+                await message.reply(`**Error:** ${addResult.error}`);
               }
               break;
 
             case 'remove':
               if (!userId) {
-                await message.reply('❌ User ID required for remove action\nUsage: `;admin remove <userId>`');
+                await message.reply('User ID required for remove action\nUsage: `;admin remove <userId>`');
                 return;
               }
               const removeResult = adminManager.toggleAdmin(userId);
               if (removeResult.success && removeResult.action === 'removed') {
-                await message.reply(`➖ **Admin Removed**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`);
+                await message.reply(`**Admin Removed**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`);
               } else if (removeResult.success && removeResult.action === 'added') {
-                await message.reply(`⚠️ **User was not admin** - added instead\n\n**User ID:** ${userId}`);
+                await message.reply(`**User was not admin** - added instead\n\n**User ID:** ${userId}`);
               } else {
-                await message.reply(`❌ **Error:** ${removeResult.error}`);
+                await message.reply(`**Error:** ${removeResult.error}`);
               }
               break;
 
             case 'toggle':
               if (!userId) {
-                await message.reply('❌ User ID required for toggle action\nUsage: `;admin toggle <userId>`');
+                await message.reply('User ID required for toggle action\nUsage: `;admin toggle <userId>`');
                 return;
               }
               const toggleResult = adminManager.toggleAdmin(userId);
               if (toggleResult.success) {
-                const emoji = toggleResult.action === 'added' ? '➕' : '➖';
                 const status = toggleResult.action === 'added' ? 'Now an admin' : 'No longer an admin';
-                await message.reply(`${emoji} **Admin Status Toggled**\n\n**User ID:** ${userId}\n**Action:** ${toggleResult.action}\n**Status:** ${status}\n**Total Admins:** ${adminManager.getAdminCount()}`);
+                await message.reply(`**Admin Status Toggled**\n\n**User ID:** ${userId}\n**Action:** ${toggleResult.action}\n**Status:** ${status}\n**Total Admins:** ${adminManager.getAdminCount()}`);
               } else {
-                await message.reply(`❌ **Error:** ${toggleResult.error}`);
+                await message.reply(`**Error:** ${toggleResult.error}`);
               }
               break;
 
             case 'list':
               const admins = adminManager.getAdmins();
-              let listResponse = `👑 **Bot Administrators**\n\n**Total Admins:** ${admins.length}\n\n`;
+              let listResponse = `**Bot Administrators**\n\n**Total Admins:** ${admins.length}\n\n`;
               if (admins.length > 0) {
                 listResponse += `**Admin IDs:**\n`;
                 admins.forEach((adminId, index) => {
@@ -168,16 +167,16 @@ Commands
 
             case 'clear':
               const clearResult = adminManager.clearAdmins();
-              await message.reply(`🚨 **All Admins Cleared**\n\n**Removed:** ${clearResult.count} admin(s)\n⚠️ **Warning:** No admins remain!`);
+              await message.reply(`**All Admins Cleared**\n\n**Removed:** ${clearResult.count} admin(s)\n**Warning:** No admins remain!`);
               break;
 
             default:
-              await message.reply(`❌ Unknown action: ${action}\n\nUse \`;admin\` to see available actions.`);
+              await message.reply(`Unknown action: ${action}\n\nUse \`;admin\` to see available actions.`);
               break;
           }
         } catch (error) {
           logger.error('Admin command failed', { error: error.message, action, userId, executorId: message.author.id });
-          await message.reply('❌ An error occurred while processing admin command.');
+          await message.reply('An error occurred while processing admin command.');
         }
         break;
       }

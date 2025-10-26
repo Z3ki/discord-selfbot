@@ -56,46 +56,10 @@ Use `;admin` command with the following actions:
 ```
 ;admin clear
 ```
-- ⚠️ **Dangerous**: Removes all admins
+- **Dangerous**: Removes all admins
 - Only existing admins can use
 
-#### Method 2: Tool Commands
-Use the `admin_manager` tool with the following actions:
 
-#### Toggle Admin Status
-```
-TOOL: admin_manager action="toggle" userId="123456789012345678"
-```
-- Adds the user if not admin
-- Removes the user if already admin
-
-#### Add Admin
-```
-TOOL: admin_manager action="add" userId="123456789012345678"
-```
-- Adds the user as admin
-- Returns error if already admin
-
-#### Remove Admin
-```
-TOOL: admin_manager action="remove" userId="123456789012345678"
-```
-- Removes admin status
-- Returns error if not admin
-
-#### List Admins
-```
-TOOL: admin_manager action="list"
-```
-- Shows all current administrators
-- Displays total count
-
-#### Clear All Admins
-```
-TOOL: admin_manager action="clear"
-```
-- ⚠️ **Dangerous**: Removes all admins
-- Requires user context for confirmation
 
 ### CLI Tool
 
@@ -115,7 +79,7 @@ node admin_cli.js clear
 ## File Structure
 
 - `utils/adminManager.js` - Core admin management logic
-- `tools/system/adminManager.js` - Discord tool integration
+- `handlers.js` - Discord command integration
 - `admin_cli.js` - Command-line interface
 - `data/admins.json` - Persistent admin storage
 
@@ -131,7 +95,7 @@ node admin_cli.js clear
 ### Initial Setup (First Admin)
 ```
 User: ;admin add 123456789012345678
-Bot: 🎉 **First Admin Setup Complete!**
+Bot: **First Admin Setup Complete!**
 
 **User ID:** 123456789012345678
 **Status:** Now an admin
@@ -142,7 +106,7 @@ You can now use all admin commands including managing other admins.
 ### Adding an Admin
 ```
 User: ;admin add 987654321098765432
-Bot: ➕ **Admin Added**
+Bot: **Admin Added**
 
 **User ID:** 987654321098765432
 **Total Admins:** 2
@@ -151,7 +115,7 @@ Bot: ➕ **Admin Added**
 ### Removing an Admin
 ```
 User: ;admin remove 987654321098765432
-Bot: ➖ **Admin Removed**
+Bot: **Admin Removed**
 
 **User ID:** 987654321098765432
 **Total Admins:** 1
@@ -160,7 +124,7 @@ Bot: ➖ **Admin Removed**
 ### Toggling Admin Status
 ```
 User: ;admin toggle 987654321098765432
-Bot: ➖ **Admin Status Toggled**
+Bot: **Admin Status Toggled**
 
 **User ID:** 987654321098765432
 **Action:** removed
@@ -171,7 +135,7 @@ Bot: ➖ **Admin Status Toggled**
 ### Listing Admins
 ```
 User: ;admin list
-Bot: 👑 **Bot Administrators**
+Bot: **Bot Administrators**
 
 **Total Admins:** 1
 
@@ -182,19 +146,20 @@ Bot: 👑 **Bot Administrators**
 ### Non-Admin Access Denied
 ```
 User: ;admin list
-Bot: ❌ Access denied. Only existing administrators can manage admin access.
+Bot: Access denied. Only existing administrators can manage admin access.
 
 Initial Setup: If no admins exist, use `;admin add <your_user_id>` to set yourself as the first admin.
 ```
 
 ## Integration
 
-The admin manager integrates with the existing tool system:
+The admin manager integrates with the bot's command system:
 
-1. **Tool Registry**: Automatically registered in `tools/index.js`
-2. **Category**: Listed under SYSTEM tools
-3. **Parameters**: Validated using the tool parameter system
+1. **Command Handler**: Integrated in `handlers.js`
+2. **Direct Commands**: Uses `;admin` prefix instead of tool system
+3. **Parameters**: Validated using Discord ID format checking
 4. **Context**: Access to message and bot context for security
+5. **Storage**: Persistent admin data in `data/admins.json`
 
 ## Error Handling
 
