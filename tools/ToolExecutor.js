@@ -278,9 +278,9 @@ export class ToolExecutor {
 
           if (progress.completed) {
             if (progress.timed_out) {
-              content += `⏰ **Timed out after ${args.timeout || 10}s**`;
+              content += `**Timed out after ${args.timeout || 10}s**`;
             } else {
-              content += progress.exit_code === 0 ? '✅ **Completed successfully**' : `❌ **Failed (exit code: ${progress.exit_code})**`;
+              content += progress.exit_code === 0 ? '**Completed successfully**' : `**Failed (exit code: ${progress.exit_code})**`;
             }
           }
 
@@ -314,7 +314,7 @@ export class ToolExecutor {
             if (parsed.stderr) {
               finalContent += `**Errors:**\n\`\`\`\n${parsed.stderr}\n\`\`\`\n`;
             }
-            finalContent += parsed.exit_code === 0 ? '✅ **Success**' : `❌ **Failed (code: ${parsed.exit_code})**`;
+            finalContent += parsed.exit_code === 0 ? '**Success**' : `**Failed (code: ${parsed.exit_code})**`;
           } catch (e) {
             // Fallback to raw result
             finalContent += result;
