@@ -315,7 +315,8 @@ export async function generateResponse(message, providerManager, channelMemories
     }
 
     // Include all available tools
-    const toolsText = toolRegistry.getToolsText();
+    const serverId = message.guild?.id;
+    const toolsText = toolRegistry.getToolsText(serverId, bot);
 
     logger.debug('Built tools text', { toolCount: toolRegistry.getAllTools().length, toolsTextLength: toolsText.length });
 

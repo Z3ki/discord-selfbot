@@ -17,6 +17,7 @@ import { executeGetServerList } from './discord/getServerList.js';
 import { executeLeaveServer } from './discord/leaveServer.js';
 
  import { executeReasonComplex } from './system/reasonComplex.js';
+ import { executeDockerExec } from './system/dockerExec.js';
  import { executeInvestigateUser } from './investigation/investigateUser.js';
 
 import { executeGetUserProfileComplete } from './investigation/getUserProfileComplete.js';
@@ -85,6 +86,8 @@ export class ToolExecutor {
         
          case 'reason_complex':
            return await executeReasonComplex(args, message, client, providerManager);
+         case 'docker_exec':
+           return await executeDockerExec(args);
          case 'investigate_user':
           return await executeInvestigateUser(args, client, message);
         case 'get_user_profile_complete':
@@ -139,8 +142,8 @@ export class ToolExecutor {
   /**
    * Get tools text for AI prompt
    */
-  getToolsText() {
-    return this.registry.getToolsText();
+  getToolsText(serverId, bot) {
+    return this.registry.getToolsText(serverId, bot);
   }
 
   /**

@@ -46,6 +46,9 @@ export class Bot {
     // Safe mode settings per server
     this.safeModeServers = new Map();
 
+    // Shell access settings per server (default: off)
+    this.shellAccessServers = new Map();
+
     // Blacklist for servers
     this.blacklist = new Set();
   }
@@ -173,6 +176,9 @@ export class Bot {
       this.safeModeServers = new Map();
       logger.debug('SAFE MODE LOAD - using empty map (invalid data type)');
     }
+
+    // Load shell access servers (default: off, so no need to load - stays empty)
+    // Shell access is intentionally not persisted per user request
 
     logger.info('Data loaded into existing LRU caches', {
       channelMemories: this.channelMemories.size(),

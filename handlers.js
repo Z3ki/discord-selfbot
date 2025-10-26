@@ -34,6 +34,7 @@ Commands
 \`;info\` - Bot info
 \`;servers\` - Server list
 \`;blacklist\` - Manage blacklisted servers
+\`;shell\` - Toggle Docker shell access (default: off)
 \`;prompt <text>\` - Set server prompt
   \`;prompt all <text>\` - Set global prompt
   \`;prompt clear <text>\` - Clear memory + set server prompt
@@ -544,6 +545,30 @@ Commands
 break;
         }
 
+       case 'shell': {
+         if (!message.guild) {
+           await message.reply('Shell access can only be toggled in servers, not DMs.');
+           break;
+         }
+
+         const serverId = message.guild.id;
+
+         // Initialize shell access map if it doesn't exist
+         if (!bot.shellAccessServers) {
+           bot.shellAccessServers = new Map();
+         }
+
+         // Toggle shell access for this server (default: off)
+         const currentMode = bot.shellAccessServers.get(serverId) || false;
+         const newMode = !currentMode;
+         bot.shellAccessServers.set(serverId, newMode);
+
+         const modeText = newMode ? 'ENABLED' : 'DISABLED';
+         const statusText = newMode ? 'Docker shell commands are now available' : 'Docker shell commands are now disabled';
+         await message.reply(`Shell access ${modeText} for this server. ${statusText}.`);
+         break;
+       }
+
        case 'safemode': {
          if (!message.guild) {
            await message.reply('Safe mode can only be toggled in servers, not DMs.');
@@ -551,7 +576,7 @@ break;
          }
 
          const serverId = message.guild.id;
-         
+
          // Initialize safe mode map if it doesn't exist
          if (!bot.safeModeServers) {
            bot.safeModeServers = new Map();
@@ -561,10 +586,10 @@ break;
          const currentMode = bot.safeModeServers.get(serverId) || false;
          const newMode = !currentMode;
          bot.safeModeServers.set(serverId, newMode);
-         
+
          // Save the data
          await bot.saveData();
-         
+
          const modeText = newMode ? 'ENABLED' : 'DISABLED';
 await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`);
           break;
