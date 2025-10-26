@@ -40,6 +40,9 @@ export class Bot {
     this.lastToolCalls = [[]];
     this.lastToolResults = [[]];
 
+    // Server-specific prompts
+    this.serverPrompts = new Map();
+
     // Blacklist for servers
     this.blacklist = new Set();
   }
@@ -130,6 +133,14 @@ export class Bot {
     }
 
     this.globalPrompt[0] = await this.dataManager.loadGlobalPrompt();
+
+    // Load server prompts
+    const serverPromptsData = await this.dataManager.loadData('serverPrompts.json');
+    for (const [key, value] of serverPromptsData) {
+      if (key !== 'maxSize' && key !== 'cache') {
+        this.serverPrompts.set(key, value);
+      }
+    }
 
     // Load blacklist
     const blacklistData = await this.dataManager.loadData('blacklist.json');
@@ -235,7 +246,8 @@ export class Bot {
         this.lastToolCalls,
         this.lastToolResults,
         this.apiResourceManager,
-        this.subagentCoordinator
+        this.subagentCoordinator,
+        this
       ),
       this.providerManager,
       this // Pass bot instance
@@ -264,6 +276,7 @@ export class Bot {
 
       await this.dataManager.saveGlobalPrompt(this.globalPrompt[0]);
       await this.dataManager.saveData('blacklist.json', Array.from(this.blacklist));
+
       logger.info('Data saved successfully');
     } catch (error) {
       logger.error('Error saving data', { error: error.message });

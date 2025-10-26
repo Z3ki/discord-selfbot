@@ -641,7 +641,22 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
       }
     }
     
-    processMediaAsync(message, context);
+    // Extract channel ID before async processing to avoid reference loss
+    const channelId = message.channel?.id || message.channelId;
+    if (channelId) {
+      logger.debug('Starting async media processing', { 
+        channelId,
+        attachmentCount: message.attachments?.size || 0,
+        stickerCount: message.stickers?.size || 0
+      });
+      processMediaAsync(message, context);
+    } else {
+      logger.warn('Skipping async media processing - no channel ID available', { 
+        hasChannel: !!message.channel,
+        hasChannelId: !!message.channelId,
+        messageKeys: Object.keys(message)
+      });
+    }
     // Return sticker data immediately, process other media in background
     return {
       hasMedia: message.attachments.size > 0 || (message.stickers && message.stickers.size > 0),
@@ -664,22 +679,39 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
    if (message.attachments.size > 0) {
     const attachmentsArray = Array.from(message.attachments.values());
     
-    for (const attachment of attachmentsArray) {
-      if (!attachment.contentType) continue;
-      
-      try {
-        if (attachment.contentType.startsWith('image/')) {
-          // Process static images
-          hasMedia = true;
-          const imageData = await downloadImageAsBase64(attachment.url);
-          multimodalContent.push({
-            inlineData: {
-              mimeType: imageData.mimeType,
-              data: imageData.base64
+for (const attachment of attachmentsArray) {
+        logger.debug(`Processing attachment:`, { 
+          id: attachment.id,
+          url: attachment.url,
+          contentType: attachment.contentType,
+          size: attachment.size
+        });
+        
+        if (!attachment.contentType) {
+          logger.warn('Skipping attachment without contentType');
+          continue;
+        }
+
+        try {
+          if (attachment.contentType.startsWith('image/')) {
+            // Process static images
+            hasMedia = true;
+            logger.debug(`Processing image attachment: ${attachment.url}`);
+            const imageData = await downloadImageAsBase64(attachment.url);
+            if (imageData) {
+              multimodalContent.push({
+                inlineData: {
+                  mimeType: imageData.mimeType,
+                  data: imageData.base64
+                }
+              });
+              fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
+              logger.debug(`Successfully processed image: ${attachment.url}`);
+            } else {
+              logger.warn(`Failed to download image: ${attachment.url}`);
+              fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
             }
-          });
-          fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
-        } else if (attachment.contentType.startsWith('video/')) {
+          } else if (attachment.contentType.startsWith('video/')) {
           // Process videos with error handling (frames + audio transcription)
           hasMedia = true;
           try {
@@ -844,6 +876,27 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
  */
 async function processMediaAsync(message, context) {
   try {
+    // Store message and channel IDs to avoid issues with async processing
+    const messageId = message?.id;
+    const channelId = message.channel?.id || message.channelId; // Try both channel.id and channelId
+    const client = context?.client;
+
+    // Validate required data before proceeding
+    if (!messageId || !channelId || !client) {
+      logger.error('Async media processing failed - missing required data', { 
+        hasMessageId: !!messageId, 
+        hasChannelId: !!channelId, 
+        hasClient: !!client 
+      });
+      return;
+    }
+
+    logger.debug('Starting async media processing with valid data', { 
+      messageId, 
+      channelId,
+      hasAttachments: message.attachments?.size > 0,
+      hasStickers: message.stickers?.size > 0
+    });
 
     let multimodalContent = [];
     let hasMedia = false;
@@ -859,7 +912,17 @@ async function processMediaAsync(message, context) {
     }
 
     // Process attachments
-    if (message.attachments.size > 0) {
+    logger.debug('Processing attachments in async function', { 
+      attachmentCount: message.attachments?.size || 0,
+      attachments: Array.from(message.attachments?.values() || []).map(a => ({ 
+        id: a.id, 
+        url: a.url, 
+        contentType: a.contentType,
+        size: a.size 
+      }))
+    });
+    
+    if (message.attachments && message.attachments.size > 0) {
       const attachmentsArray = Array.from(message.attachments.values());
 
       for (const attachment of attachmentsArray) {
@@ -869,14 +932,29 @@ async function processMediaAsync(message, context) {
           if (attachment.contentType.startsWith('image/')) {
             // Process static images
             hasMedia = true;
-            const imageData = await downloadImageAsBase64(attachment.url);
-            multimodalContent.push({
-              inlineData: {
-                mimeType: imageData.mimeType,
-                data: imageData.base64
-              }
+            logger.debug(`Processing image attachment`, { 
+              url: attachment.url, 
+              contentType: attachment.contentType,
+              size: attachment.size 
             });
-            fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
+            
+            const imageData = await downloadImageAsBase64(attachment.url);
+            if (imageData) {
+              multimodalContent.push({
+                inlineData: {
+                  mimeType: imageData.mimeType,
+                  data: imageData.base64
+                }
+              });
+              fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
+              logger.debug(`Successfully processed image`, { 
+                mimeType: imageData.mimeType,
+                dataSize: imageData.base64.length 
+              });
+            } else {
+              logger.error(`Failed to download image`, { url: attachment.url });
+              fallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
+            }
           } else if (attachment.contentType.startsWith('video/')) {
             // Process videos with error handling (frames + audio transcription)
             hasMedia = true;
@@ -1041,8 +1119,13 @@ async function processMediaAsync(message, context) {
 
         // Create a follow-up message with media analysis
         const followUpMessage = {
-          ...message,
+          id: message.id,
           content: `**MEDIA ANALYSIS COMPLETE**: ${fallbackText.trim()}\n\nPlease analyze the attached media and provide insights.`,
+          author: message.author,
+          channel: {
+            id: channelId,
+            type: message.channel?.type || 'unknown'
+          },
           attachments: new Map(), // Clear attachments since they're processed
           stickers: new Map() // Clear stickers since they're processed
         };
@@ -1064,27 +1147,26 @@ async function processMediaAsync(message, context) {
           context.lastResponse,
           context.lastToolCalls,
           context.lastToolResults,
-          context.apiResourceManager
+          context.apiResourceManager,
+          context.bot || null
         );
 
         if (mediaAnalysis) {
           try {
-            // Check if message and reply method exist
-            if (message && typeof message.reply === 'function') {
-              await message.reply(`**Media Analysis**: ${mediaAnalysis}`);
-              logger.info('Sent media analysis follow-up message', { channelId: message.channel?.id || 'unknown' });
-            } else if (message && message.channel && typeof message.channel.send === 'function') {
-              await message.channel.send(`**Media Analysis**: ${mediaAnalysis}`);
-              logger.info('Sent media analysis follow-up message via channel.send', { channelId: message.channel?.id || 'unknown' });
+            const channel = client.channels.cache.get(channelId);
+            if (channel) {
+              await channel.send({ content: `**Media Analysis**: ${mediaAnalysis}`, reply: { messageReference: messageId } });
+              logger.info('Sent media analysis follow-up message', { channelId });
             } else {
-              logger.warn('Cannot send media analysis - no valid message or channel object available');
+              logger.warn('Cannot send media analysis - channel not found in cache', { channelId });
             }
           } catch (replyError) {
             logger.error('Failed to send media analysis reply', { error: replyError.message });
             // Try alternative method
             try {
-              if (message && message.channel && typeof message.channel.send === 'function') {
-                await message.channel.send(`**Media Analysis**: ${mediaAnalysis}`);
+              const channel = client.channels.cache.get(channelId);
+              if (channel) {
+                await channel.send(`**Media Analysis**: ${mediaAnalysis}`);
               }
             } catch (altError) {
               logger.error('Failed to send media analysis via alternative method', { error: altError.message });
@@ -1094,20 +1176,19 @@ async function processMediaAsync(message, context) {
       } catch (error) {
         logger.error('Failed to send media analysis follow-up', { error: error.message });
         try {
-          // Check if message and reply method exist
-          if (message && typeof message.reply === 'function') {
-            await message.reply(`**Media Processing Error**: ${error.message}`);
-          } else if (message && message.channel && typeof message.channel.send === 'function') {
-            await message.channel.send(`**Media Processing Error**: ${error.message}`);
+          const channel = client.channels.cache.get(channelId);
+          if (channel) {
+            await channel.send({ content: `**Media Processing Error**: ${error.message}`, reply: { messageReference: messageId } });
           } else {
-            logger.warn('Cannot send media processing error - no valid message or channel object available');
+            logger.warn('Cannot send media processing error - channel not found in cache', { channelId });
           }
         } catch (replyError) {
           logger.error('Failed to send error message', { error: replyError.message });
           // Try alternative method
           try {
-            if (message && message.channel && typeof message.channel.send === 'function') {
-              await message.channel.send(`**Media Processing Error**: ${error.message}`);
+            const channel = client.channels.cache.get(channelId);
+            if (channel) {
+              await channel.send(`**Media Processing Error**: ${error.message}`);
             }
           } catch (altError) {
             logger.error('Failed to send error message via alternative method', { error: altError.message });

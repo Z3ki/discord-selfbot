@@ -37,7 +37,7 @@ export const CONFIG = {
     }
   },
   admin: {
-    userId: process.env.DISCORD_USER_ID
+    userId: process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID
   },
   limits: {
     maxMemoryMessages: 30, // Reduced from 50 for better memory management

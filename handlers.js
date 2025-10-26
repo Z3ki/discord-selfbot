@@ -34,8 +34,10 @@ Commands
 \`;info\` - Bot info
 \`;servers\` - Server list
 \`;blacklist\` - Manage blacklisted servers
-\`;prompt <text>\` - Set prompt
-\`;prompt clear <text>\` - Clear memory + set prompt
+\`;prompt <text>\` - Set server prompt
+  \`;prompt all <text>\` - Set global prompt
+  \`;prompt clear <text>\` - Clear memory + set server prompt
+  \`;prompt clear all <text>\` - Clear memory + set global prompt
 \`;nvidia <msg>\` - NVIDIA AI
 \`;health\` - Health (admin)
 \`;testqueue\` - Test queue
@@ -170,7 +172,7 @@ Commands
 
           // Verify memory was cleared
           const verifyCleared = () => {
-            const memory = channelMemories.get(message.channel.id) || [];
+            const memory = channelMemories.get(message.channel?.id || message.channelId) || [];
             return memory.length === 0;
           };
 
@@ -214,13 +216,22 @@ Commands
           // Capture everything after ";prompt " to preserve newlines and formatting
           const promptArgs = message.content.slice(8).trim();
           const args = promptArgs.split(' ');
+          
+          const serverId = message.guild?.id;
+          const isDM = !serverId;
 
           if (args[0] === 'clear') {
-            // Clear memory first, then set new prompt
-            const newPrompt = message.content.slice(14).trim(); // After "*prompt clear "
+            // Check if this is "clear all" or just "clear"
+            const isClearAll = args[1] === 'all';
+            const newPromptArgs = isClearAll ? args.slice(2) : args.slice(1);
+            const newPrompt = newPromptArgs.join(' ').trim();
 
             if (!newPrompt) {
-              await message.reply('Usage: `;prompt clear <new prompt text>` - Clears memory and sets new prompt');
+              if (isClearAll) {
+                await message.reply('Usage: `;prompt clear all <new prompt text>` - Clears memory and sets new global prompt');
+              } else {
+                await message.reply('Usage: `;prompt clear <new prompt text>` - Clears memory and sets new server prompt');
+              }
               return;
             }
 
@@ -233,7 +244,7 @@ Commands
 
               // Verify memory was cleared
               const verifyCleared = () => {
-                const memory = channelMemories.get(message.channel.id) || [];
+                const memory = channelMemories.get(message.channel?.id || message.channelId) || [];
                 return memory.length === 0;
               };
 
@@ -242,11 +253,20 @@ Commands
                 return;
               }
 
-              // Set new prompt
-              await fs.promises.writeFile('globalPrompt.txt', newPrompt);
-              globalPrompt[0] = newPrompt;
-
-              await message.reply('Memory cleared and global prompt updated successfully!');
+              // Set new prompt (server-specific or global)
+              if (isClearAll || isDM) {
+                await fs.promises.writeFile('globalPrompt.txt', newPrompt);
+                globalPrompt[0] = newPrompt;
+                await message.reply('Memory cleared and global prompt updated successfully!');
+              } else {
+                // Server-specific prompt
+                if (!bot.serverPrompts) {
+                  bot.serverPrompts = new Map();
+                }
+                bot.serverPrompts.set(serverId, newPrompt);
+                await bot.dataManager.saveData('serverPrompts.json', bot.serverPrompts);
+                await message.reply('Memory cleared and server prompt updated successfully!');
+              }
             } catch (error) {
               await message.reply('Failed to clear memory and update prompt: ' + error.message);
             }
@@ -254,16 +274,62 @@ Commands
           }
 
           if (!promptArgs) {
-            // Show current prompt and usage instructions
-            const currentPrompt = globalPrompt[0] || 'None set';
-            await message.reply(`**Current Global Prompt:**\n\`\`\`\n${currentPrompt}\n\`\`\`\n\n**Usage:**\n\`;prompt <text>\` - Set a new global prompt\n\`;prompt clear <text>\` - Clear memory and set new prompt\n\nYou can include newlines and formatting in your prompt.`);
+            // Show current prompts and usage instructions
+            const globalPromptText = globalPrompt[0] || 'None set';
+            let serverPromptText = 'None set';
+            
+            if (!isDM && bot.serverPrompts && bot.serverPrompts.has(serverId)) {
+              serverPromptText = bot.serverPrompts.get(serverId);
+            }
+
+            let response = `**Current Prompts:**\n\n`;
+            if (!isDM) {
+              response += `**Server Prompt:**\n\`\`\`\n${serverPromptText}\n\`\`\`\n\n`;
+            }
+            response += `**Global Prompt:**\n\`\`\`\n${globalPromptText}\n\`\`\`\n\n**Usage:**\n`;
+            if (!isDM) {
+              response += `\`;prompt <text>\` - Set a new server prompt\n`;
+              response += `\`;prompt all <text>\` - Set a new global prompt\n`;
+              response += `\`;prompt clear <text>\` - Clear memory and set new server prompt\n`;
+              response += `\`;prompt clear all <text>\` - Clear memory and set new global prompt\n\n`;
+            } else {
+              response += `\`;prompt <text>\` - Set a new global prompt (DMs only support global prompts)\n`;
+              response += `\`;prompt clear <text>\` - Clear memory and set new global prompt\n\n`;
+            }
+            response += `You can include newlines and formatting in your prompt.`;
+            
+            await message.reply(response);
             return;
           }
 
           try {
-            await fs.promises.writeFile('globalPrompt.txt', promptArgs);
-            globalPrompt[0] = promptArgs;
-            await message.reply('Global prompt updated successfully!');
+            if (args[0] === 'all' || isDM) {
+              // Global prompt
+              let promptText;
+              if (args[0] === 'all') {
+                // Remove "all" from the beginning
+                promptText = args.slice(1).join(' ');
+              } else {
+                promptText = promptArgs;
+              }
+              
+              if (!promptText) {
+                await message.reply('Usage: `;prompt all <text>` - Set a new global prompt');
+                return;
+              }
+              
+              await fs.promises.writeFile('globalPrompt.txt', promptText);
+              globalPrompt[0] = promptText;
+              await message.reply('Global prompt updated successfully!');
+            } else {
+              // Server-specific prompt
+              if (!bot.serverPrompts) {
+                bot.serverPrompts = new Map();
+              }
+              bot.serverPrompts.set(serverId, promptArgs);
+              await bot.dataManager.saveData('serverPrompts.json', bot.serverPrompts);
+              await message.reply('Server prompt updated successfully!');
+            }
           } catch (error) {
             await message.reply('Failed to update prompt: ' + error.message);
           }
@@ -452,23 +518,25 @@ Commands
              await message.reply('Usage: `;blacklist add <server_id>`');
              break;
            }
-           if (bot.blacklist.has(serverId)) {
-             await message.reply(`Server ${serverId} is already blacklisted.`);
-           } else {
-             bot.blacklist.add(serverId);
-             await message.reply(`Server ${serverId} added to blacklist.`);
-           }
+            if (bot.blacklist.has(serverId)) {
+              await message.reply(`Server ${serverId} is already blacklisted.`);
+            } else {
+              bot.blacklist.add(serverId);
+              await bot.saveData();
+              await message.reply(`Server ${serverId} added to blacklist.`);
+            }
          } else if (subcommand === 'remove' || subcommand === 'rm') {
            if (!serverId) {
              await message.reply('Usage: `;blacklist remove <server_id>`');
              break;
            }
-           if (bot.blacklist.has(serverId)) {
-             bot.blacklist.delete(serverId);
-             await message.reply(`Server ${serverId} removed from blacklist.`);
-           } else {
-             await message.reply(`Server ${serverId} is not blacklisted.`);
-           }
+            if (bot.blacklist.has(serverId)) {
+              bot.blacklist.delete(serverId);
+              await bot.saveData();
+              await message.reply(`Server ${serverId} removed from blacklist.`);
+            } else {
+              await message.reply(`Server ${serverId} is not blacklisted.`);
+            }
          } else {
            await message.reply('Usage: `;blacklist` (show), `;blacklist add <server_id>`, `;blacklist remove <server_id>`');
          }
@@ -550,16 +618,17 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       try {
         await generateResponse(
           mockMessage,
-          channelMemories,
-          client,
           providerManager,
+          channelMemories,
+          dmOrigins,
+          client,
           globalPrompt,
           lastPrompt,
           lastResponse,
           lastToolCalls,
           lastToolResults,
-          dmOrigins,
-          apiResourceManager
+          apiResourceManager,
+          bot
         );
        } catch (error) {
          logger.error('Error handling friend request:', error);
@@ -579,17 +648,17 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         isBot: message.author.bot,
         channel: message.channel.name,
         hasAttachments: message.attachments.size > 0,
-        channelId: message.channel.id,
+        channelId: message.channel?.id || message.channelId,
         hasStickers: message.stickers?.size > 0
       });
 
-    if (message.author.id === client.user.id || message.author.id === '1226166714547437628') {
+    if (message.author.id === client.user.id) {
       logger.debug('Ignoring own message', { authorId: message.author.id, botId: client.user.id });
       return;
     }
 
     // Check if server is blacklisted
-    const isDM = message.channel.type === 'DM' || message.channel.type === 1;
+    const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
     if (!isDM && message.guild && bot.blacklist.has(message.guild.id)) {
       logger.debug('Ignoring message from blacklisted server', { serverId: message.guild.id });
       return;
@@ -602,7 +671,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
     let repliedMessageContent = null;
     if (message.reference && message.reference.messageId) {
       try {
-        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+        const repliedMessage = await message.channel?.messages?.fetch(message.reference.messageId);
         isReplyToBot = repliedMessage.author.id === client.user.id;
         if (isReplyToBot) {
           repliedMessageContent = repliedMessage.content;
@@ -622,7 +691,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       isMentioned,
       isReplyToBot,
       botId: client.user.id,
-      mentions: message.mentions.users.map(u => u.id),
+      mentions: message.mentions?.users?.map(u => u.id) || [],
       contentLength: message.content.length
     });
 
@@ -652,7 +721,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
     // Anti-spam check (only for messages the bot will process)
     const userId = message.author.id;
-    const channelId = message.channel.id;
+    const channelId = message.channel?.id || message.channelId;
     const now = Date.now();
 
     if (!lastMessageTimes.has(userId)) {
@@ -705,8 +774,8 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
     let repliedMediaInfo = '';
     if (message.reference && message.reference.messageId) {
       try {
-        logger.debug('Fetching replied message', { repliedMessageId: message.reference.messageId, channelId: message.channel.id });
-        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+        logger.debug('Fetching replied message', { repliedMessageId: message.reference.messageId, channelId: message.channel?.id || message.channelId });
+        const repliedMessage = await message.channel?.messages?.fetch(message.reference.messageId);
 
         // Process replies to users and other bots, but skip replies to self to prevent AI confusion
         if (!isReplyToBot) {
@@ -833,10 +902,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
     // Add to memory with error handling
     try {
-      if (!channelMemories.has(message.channel.id)) {
-        channelMemories.set(message.channel.id, []);
+      if (!channelMemories.has(message.channel?.id || message.channelId)) {
+        channelMemories.set(message.channel?.id || message.channelId, []);
       }
-      const memory = channelMemories.get(message.channel.id);
+      const memory = channelMemories.get(message.channel?.id || message.channelId);
       const userMessage = {
         user: `${message.author.displayName || message.author.username} (${message.author.username}) [${message.author.id}]`,
         message: message.content + embedInfo + mediaInfo + repliedMediaInfo + transcriptionInfo,
@@ -848,7 +917,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       }
 
       logger.debug('Added user message to memory', {
-        channelId: message.channel.id,
+        channelId: message.channel?.id || message.channelId,
         user: userMessage.user,
         messageLength: userMessage.message.length,
         totalMessages: memory.length
@@ -858,16 +927,16 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
       // Also add to dmContexts if this is a DM
       if (isDM) {
-        if (!dmContexts.has(message.channel.id)) {
-          dmContexts.set(message.channel.id, []);
+        if (!dmContexts.has(message.channel?.id || message.channelId)) {
+          dmContexts.set(message.channel?.id || message.channelId, []);
         }
-        const dmMemory = dmContexts.get(message.channel.id);
+        const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
         dmMemory.push(userMessage);
         if (dmMemory.length > 100) { // dmContexts has higher limit
           dmMemory.shift();
         }
         logger.debug('Added DM message to dmContexts', {
-          dmChannelId: message.channel.id,
+          dmChannelId: message.channel?.id || message.channelId,
           totalMessages: dmMemory.length
         });
       }
@@ -881,7 +950,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
     // Process message in queue
       try {
-        await requestQueue.add(message.channel.id, async () => {
+        await requestQueue.add(message.channel?.id || message.channelId, async () => {
 
 
           // const processingStartTime = Date.now(); // eslint-disable-line no-unused-vars
@@ -889,14 +958,14 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           // Start typing indicator to show the bot is processing
           try {
             await message.channel.sendTyping();
-            logger.debug('Started typing indicator for message processing', { channelId: message.channel.id });
+            logger.debug('Started typing indicator for message processing', { channelId: message.channel?.id || message.channelId });
           } catch (error) {
             logger.warn('Failed to start typing indicator for message processing', { error: error.message });
           }
 
           let response;
           try {
-            response = await generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager);
+            response = await generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, bot);
          } catch (error) {
           logger.error('Message processing failed', {
             error: error.message,
@@ -924,20 +993,20 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
          }
         logger.debug('Generated response', {
           responseLength: response?.length || 0,
-          channelId: message.channel.id,
+          channelId: message.channel?.id || message.channelId,
           ignored: response === null
         });
         if (response) {
             logger.debug('Sending follow-up response to Discord', {
               responseLength: response.length,
-              channelId: message.channel.id,
+              channelId: message.channel?.id || message.channelId,
               userId: message.author.id
             });
 
             // Start typing indicator to show the bot is responding
             try {
               await message.channel.sendTyping();
-              logger.debug('Started typing indicator for response', { channelId: message.channel.id });
+              logger.debug('Started typing indicator for response', { channelId: message.channel?.id || message.channelId });
             } catch (error) {
               logger.warn('Failed to start typing indicator for response', { error: error.message });
             }
@@ -954,7 +1023,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 await message.reply(response);
               }
               logger.debug('Follow-up response sent successfully', {
-                channelId: message.channel.id,
+                channelId: message.channel?.id || message.channelId,
                 userId: message.author.id,
                 usedReply: !isDM
               });
@@ -968,7 +1037,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
               }
             }
             // Add follow-up response to memory
-            const memory = channelMemories.get(message.channel.id);
+            const memory = channelMemories.get(message.channel?.id || message.channelId);
             if (memory) {
               const botMessage = {
                 user: `${client.user.displayName || client.user.username} (${client.user.username}) [${client.user.id}]`,
@@ -981,7 +1050,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
               }
 
             logger.debug('Added bot response to memory', {
-              channelId: message.channel.id,
+              channelId: message.channel?.id || message.channelId,
               user: botMessage.user,
               messageLength: botMessage.message.length,
               totalMessages: memory.length
@@ -992,14 +1061,14 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
               // Also add to dmContexts if this is a DM
               if (isDM) {
-                const dmMemory = dmContexts.get(message.channel.id);
+                const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
                 if (dmMemory) {
                   dmMemory.push(botMessage);
                   if (dmMemory.length > 100) {
                     dmMemory.shift();
                   }
                   logger.debug('Added bot response to dmContexts', {
-                    dmChannelId: message.channel.id,
+                    dmChannelId: message.channel?.id || message.channelId,
                     totalMessages: dmMemory.length
                   });
                 }
