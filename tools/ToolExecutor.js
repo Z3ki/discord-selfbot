@@ -206,7 +206,7 @@ export class ToolExecutor {
     let statusMessage;
     try {
       const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
-      const initialContent = `🔧 **Executing shell command:** \`${command}\`\n⏳ **Status:** Starting...`;
+      const initialContent = `**Executing:** \`${command}\`\n**Status:** Starting...`;
 
       if (isDM) {
         statusMessage = await message.channel.send(initialContent);
@@ -229,7 +229,7 @@ export class ToolExecutor {
       // Update status message with error
       if (statusMessage) {
         try {
-          const errorContent = `❌ **Command failed:** \`${command}\`\n💥 **Error:** ${error.message}`;
+          const errorContent = `**Command failed:** \`${command}\`\n**Error:** ${error.message}`;
           await statusMessage.edit(errorContent);
         } catch (editError) {
           logger.warn('Failed to update error status', { error: editError.message });
@@ -251,27 +251,42 @@ export class ToolExecutor {
     const { executeDockerExec } = await import('./system/dockerExec.js');
 
     // Execute with progress callback
+    let lastUpdate = 0;
     const progressCallback = async (progress) => {
       if (statusMessage && progress) {
+        // Throttle updates to once per second to avoid spam
+        const now = Date.now();
+        if (now - lastUpdate < 1000 && !progress.completed) return;
+        lastUpdate = now;
+
         try {
-          let content = `🔧 **Executing shell command:** \`${command}\`\n`;
+          let content = `**Executing:** \`${command}\`\n`;
 
           if (progress.status) {
-            content += `📊 **Status:** ${progress.status}\n`;
+            content += `**Status:** ${progress.status}\n`;
           }
 
           if (progress.stdout && progress.stdout.length > 0) {
-            const preview = progress.stdout.length > 500 ? progress.stdout.substring(0, 500) + '...' : progress.stdout;
-            content += `📄 **Output:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+            const preview = progress.stdout.length > 800 ? progress.stdout.substring(0, 800) + '...' : progress.stdout;
+            content += `**Output:**\n\`\`\`\n${preview}\n\`\`\`\n`;
           }
 
           if (progress.stderr && progress.stderr.length > 0) {
-            const preview = progress.stderr.length > 200 ? progress.stderr.substring(0, 200) + '...' : progress.stderr;
-            content += `⚠️ **Errors:**\n\`\`\`\n${preview}\n\`\`\`\n`;
+            const preview = progress.stderr.length > 300 ? progress.stderr.substring(0, 300) + '...' : progress.stderr;
+            content += `**Errors:**\n\`\`\`\n${preview}\n\`\`\`\n`;
           }
 
           if (progress.completed) {
-            content += progress.exit_code === 0 ? '✅ **Completed successfully**' : `❌ **Failed (exit code: ${progress.exit_code})**`;
+            if (progress.timed_out) {
+              content += `⏰ **Timed out after ${args.timeout || 10}s**`;
+            } else {
+              content += progress.exit_code === 0 ? '✅ **Completed successfully**' : `❌ **Failed (exit code: ${progress.exit_code})**`;
+            }
+          }
+
+          // Ensure content doesn't exceed Discord limit
+          if (content.length > 1900) {
+            content = content.substring(0, 1900) + '\n... (truncated)';
           }
 
           await statusMessage.edit(content);
@@ -284,10 +299,35 @@ export class ToolExecutor {
     // Execute with progress updates
     const result = await executeDockerExec(args, progressCallback);
 
-    // Final update
+    // Final update with complete results
     if (statusMessage) {
       try {
-        const finalContent = `🔧 **Command completed:** \`${command}\`\n${result}`;
+        // Parse the result to get clean output
+        let finalContent = `**Command completed:** \`${command}\`\n`;
+
+        if (typeof result === 'string' && result.includes('stdout')) {
+          try {
+            const parsed = JSON.parse(result.replace(/```json\n?|\n?```/g, ''));
+            if (parsed.stdout) {
+              finalContent += `**Output:**\n\`\`\`\n${parsed.stdout}\n\`\`\`\n`;
+            }
+            if (parsed.stderr) {
+              finalContent += `**Errors:**\n\`\`\`\n${parsed.stderr}\n\`\`\`\n`;
+            }
+            finalContent += parsed.exit_code === 0 ? '✅ **Success**' : `❌ **Failed (code: ${parsed.exit_code})**`;
+          } catch (e) {
+            // Fallback to raw result
+            finalContent += result;
+          }
+        } else {
+          finalContent += result;
+        }
+
+        // Ensure final content doesn't exceed Discord limit
+        if (finalContent.length > 1900) {
+          finalContent = finalContent.substring(0, 1900) + '\n... (truncated)';
+        }
+
         await statusMessage.edit(finalContent);
       } catch (error) {
         logger.warn('Failed to send final update', { error: error.message });
