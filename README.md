@@ -97,13 +97,14 @@ The bot includes optional Docker shell execution capabilities for advanced syste
 ### Security & Access Control
 - **Disabled by default** for security
 - **Per-server toggle** using `;shell` command (admin only)
+- **DM toggle** using `;shell` command in DMs (admin only)
 - **No persistence** - settings reset on bot restart
 - **Isolated execution** in Docker container
 - **AI-controlled timeouts** prevents hanging commands
 - **Live progress feedback** during execution
 
 ### Usage
-1. Enable shell access: `;shell` (in the desired server)
+1. Enable shell access: `;shell` (in the desired server or DM)
 2. AI can now execute commands like:
    - `ping example.com` - Network connectivity testing
    - `curl -I https://example.com` - HTTP header inspection
@@ -174,7 +175,7 @@ The AI automatically selects appropriate timeouts:
 - `NVIDIA_NIM_MODEL`: NVIDIA NIM model (default: google/gemma-3-27b-it)
 - `NVIDIA_NIM_MAX_TOKENS`: Max tokens for NVIDIA (default: 32768)
 - `NVIDIA_NIM_TEMPERATURE`: Temperature for NVIDIA (default: 0.7)
-- `ADMIN_USER_ID`: User ID with admin privileges (auto-detected from token, .z3ki is permanent admin)
+- `ADMIN_USER_ID`: User ID with admin privileges (permanent admin, falls back to DISCORD_USER_ID if not set)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
 
 ## Usage
@@ -370,7 +371,9 @@ Use `;reasoning-log` command to view recent reasoning activity directly in Disco
 ## Recent Updates
 
 ### Latest Features
-- **Permanent Admin System**: .z3ki is now a permanent administrator that cannot be removed, with initial setup logic removed for simplified admin management
+- **Environment-Based Permanent Admin**: Permanent admin now uses ADMIN_USER_ID environment variable (falls back to DISCORD_USER_ID), removing hardcoded values and initial setup logic
+- **DM Shell Access**: Shell access now works in DMs with `;shell` command, in addition to server-specific access
+- **Anti-Hallucination Guidelines**: Added prompts to prevent AI from making up false information, people, or details
 - **Multi-Round Tool Execution**: AI can now execute multiple sequential tool calls in a single conversation turn, enabling complex multi-step operations
 - **Clean Terminal Output**: Docker shell commands now display in clean terminal format instead of JSON, showing just the command and its output like a real terminal
 - **Shared Message Editing**: When the AI makes multiple tool calls (especially docker_exec commands), it edits the same Discord message instead of creating new messages for each round, providing a cleaner experience
