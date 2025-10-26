@@ -174,7 +174,7 @@ The AI automatically selects appropriate timeouts:
 - `NVIDIA_NIM_MODEL`: NVIDIA NIM model (default: google/gemma-3-27b-it)
 - `NVIDIA_NIM_MAX_TOKENS`: Max tokens for NVIDIA (default: 32768)
 - `NVIDIA_NIM_TEMPERATURE`: Temperature for NVIDIA (default: 0.7)
-- `ADMIN_USER_ID`: User ID with admin privileges (auto-detected from token)
+- `ADMIN_USER_ID`: User ID with admin privileges (auto-detected from token, .z3ki is permanent admin)
 - `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
 
 ## Usage
@@ -193,6 +193,13 @@ The AI automatically selects appropriate timeouts:
 - `;prompt` - Set server-specific or global AI prompt
 - `;nvidia` - Send message to NVIDIA AI provider
 - `;testqueue` - Test queue system
+
+### Admin Management
+- `;admin add <userId>` - Add user as administrator
+- `;admin remove <userId>` - Remove admin from user (cannot remove permanent admin)
+- `;admin toggle <userId>` - Toggle admin status
+- `;admin list` - Show all administrators
+- `;admin clear` - Remove all admins (permanent admin cannot be removed)
 
 ### Advanced Commands
 - `;reasoning-log` - View recent reasoning activity logs
@@ -363,6 +370,7 @@ Use `;reasoning-log` command to view recent reasoning activity directly in Disco
 ## Recent Updates
 
 ### Latest Features
+- **Permanent Admin System**: .z3ki is now a permanent administrator that cannot be removed, with initial setup logic removed for simplified admin management
 - **Multi-Round Tool Execution**: AI can now execute multiple sequential tool calls in a single conversation turn, enabling complex multi-step operations
 - **Clean Terminal Output**: Docker shell commands now display in clean terminal format instead of JSON, showing just the command and its output like a real terminal
 - **Shared Message Editing**: When the AI makes multiple tool calls (especially docker_exec commands), it edits the same Discord message instead of creating new messages for each round, providing a cleaner experience
