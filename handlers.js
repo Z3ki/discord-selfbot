@@ -639,10 +639,23 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             username: relationship.user?.username || 'Unknown'
           });
 
-          // Accept the friend request using API method
+// Accept the friend request using API method
+        try {
           await client.api.users('@me').relationships[relationship.id].put({
             type: 1
           });
+        } catch (apiError) {
+          if (apiError.message.includes('CAPTCHA')) {
+            logger.warn('CAPTCHA required for friend request acceptance', { 
+              userId: relationship.id,
+              error: apiError.message
+            });
+            // Skip auto-accept for CAPTCHA-protected requests
+            return;
+          } else {
+            throw apiError;
+          }
+        }
 
           logger.info('Friend request accepted successfully', { 
             userId: relationship.id,
