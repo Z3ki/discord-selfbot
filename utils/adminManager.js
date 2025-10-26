@@ -13,9 +13,12 @@ class AdminManager {
     this.admins = new Set();
     this.loadAdmins();
     
-    // Always make .z3ki an admin (permanent)
-    this.admins.add('877972869001412768');
-    this.saveAdmins();
+    // Always make the environment admin permanent
+    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    if (permanentAdminId) {
+      this.admins.add(permanentAdminId);
+      this.saveAdmins();
+    }
   }
 
   /**
@@ -76,8 +79,9 @@ class AdminManager {
       };
     }
 
-    // Prevent removing the permanent admin (.z3ki)
-    if (userId === '877972869001412768') {
+    // Prevent removing the permanent admin
+    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    if (userId === permanentAdminId) {
       return {
         success: false,
         error: 'Cannot remove permanent administrator',
@@ -139,7 +143,10 @@ class AdminManager {
     this.admins.clear();
     
     // Always restore the permanent admin
-    this.admins.add('877972869001412768');
+    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    if (permanentAdminId) {
+      this.admins.add(permanentAdminId);
+    }
     this.saveAdmins();
     logger.warn(`Cleared all ${count} admin(s), restored permanent admin`);
     
