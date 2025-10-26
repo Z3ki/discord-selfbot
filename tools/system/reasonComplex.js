@@ -93,19 +93,7 @@ function generateBriefSummary(content, stepNumber, type = 'general') {
   return summary;
 }
 
-// Import specialized reasoning tools
-import { executeSolveEquation } from '../reasoning/solveEquation.js';
-import { executeAnalyzeArgument } from '../reasoning/analyzeArgument.js';
-import { executeDebugCode } from '../reasoning/debugCode.js';
-import { executeEvaluateEvidence } from '../reasoning/evaluateEvidence.js';
 
-// Internal reasoning tool registry
-const reasoningTools = {
-  solve_equation: executeSolveEquation,
-  analyze_argument: executeAnalyzeArgument,
-  debug_code: executeDebugCode,
-  evaluate_evidence: executeEvaluateEvidence
-};
 
 export const reasonComplexTool = {
   name: 'reason_complex',
@@ -696,59 +684,3 @@ logger.warn('Failed to edit thinking message', { error: editError.message });
   }
 }
 
-/**
- * Delegate to specialized reasoning tools based on problem type
- */
-async function delegateToSpecializedTool(problem, type, message, client, providerManager) {
-  const lowerType = type.toLowerCase();
-  
-  try {
-    // Map problem types to specialized tools
-    if (lowerType.includes('equation') || lowerType.includes('math') || lowerType.includes('algebra') || lowerType.includes('solve')) {
-      const args = { 
-        equation: problem,
-        domain: 'real',
-        method: 'algebraic'
-      };
-      return await reasoningTools.solve_equation(args, message, client, providerManager);
-    }
-    
-    if (lowerType.includes('argument') || lowerType.includes('logic') || lowerType.includes('fallacy')) {
-      const args = {
-        argument: problem,
-        analysis_type: 'complete'
-      };
-      return await reasoningTools.analyze_argument(args, message, client, providerManager);
-    }
-    
-    if (lowerType.includes('debug') || lowerType.includes('code') || lowerType.includes('bug') || lowerType.includes('error')) {
-      // Extract code from problem if present
-      const codeMatch = problem.match(/```(\w+)?\n([\s\S]*?)\n```/);
-      const language = codeMatch ? codeMatch[1] : 'unknown';
-      const code = codeMatch ? codeMatch[2] : problem;
-      
-      const args = {
-        code: code,
-        language: language,
-        error_description: problem.includes('error') ? problem : undefined
-      };
-      return await reasoningTools.debug_code(args, message, client, providerManager);
-    }
-    
-    if (lowerType.includes('evidence') || lowerType.includes('study') || lowerType.includes('research') || lowerType.includes('scientific')) {
-      const args = {
-        claim: problem,
-        evidence: problem, // For now, use problem as both claim and evidence
-        study_type: 'general'
-      };
-      return await reasoningTools.evaluate_evidence(args, message, client, providerManager);
-    }
-    
-    // If no specialized tool matches, return null to use general reasoning
-    return null;
-    
-  } catch (error) {
-    logger.warn(`Specialized tool delegation failed for type ${type}`, { error: error.message });
-    return null;
-  }
-}

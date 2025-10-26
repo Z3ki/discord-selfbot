@@ -43,6 +43,9 @@ export class Bot {
     // Server-specific prompts
     this.serverPrompts = new Map();
 
+    // Safe mode settings per server
+    this.safeModeServers = new Map();
+
     // Blacklist for servers
     this.blacklist = new Set();
   }
@@ -148,6 +151,27 @@ export class Bot {
       this.blacklist = new Set(blacklistData);
     } else {
       this.blacklist = new Set();
+    }
+
+    // Load safe mode servers
+    const safeModeData = await this.dataManager.loadData('safeModeServers.json');
+    logger.debug('SAFE MODE LOAD DEBUG', {
+      safeModeData: safeModeData,
+      type: typeof safeModeData,
+      isMap: safeModeData instanceof Map,
+      size: safeModeData instanceof Map ? safeModeData.size : 'N/A'
+    });
+
+    // DataManager.loadData() already returns a Map, so use it directly
+    if (safeModeData instanceof Map) {
+      this.safeModeServers = safeModeData;
+      logger.info('SAFE MODE LOAD SUCCESS', {
+        size: this.safeModeServers.size,
+        keys: Array.from(this.safeModeServers.keys())
+      });
+    } else {
+      this.safeModeServers = new Map();
+      logger.debug('SAFE MODE LOAD - using empty map (invalid data type)');
     }
 
     logger.info('Data loaded into existing LRU caches', {
@@ -281,6 +305,13 @@ export class Bot {
 
       await this.dataManager.saveGlobalPrompt(this.globalPrompt[0]);
       await this.dataManager.saveData('blacklist.json', Array.from(this.blacklist));
+      
+      // Save server prompts and safe mode settings
+      await this.dataManager.saveData('serverPrompts.json', this.serverPrompts);
+      if (this.safeModeServers) {
+        const safeModeObject = Object.fromEntries(this.safeModeServers.entries());
+        await this.dataManager.saveData('safeModeServers.json', safeModeObject);
+      }
 
       logger.info('Data saved successfully');
     } catch (error) {

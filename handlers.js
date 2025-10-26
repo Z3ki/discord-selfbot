@@ -42,7 +42,8 @@ Commands
 \`;health\` - Health (admin)
 \`;testqueue\` - Test queue
 \`;reasoning-log\` - View reasoning logs
-\`;reasoning-mode brief\` - Set reasoning display mode (brief only)`;
+\`;reasoning-mode brief\` - Set reasoning display mode (brief only)
+\`;safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
         await message.reply(helpText);
         break;
       }
@@ -540,11 +541,37 @@ Commands
          } else {
            await message.reply('Usage: `;blacklist` (show), `;blacklist add <server_id>`, `;blacklist remove <server_id>`');
          }
+break;
+        }
+
+       case 'safemode': {
+         if (!message.guild) {
+           await message.reply('Safe mode can only be toggled in servers, not DMs.');
+           break;
+         }
+
+         const serverId = message.guild.id;
+         
+         // Initialize safe mode map if it doesn't exist
+         if (!bot.safeModeServers) {
+           bot.safeModeServers = new Map();
+         }
+
+         // Toggle safe mode for this server
+         const currentMode = bot.safeModeServers.get(serverId) || false;
+         const newMode = !currentMode;
+         bot.safeModeServers.set(serverId, newMode);
+         
+         // Save the data
+         await bot.saveData();
+         
+         const modeText = newMode ? 'ENABLED' : 'DISABLED';
+         await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`);
          break;
        }
 
-      default:
-        await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
+       default:
+         await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
     }
   } catch (error) {
     logger.error('Error handling command', { command, error: error.message, userId: message.author.id });

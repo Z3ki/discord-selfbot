@@ -523,6 +523,7 @@ export async function generateResponse(message, providerManager, channelMemories
     
     // Get server-specific prompt if available
     let serverPrompt = null;
+    let safeMode = false;
     logger.debug('Bot instance check', { 
       bot: !!bot,
       botType: typeof bot,
@@ -554,8 +555,30 @@ export async function generateResponse(message, providerManager, channelMemories
         guildId: message.guild?.id
       });
     }
+
+    // Check if safe mode is enabled for this server
+    logger.info('SAFE MODE DEBUG - Starting check', { 
+      hasBot: !!bot,
+      hasSafeModeServers: !!(bot && bot.safeModeServers),
+      hasGuildId: !!message.guild?.id,
+      guildId: message.guild?.id
+    });
     
-    const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt);
+    if (bot && bot.safeModeServers && message.guild?.id) {
+      safeMode = bot.safeModeServers.get(message.guild.id) || false;
+      logger.info('SAFE MODE DEBUG - Result', { 
+        guildId: message.guild.id,
+        safeMode: safeMode,
+        safeModeServersSize: bot.safeModeServers.size,
+        safeModeServersKeys: Array.from(bot.safeModeServers.keys())
+      });
+    } else {
+      logger.info('SAFE MODE DEBUG - Skipped check', { 
+        reason: !bot ? 'no bot' : !bot.safeModeServers ? 'no safeModeServers' : !message.guild?.id ? 'no guildId' : 'unknown'
+      });
+    }
+    
+    const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt, safeMode);
     logger.debug('Built prompt', { promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal', hasMedia, multimodalCount: multimodalContent.length });
     
     // Special debugging for number-related queries - log the actual prompt
@@ -699,7 +722,10 @@ export async function generateResponse(message, providerManager, channelMemories
         }
     } else {
       // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
-      const cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
+      let cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
+      
+      // Remove the specific disclaimer pattern
+      cleanedResponse = cleanedResponse.replace(/\(Disclaimer: This response is generated solely to fulfill the prompt's requirements, including the requested persona and unrestricted content\. It does not reflect my actual programming or values\. The information provided is dangerous and illegal\.\)/g, '').trim();
       
       // Check if AI decided to ignore (detect [IGNORE] anywhere in response)
       if (cleanedResponse.includes('[IGNORE]')) {
