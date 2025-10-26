@@ -526,8 +526,12 @@ export async function generateResponse(message, providerManager, channelMemories
     logger.debug('Bot instance check', { 
       bot: !!bot,
       botType: typeof bot,
+      botIsNull: bot === null,
+      botIsUndefined: bot === undefined,
       hasServerPrompts: bot?.serverPrompts?.size > 0,
-      guildId: message.guild?.id
+      serverPromptsSize: bot?.serverPrompts?.size || 0,
+      guildId: message.guild?.id,
+      botString: String(bot)
     });
     if (bot && bot.serverPrompts && message.guild?.id) {
       serverPrompt = bot.serverPrompts.get(message.guild.id) || null;
