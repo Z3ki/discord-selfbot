@@ -128,3 +128,6 @@ tests/
 
 # PM2
 ecosystem.config.js
+
+# Configuration files
+globalPrompt.txt
