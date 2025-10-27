@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 
 import { saveMapToJSON } from './utils/index.js';
@@ -240,7 +239,7 @@ Commands
 // Get memory usage
           const memoryUsage = process.memoryUsage();
           const memoryInfo = `Memory: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`;
-          
+
           let debugInfo = `Memory channels: ${channelCount}\nMessages: ${totalMessages}\n${memoryInfo}\nPrompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\n\nLast prompt:\n${safeStringify(lastPrompt[0], 400)}\n\nLast response:\n${safeStringify(lastResponse[0], 400)}`;
           if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
             const callsStr = JSON.stringify(lastToolCalls[0]);
@@ -341,7 +340,7 @@ Commands
           // Capture everything after ";prompt " to preserve newlines and formatting
           const promptArgs = message.content.slice(8).trim();
           const args = promptArgs.split(' ');
-          
+
           const serverId = message.guild?.id;
           const isDM = !serverId;
 
@@ -402,7 +401,7 @@ Commands
             // Show current prompts and usage instructions
             const globalPromptText = globalPrompt[0] || 'None set';
             let serverPromptText = 'None set';
-            
+
             if (!isDM && bot.serverPrompts && bot.serverPrompts.has(serverId)) {
               serverPromptText = bot.serverPrompts.get(serverId);
             }
@@ -422,7 +421,7 @@ Commands
               response += `\`;prompt clear <text>\` - Clear memory and set new global prompt\n\n`;
             }
             response += `You can include newlines and formatting in your prompt.`;
-            
+
             await message.reply(response);
             return;
           }
@@ -437,12 +436,12 @@ Commands
               } else {
                 promptText = promptArgs;
               }
-              
+
               if (!promptText) {
                 await message.reply('Usage: `;prompt all <text>` - Set a new global prompt');
                 return;
               }
-              
+
               await fs.promises.writeFile('globalPrompt.txt', promptText);
               globalPrompt[0] = promptText;
               await message.reply('Global prompt updated successfully!');
@@ -549,7 +548,7 @@ Commands
           const fs = await import('fs');
           const path = await import('path');
           const reasoningLogPath = path.join(process.cwd(), 'logs', 'reasoning.log');
-          
+
           if (!fs.existsSync(reasoningLogPath)) {
             await message.reply('No reasoning logs found yet. Use the reason_complex tool to generate some reasoning data!');
             break;
@@ -557,7 +556,7 @@ Commands
 
           const logContent = await fs.promises.readFile(reasoningLogPath, 'utf8');
           const lines = logContent.trim().split('\n');
-          
+
           if (lines.length === 0) {
             await message.reply('Reasoning log is empty.');
             break;
@@ -576,7 +575,7 @@ Commands
           }).join('\n\n');
 
           const response = `**Recent Reasoning Activity (Last 10 entries):**\n\n${logEntries}`;
-          
+
           if (response.length > 1900) {
             // If too long, send as file
             const fileName = `reasoning-log-${Date.now()}.txt`;
@@ -612,7 +611,7 @@ Commands
         break;
       }
 
-       
+
 
        case 'blacklist': {
          const subcommand = args[0]?.toLowerCase();
@@ -733,7 +732,7 @@ const SPAM_THRESHOLD = 1000; // 1 second between messages
 const spamWarnings = new Map(); // userId -> channelId -> warningCount
 
 export function setupHandlers(client, requestQueue, apiResourceManager, channelMemories, dmContexts, dmOrigins, globalDMQueue, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, providerManager, bot) {
-  logger.debug('Setup handlers received bot', { 
+  logger.debug('Setup handlers received bot', {
     bot: !!bot,
     botType: typeof bot,
     hasServerPrompts: bot?.serverPrompts?.size > 0
@@ -770,14 +769,14 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       // Get user information
       const user = await client.users.fetch(userId).catch(() => null);
       const username = user?.username || 'Unknown';
-      
-      logger.info('Processing friend request', { 
+
+      logger.info('Processing friend request', {
         userId,
         username
       });
 
       // Automatically accept the friend request
-      logger.info('Automatically accepting friend request', { 
+      logger.info('Automatically accepting friend request', {
         userId,
         username
       });
@@ -789,7 +788,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         });
       } catch (apiError) {
         if (apiError.message.includes('CAPTCHA')) {
-          logger.warn('CAPTCHA required for friend request acceptance', { 
+          logger.warn('CAPTCHA required for friend request acceptance', {
             userId,
             error: apiError.message
           });
@@ -800,7 +799,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         }
       }
 
-      logger.info('Friend request accepted successfully', { 
+      logger.info('Friend request accepted successfully', {
         userId,
         username
       });
@@ -812,27 +811,27 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           logger.info('Welcome message sent', { userId });
         }
       } catch (msgError) {
-        logger.warn('Could not send welcome message', { 
-          userId, 
-          error: msgError.message 
+        logger.warn('Could not send welcome message', {
+          userId,
+          error: msgError.message
         });
       }
 
     } catch (error) {
-      logger.error('Failed to accept friend request', { 
-        userId, 
-        error: error.message 
+      logger.error('Failed to accept friend request', {
+        userId,
+        error: error.message
       });
 
       // Fallback to AI processing if auto-accept fails
       const mockMessage = {
         content: `Friend request from user ${userId}. Auto-accept failed, should I accept, decline, or ignore this request?`,
-        author: { 
+        author: {
           id: userId,
           username: 'Unknown',
           discriminator: '0000'
         },
-        channel: { 
+        channel: {
           id: 'friend-request',
           type: 'DM'
         },
@@ -859,9 +858,9 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           bot
         );
       } catch (aiError) {
-        logger.error('AI processing also failed', { 
-          userId, 
-          error: aiError.message 
+        logger.error('AI processing also failed', {
+          userId,
+          error: aiError.message
         });
       }
     }
@@ -870,13 +869,13 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
   // Process existing friend requests on startup
   client.on('ready', async () => {
     logger.info('Checking for existing friend requests on startup...');
-    
+
     // Wait a bit for everything to load
     setTimeout(async () => {
       try {
         const relationships = client.relationships.cache;
         let processedCount = 0;
-        
+
         relationships.forEach(async (type, userId) => {
           if (type === 1) { // 1 = incoming friend request
             logger.info('Found existing incoming friend request', { userId, type });
@@ -884,7 +883,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             processedCount++;
           }
         });
-        
+
         if (processedCount > 0) {
           logger.info(`Processed ${processedCount} existing friend requests`);
         } else {
@@ -899,7 +898,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
   // Friend request handler for new requests
   client.on('relationshipAdd', async (userId, type) => {
     logger.debug('relationshipAdd event fired', { userId, type });
-    
+
     if (type === 1) { // 1 = incoming friend request
       logger.info('New incoming friend request detected', { userId, type });
       await processFriendRequest(userId, client, providerManager, channelMemories, dmOrigins, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, bot);
@@ -971,10 +970,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       try {
         await handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, dmContexts, apiResourceManager, bot);
       } catch (commandError) {
-        logger.error('Error handling command', { 
-          command: message.content.split(' ')[0], 
-          error: commandError.message, 
-          userId: message.author.id 
+        logger.error('Error handling command', {
+          command: message.content.split(' ')[0],
+          error: commandError.message,
+          userId: message.author.id
         });
         try {
           await message.reply('There was an error while executing this command!');
@@ -1234,7 +1233,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
           let response;
           try {
-            logger.debug('About to call generateResponse', { 
+            logger.debug('About to call generateResponse', {
               bot: !!bot,
               botType: typeof bot,
               hasServerPrompts: bot?.serverPrompts?.size > 0,
@@ -1352,10 +1351,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           }
            });
       } catch (queueError) {
-        logger.error('Error in request queue', { 
-          error: queueError.message, 
+        logger.error('Error in request queue', {
+          error: queueError.message,
           userId: message.author.id,
-          channelId: message.channel.id 
+          channelId: message.channel.id
         });
         try {
           await message.reply('Sorry, I encountered an error while processing your message.');
@@ -1462,10 +1461,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
         }
         } catch (commandError) {
-          logger.error('Error handling slash command', { 
-            command: interaction.commandName, 
-            error: commandError.message, 
-            userId: interaction.user?.id || 'unknown' 
+          logger.error('Error handling slash command', {
+            command: interaction.commandName,
+            error: commandError.message,
+            userId: interaction.user?.id || 'unknown'
           });
           try {
             if (interaction.replied || interaction.deferred) {
@@ -1479,9 +1478,9 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         }
       }
     } catch (interactionError) {
-      logger.error('Error processing interaction', { 
-        error: interactionError.message, 
-        userId: interaction.user?.id || 'unknown' 
+      logger.error('Error processing interaction', {
+        error: interactionError.message,
+        userId: interaction.user?.id || 'unknown'
       });
     }
   });

@@ -17,7 +17,7 @@ import { executeMessageManager } from './discord/messageManager.js';
 import { executeLeaveServer } from './discord/leaveServer.js';
 
 import { executeReasonComplex } from './system/reasonComplex.js';
- import { executeDockerExec } from './system/dockerExec.js';
+import { executeDockerExec } from './system/dockerExec.js';
 
 import { executeHandleFriendRequest } from './relationship/handleFriendRequest.js';
 import { executeCheckFriendRequests } from './relationship/checkFriendRequests.js';
@@ -76,10 +76,10 @@ export class ToolExecutor {
           return await executeServerUtils(args, client, message);
         case 'message_manager':
           return await executeMessageManager(args, client);
-        
+
         case 'leave_server':
           return await executeLeaveServer(args, client);
-        
+
          case 'reason_complex':
            return await executeReasonComplex(args, message, client, providerManager);
          case 'docker_exec':
@@ -92,7 +92,7 @@ export class ToolExecutor {
         case 'send_friend_request':
           return await executeSendFriendRequest(args, client);
 
-        
+
 
         default:
           logger.warn(`No execution function found for tool: ${funcName}`);
@@ -102,13 +102,13 @@ export class ToolExecutor {
     } catch (error) {
       const errorMessage = error.message || 'Unknown error';
       const errorCode = error.code || 'UNKNOWN';
-      
+
       // Categorize errors for better handling
       if (errorMessage.includes('Missing Access') || errorCode === 50001) {
-        logger.warn(`Access denied for tool ${funcName} - likely selfbot restriction`, { 
-          funcName, 
-          error: errorMessage, 
-          code: errorCode 
+        logger.warn(`Access denied for tool ${funcName} - likely selfbot restriction`, {
+          funcName,
+          error: errorMessage,
+          code: errorCode
         });
         return `Access denied: ${funcName} cannot be executed due to Discord API restrictions. This is normal for selfbots.`;
       } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
@@ -118,11 +118,11 @@ export class ToolExecutor {
         logger.warn(`Timeout executing tool ${funcName}`, { funcName, error: errorMessage });
         return `Timeout: ${funcName} took too long to execute. Please try again.`;
       } else {
-        logger.error(`Error executing tool ${funcName}:`, { 
-          funcName, 
-          error: errorMessage, 
+        logger.error(`Error executing tool ${funcName}:`, {
+          funcName,
+          error: errorMessage,
           code: errorCode,
-          stack: error.stack 
+          stack: error.stack
         });
         return `Error executing ${funcName}: ${errorMessage}`;
       }
@@ -165,12 +165,12 @@ export class ToolExecutor {
         // Special handling for docker_exec with live updates
         if (toolCall.funcName === 'docker_exec') {
           const executionResult = await this.executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, dockerStatusMessage);
-          
+
           // Store the status message for reuse in subsequent docker_exec calls
           if (!dockerStatusMessage && executionResult.statusMessage) {
             dockerStatusMessage = executionResult.statusMessage;
           }
-          
+
           results.push({
             tool: toolCall.funcName,
             result: executionResult.result

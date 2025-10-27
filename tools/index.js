@@ -7,11 +7,11 @@ import { reactionManagerTool } from './discord/reactionManager.js';
 import { inviteManagerTool } from './discord/inviteManager.js';
 import { serverUtilsTool } from './discord/serverUtils.js';
 import { messageManagerTool } from './discord/messageManager.js';
-import { getServerListTool } from './discord/getServerList.js';
+
 import { leaveServerTool } from './discord/leaveServer.js';
 
  import { reasonComplexTool } from './system/reasonComplex.js';
- import { dockerExecTool } from './system/dockerExec.js';
+import { dockerExecTool } from './system/dockerExec.js';
 
 
 import { handleFriendRequestTool } from './relationship/handleFriendRequest.js';
@@ -30,14 +30,14 @@ export const tools = [
   inviteManagerTool,
   serverUtilsTool,
   messageManagerTool,
-  getServerListTool,
+
   leaveServerTool,
    reasonComplexTool,
    dockerExecTool,
   handleFriendRequestTool,
   checkFriendRequestsTool,
   sendFriendRequestTool,
-  
+
 ];
 
 // Tool registry for execution
@@ -66,7 +66,7 @@ export class ToolRegistry {
     const categories = {
       'COMMUNICATION': ['send_dm', 'update_context'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'leave_server'],
-      
+
       'SYSTEM': ['reason_complex'],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
     };

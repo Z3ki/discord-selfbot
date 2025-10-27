@@ -86,7 +86,7 @@ function buildMessageSection(messageInfo, messageContent, audioTranscription, me
 
 function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = false) {
   let rules;
-  
+
   if (safeMode) {
     logger.debug('Building SAFE MODE response rules');
     rules = "\n\n=== RESPONSE GUIDELINES ===\n" +
@@ -225,7 +225,7 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
   const responseRules = buildResponseRules(messageInfo, safeMode, shellAccessEnabled);
   const toolsSection = buildToolsSection(toolsText, allocation.tools);
   const historySection = buildHistorySection(memoryText, allocation.memory);
-  
+
     // Use server prompt if available, otherwise use global prompt
     const effectivePrompt = serverPrompt || globalPrompt;
   const globalSection = buildGlobalSection(effectivePrompt, allocation.globalPrompt);
@@ -237,11 +237,11 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
-    logger.warn("Prompt exceeds " + TOTAL_PROMPT_LIMIT + " chars, truncating aggressively", { 
+    logger.warn("Prompt exceeds " + TOTAL_PROMPT_LIMIT + " chars, truncating aggressively", {
       currentLength: systemPrompt.length,
-      limit: TOTAL_PROMPT_LIMIT 
+      limit: TOTAL_PROMPT_LIMIT
     });
-    
+
     // Emergency truncation: prioritize keeping the most recent content
     const sections = [
       { name: 'message', content: messageSection, priority: 1 },
@@ -251,15 +251,15 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
       { name: 'rules', content: responseRules, priority: 5 },
       { name: 'final', content: finalInstructions, priority: 6 }
     ];
-    
+
     // Sort by priority and build prompt incrementally
     const originalLength = systemPrompt.length;
     systemPrompt = '';
     let remainingBudget = TOTAL_PROMPT_LIMIT - 50; // Leave 50 chars buffer
-    
+
     for (const section of sections.sort((a, b) => a.priority - b.priority)) {
       if (remainingBudget <= 0) break;
-      
+
       if (section.content.length <= remainingBudget) {
         systemPrompt += section.content;
         remainingBudget -= section.content.length;
@@ -269,8 +269,8 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
         remainingBudget = 0;
       }
     }
-    
-logger.info("Emergency truncation completed", { 
+
+logger.info("Emergency truncation completed", {
       finalLength: systemPrompt.length,
       truncated: originalLength - systemPrompt.length
     });
