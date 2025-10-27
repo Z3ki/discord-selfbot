@@ -10,7 +10,7 @@ import { processMessageMedia } from './media.js';
 // Stealth utilities removed - no stealth features
 
 // eslint-disable-next-line no-unused-vars
-async function handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, apiResourceManager, bot) {
+async function handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, dmContexts, apiResourceManager, bot) {
   const args = message.content.slice(1).trim().split(' ');
   const command = args.shift().toLowerCase();
 
@@ -979,7 +979,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
     // Check for ; prefix commands
     if (message.content.startsWith(';')) {
       try {
-        await handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, apiResourceManager, bot);
+        await handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, dmContexts, apiResourceManager, bot);
       } catch (commandError) {
         logger.error('Error handling command', { 
           command: message.content.split(' ')[0], 
