@@ -87,7 +87,7 @@ Commands
 
         try {
           switch (action) {
-            case 'add':
+            case 'add': {
               if (!userId) {
                 await message.reply('User ID required for add action\nUsage: `;admin add <userId>`');
                 return;
@@ -101,8 +101,9 @@ Commands
                 await message.reply(`**Error:** ${addResult.error}`);
               }
               break;
+            }
 
-            case 'remove':
+            case 'remove': {
               if (!userId) {
                 await message.reply('User ID required for remove action\nUsage: `;admin remove <userId>`');
                 return;
@@ -116,8 +117,9 @@ Commands
                 await message.reply(`**Error:** ${removeResult.error}`);
               }
               break;
+            }
 
-            case 'toggle':
+            case 'toggle': {
               if (!userId) {
                 await message.reply('User ID required for toggle action\nUsage: `;admin toggle <userId>`');
                 return;
@@ -130,8 +132,9 @@ Commands
                 await message.reply(`**Error:** ${toggleResult.error}`);
               }
               break;
+            }
 
-            case 'list':
+            case 'list': {
               const admins = adminManager.getAdmins();
               let listResponse = `**Bot Administrators**\n\n**Total Admins:** ${admins.length}\n\n`;
               if (admins.length > 0) {
@@ -144,11 +147,13 @@ Commands
               }
               await message.reply(listResponse);
               break;
+            }
 
-            case 'clear':
+            case 'clear': {
               const clearResult = adminManager.clearAdmins();
               await message.reply(`**All Admins Cleared**\n\n**Removed:** ${clearResult.count} admin(s)\n**Warning:** No admins remain!`);
               break;
+            }
 
             default:
               await message.reply(`Unknown action: ${action}\n\nUse \`;admin\` to see available actions.`);

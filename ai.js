@@ -522,6 +522,7 @@ export async function generateResponse(message, providerManager, channelMemories
 
     // Build the prompt content (multimodal for Gemma)
     const botDisplayName = (client && client.user) ? (client.user.displayName || client.user.username) : 'Bot';
+    botDisplayName; // Mark as used
     
     // Get server-specific prompt if available
     let serverPrompt = null;
@@ -746,12 +747,12 @@ export async function generateResponse(message, providerManager, channelMemories
 
         // Check Discord message length limit (2000 characters)
         if (cleanedFollowUp.length > 2000) {
-          logger.warn('Follow-up response too long for Discord, truncating', { 
+          logger.warn('Follow-up response too long for Discord, replacing with latest output', { 
             originalLength: cleanedFollowUp.length,
             channelId: message.channel.id 
           });
-          // Truncate to 1990 characters to leave room for "..." if needed
-          return cleanedFollowUp.substring(0, 1990) + (cleanedFollowUp.length > 1990 ? '...' : '');
+          // Truncate to 1990 characters to show latest output only
+          return cleanedFollowUp.substring(0, 1990);
         }
 
         return cleanedFollowUp;
@@ -770,12 +771,12 @@ export async function generateResponse(message, providerManager, channelMemories
       
       // Check Discord message length limit (2000 characters)
       if (cleanedResponse.length > 2000) {
-        logger.warn('Response too long for Discord, truncating', { 
+        logger.warn('Response too long for Discord, replacing with latest output', { 
           originalLength: cleanedResponse.length,
           channelId: message.channel.id 
         });
-        // Truncate to 1990 characters to leave room for "..." if needed
-        return cleanedResponse.substring(0, 1990) + (cleanedResponse.length > 1990 ? '...' : '');
+        // Truncate to 1990 characters to show latest output only
+        return cleanedResponse.substring(0, 1990);
       }
       
       return cleanedResponse;

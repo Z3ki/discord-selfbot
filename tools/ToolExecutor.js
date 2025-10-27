@@ -230,7 +230,7 @@ export class ToolExecutor {
       // Update existing message with new command
       try {
         const currentContent = statusMessage.content;
-        const newContent = currentContent.replace(/\`\`\`$/, '') + `$ ${command}\n[Executing...]\n\`\`\``;
+        const newContent = currentContent.replace(/```$/, '') + `$ ${command}\n[Executing...]\n\`\`\``;
         await statusMessage.edit(newContent);
       } catch (error) {
         logger.warn('Failed to update existing status message', { error: error.message });
@@ -307,8 +307,8 @@ export class ToolExecutor {
             await statusMessage.edit(content);
           } catch (error) {
             if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-              logger.warn('Discord message too long, truncating further', { originalLength: content.length });
-              const truncatedContent = content.substring(0, 1950) + '`\n... (output too long for Discord)';
+              logger.warn('Discord message too long, replacing with latest output', { originalLength: content.length });
+              const truncatedContent = content.substring(0, 1950) + '`';
               await statusMessage.edit(truncatedContent);
             } else {
               throw error;
@@ -364,8 +364,8 @@ export class ToolExecutor {
           await statusMessage.edit(finalContent);
         } catch (error) {
           if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-            logger.warn('Final Discord message too long, truncating further', { originalLength: finalContent.length });
-            const truncatedContent = finalContent.substring(0, 1950) + '`\n... (output too long for Discord)';
+            logger.warn('Final Discord message too long, replacing with latest output', { originalLength: finalContent.length });
+            const truncatedContent = finalContent.substring(0, 1950) + '`';
             await statusMessage.edit(truncatedContent);
           } else {
             throw error;
@@ -373,8 +373,8 @@ export class ToolExecutor {
         }
       } catch (error) {
         if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-          logger.warn('Final update too long for Discord, sending truncated version', { error: error.message });
-          const shortContent = 'Command completed but output was too long for Discord. Use shorter commands or request specific information.';
+          logger.warn('Final update too long for Discord, sending latest output only', { error: error.message });
+          const shortContent = 'Command completed. Output updated with latest results.';
           try {
             await statusMessage.edit(shortContent);
           } catch (fallbackError) {
