@@ -1,19 +1,51 @@
 import { sendDM, saveDMMetadata } from '../../utils/index.js';
 import { logger } from '../../utils/logger.js';
 
+/**
+ * Tool for sending direct messages to users
+ * @typedef {Object} SendDMArgs
+ * @property {string} userId - Target user ID, username, display name, or mention
+ * @property {string} content - Message content to send
+ * @property {string} [reason] - Detailed reason for sending the DM
+ * 
+ * @typedef {Object} ExecutionContext
+ * @property {Client} client - Discord client instance
+ * @property {Message} message - Original message that triggered the tool
+ * @property {Map} dmOrigins - Map tracking DM channel origins
+ */
+
+/**
+ * Send DM tool definition
+ * @type {Object}
+ */
 export const sendDMTool = {
   name: 'send_dm',
-   description: 'Send a direct message to a USER (not a channel). SELFBOT CAPABILITY: Selfbots can send DMs to users in mutual servers. The target user MUST be in at least one server that the selfbot is also in. You can use: user ID (numeric), username (plain text like "john_doe"), display name (server nickname), or Discord mention (@user). NEVER use channel IDs as user IDs. The bot will automatically resolve usernames and display names by searching through all servers it is in. If the user is not found in any mutual server, the DM will fail.',
+  description: 'Send a direct message to a USER (not a channel). SELFBOT CAPABILITY: Selfbots can send DMs to users in mutual servers. The target user MUST be in at least one server that the selfbot is also in. You can use: user ID (numeric), username (plain text like "john_doe"), display name (server nickname), or Discord mention (@user). NEVER use channel IDs as user IDs. The bot will automatically resolve usernames and display names by searching through all servers it is in. If the user is not found in any mutual server, the DM will fail.',
   parameters: {
     type: 'object',
     properties: {
-      userId: { type: 'string' },
-      content: { type: 'string' },
-      reason: { type: 'string', description: 'Detailed reason for sending the DM, e.g., "User requested information about server rules" or "Responding to user query about bot features"' }
+      userId: { 
+        type: 'string',
+        description: 'Target user ID, username, display name, or Discord mention'
+      },
+      content: { 
+        type: 'string',
+        description: 'Message content to send'
+      },
+      reason: { 
+        type: 'string', 
+        description: 'Detailed reason for sending the DM, e.g., "User requested information about server rules" or "Responding to user query about bot features"' 
+      }
     },
     required: ['userId', 'content']
   },
 
+  /**
+   * Execute the send DM tool
+   * @param {SendDMArgs} args - Tool arguments
+   * @param {ExecutionContext} context - Execution context
+   * @returns {Promise<string>} Result message
+   */
   async execute(args, context) {
     try {
       const { client, message } = context;
@@ -60,6 +92,14 @@ export const sendDMTool = {
   }
 };
 
+/**
+ * Execute send DM function (legacy compatibility)
+ * @param {SendDMArgs} args - Tool arguments
+ * @param {Client} client - Discord client instance
+ * @param {Message} message - Original message
+ * @param {Map} dmOrigins - Map tracking DM channel origins
+ * @returns {Promise<string>} Result message
+ */
 export async function executeSendDM(args, client, message, dmOrigins) {
   try {
     const dmMessage = await sendDM(client, args.userId, args.content);

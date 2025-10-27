@@ -622,9 +622,14 @@ export async function generateResponse(message, providerManager, channelMemories
         }
       }
     } catch (error) {
-      logger.error('AI generation failed', { error: error.message });
-      // Respond with error message
-      await message.reply('Sorry, I\'m having trouble processing your message right now. Please try again later.');
+      const { handleError } = await import('./utils/errorHandler.js');
+      const result = handleError(error, { 
+        function: 'generateAIResponse',
+        messageId: message.id,
+        userId: message.author?.id 
+      });
+      
+      await message.reply(result.message);
       return;
     }
 

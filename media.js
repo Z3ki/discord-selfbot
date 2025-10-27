@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { logger } from './utils/logger.js';
+import { CONFIG } from './config/config.js';
 import { validateFileType, validateUrl } from './security.js';
 import { transcriptionService } from './services/TranscriptionService.js';
 import { mediaCache } from './utils/MediaCache.js';
@@ -75,9 +76,15 @@ export async function downloadFileAsBase64(url, maxRedirects = 5) {
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', async () => {
           const buffer = Buffer.concat(chunks);
-          const maxSize = 4 * 1024 * 1024; // 4MB limit for Gemini
+          const maxSize = CONFIG.media.maxFileSize;
           if (buffer.length > maxSize) {
-            reject(new Error(`File too large: ${buffer.length} bytes (max ${maxSize})`));
+            const { createBotError } = await import('./utils/errorHandler.js');
+            reject(createBotError(
+              `File too large: ${buffer.length} bytes (max ${maxSize})`,
+              'FILE_TOO_LARGE',
+              true,
+              { fileSize: buffer.length, maxSize, url }
+            ));
             return;
           }
           
@@ -114,7 +121,7 @@ export async function downloadFileAsBase64(url, maxRedirects = 5) {
  * @param {number} maxRedirects - Maximum number of redirects to follow (default: 5)
  * @returns {Promise<{base64: string, mimeType: string}>} Object containing base64 data and MIME type
  */
-export async function downloadImageAsBase64(url, maxRedirects = 5) {
+export async function downloadImageAsBase64(url, maxRedirects = CONFIG.media.maxRedirects) {
   return downloadFileAsBase64(url, maxRedirects);
 }
 
@@ -498,8 +505,8 @@ export async function processAudio(url, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https:') ? https : http;
 
-    const makeRequest = (requestUrl, redirects = 0) => {
-      protocol.get(requestUrl, (res) => {
+    const makeRequest = async (requestUrl, redirects = 0) => {
+      protocol.get(requestUrl, async (res) => {
         if (res.statusCode === 302 || res.statusCode === 301) {
           if (redirects >= maxRedirects) {
             reject(new Error(`Too many redirects: ${redirects}`));
@@ -515,12 +522,18 @@ export async function processAudio(url, maxRedirects = 5) {
         }
 
         if (res.statusCode !== 200) {
-          reject(new Error(`Failed to download audio: ${res.statusCode}`));
+          const { createBotError } = await import('./utils/errorHandler.js');
+          reject(createBotError(
+            `Failed to download audio: ${res.statusCode}`,
+            'AUDIO_DOWNLOAD_FAILED',
+            true,
+            { statusCode: res.statusCode, url }
+          ));
           return;
         }
 
         // Create temporary file for audio
-        const tempDir = path.join(__dirname, 'temp');
+        const tempDir = CONFIG.media.tempDir;
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }

@@ -40,15 +40,22 @@ export const CONFIG = {
     userIds: process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [process.env.DISCORD_USER_ID]
   },
   limits: {
-    maxMemoryMessages: 30, // Reduced from 50 for better memory management
-    maxMemoryChannels: 50, // LRU cache limit for channel memories
-    maxDMContexts: 100, // LRU cache limit for DM contexts
-    maxDMOrigins: 100, // LRU cache limit for DM origins
-    maxShellHistory: 20,
-    apiTimeout: 30000,
-    maxImages: 15,
-    maxVideoFrames: 8,
-    maxGifFrames: 6
+    maxMemoryMessages: parseInt(process.env.MAX_MEMORY_MESSAGES) || 30, // Reduced from 50 for better memory management
+    maxMemoryChannels: parseInt(process.env.MAX_MEMORY_CHANNELS) || 50, // LRU cache limit for channel memories
+    maxDMContexts: parseInt(process.env.MAX_DM_CONTEXTS) || 100, // LRU cache limit for DM contexts
+    maxDMOrigins: parseInt(process.env.MAX_DM_ORIGINS) || 100, // LRU cache limit for DM origins
+    maxShellHistory: parseInt(process.env.MAX_SHELL_HISTORY) || 20,
+    apiTimeout: parseInt(process.env.API_TIMEOUT) || 30000,
+    maxImages: parseInt(process.env.MAX_IMAGES) || 15,
+    maxVideoFrames: parseInt(process.env.MAX_VIDEO_FRAMES) || 8,
+    maxGifFrames: parseInt(process.env.MAX_GIF_FRAMES) || 6
+  },
+  media: {
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || (4 * 1024 * 1024), // 4MB limit for Gemini
+    maxRedirects: parseInt(process.env.MAX_REDIRECTS) || 5,
+    supportedImageTypes: (process.env.SUPPORTED_IMAGE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(','),
+    supportedAudioTypes: (process.env.SUPPORTED_AUDIO_TYPES || 'audio/mpeg,audio/wav,audio/ogg,audio/mp4').split(','),
+    tempDir: process.env.TEMP_DIR || './temp'
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

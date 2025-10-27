@@ -9,6 +9,7 @@ import { logger } from '../utils/logger.js';
 import { CONFIG } from '../config/config.js';
 import { DataManager } from './DataManager.js';
 import { LRUCache } from '../utils/LRUCache.js';
+import { container } from './DependencyContainer.js';
 
 export class Bot {
   constructor() {
@@ -84,9 +85,12 @@ export class Bot {
       }
     });
 
-    // Make client globally available for tools
-    global.client = this.client;
-    global.bot = this;
+    // Register dependencies in container
+    container.register('client', this.client, true);
+    container.register('bot', this, true);
+    container.register('config', CONFIG, true);
+    container.register('logger', logger, true);
+    container.register('dataManager', this.dataManager, true);
 
     // Initialize queues and managers with stealth settings
     this.globalDMQueue = new GlobalDMQueue(this.client);
