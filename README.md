@@ -554,6 +554,31 @@ The bot extracts comprehensive metadata from AI responses:
 
 See `API_CAPABILITIES.md` for detailed information about available API features.
 
+## 🐛 Bug Fixes & Improvements
+
+### Recent Fixes
+
+#### AI Self-Confusion Bug (2025-10-27)
+**Problem**: AI was confusing itself with its own past responses, engaging in conversations with itself instead of focusing on the current user.
+
+**Symptoms**:
+- AI would reference its own previous messages as if they were from another person
+- Conversation history showed AI talking to itself
+- Identity confusion between current user and bot's past responses
+
+**Solution**:
+- **Enhanced Memory Filtering**: Bot messages are now filtered out of conversation history by default to prevent self-reference
+- **Clear Message Labeling**: Added distinction between `USER_MESSAGE` and `BOT_RESPONSE` in memory text
+- **Improved Context Rules**: Updated conversation history instructions to prevent identity confusion
+- **Smart Reply Handling**: Bot messages are only included when directly replying to a bot message
+- **Debug Logging**: Added comprehensive logging for bot message filtering
+
+**Files Modified**:
+- `ai.js` - Enhanced memory filtering and message labeling
+- `prompts.js` - Updated conversation history rules
+
+**Impact**: AI now maintains clear separation between its own responses and user input, eliminating self-confusion behavior.
+
 ## 📄 License
 
 This project is provided as-is without warranty. Use at your own risk.
