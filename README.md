@@ -209,8 +209,8 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - **`docker_exec`**: Execute shell commands in Docker (when enabled)
 
 #### Relationship Tools
-- **`check_friend_requests`**: Check incoming friend requests
-- **`handle_friend_request`**: Accept/decline friend requests
+- **`check_friend_requests`**: Check incoming friend requests (read-only)
+- **`handle_friend_request`**: Accept/decline friend requests (manual)
 - **`send_friend_request`**: Send friend requests to users
 
 ### Multi-Round Execution
@@ -558,8 +558,29 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 
 ### Recent Fixes
 
+#### Friend Request Auto-Accept Removal (2025-10-27)
+**Problem**: Automatic friend request acceptance was causing CAPTCHA loops and excessive bot restarts.
+
+**Symptoms**:
+- Bot repeatedly hit CAPTCHA requirements when accepting friend requests
+- Multiple restarts triggered by failed auto-accept attempts
+- PM2 showed hundreds of restarts due to CAPTCHA failures
+- Debug logs showed "CAPTCHA_SOLVER_NOT_IMPLEMENTED" errors
+
+**Solution**:
+- **Removed Auto-Accept**: Completely removed automatic friend request acceptance functionality
+- **Manual Control Only**: Friend requests now require manual handling via tools
+- **Stability Improvement**: Eliminated CAPTCHA-triggered restart loops
+- **Cleaner Logs**: Removed CAPTCHA error spam from logs
+
+**Files Modified**:
+- `handlers.js` - Removed `processFriendRequest` function and `relationshipAdd` event handler
+- `README.md` - Updated documentation to reflect manual-only friend request handling
+
+**Impact**: Bot stability significantly improved with elimination of CAPTCHA loops and reduced restart frequency.
+
 #### AI Self-Confusion Bug (2025-10-27)
-**Problem**: AI was confusing itself with its own past responses, engaging in conversations with itself instead of focusing on the current user.
+**Problem**: AI was confusing itself with its own past responses, engaging in conversations with itself instead of focusing on current user.
 
 **Symptoms**:
 - AI would reference its own previous messages as if they were from another person
