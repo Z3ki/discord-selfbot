@@ -3,7 +3,7 @@ very shitty code that is vibe coded.
 
 # Maxwell Discord Selfbot
 
-A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with NVIDIA NIM fallback, featuring advanced reasoning capabilities, comprehensive tool integration, multimodal support, and intelligent conversation management.
+A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with NVIDIA NIM fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
 
 ## ⚠️ Disclaimer
 
@@ -15,13 +15,12 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with
 - **Primary AI**: Google Gemma 3-27B-IT model with multimodal capabilities
 - **Fallback AI**: NVIDIA NIM with automatic failover for reliability
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
-- **Progressive Reasoning**: Configurable display modes (brief/full) with detailed logging
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
 ### 🔧 Comprehensive Tool System (16 Tools)
 - **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
-- **System Tools**: Complex reasoning, Docker shell execution (optional)
+- **System Tools**: Docker shell execution (optional)
 - **Relationship Tools**: Friend request management and monitoring
 
 ### 🎯 Multimodal Support
@@ -41,7 +40,7 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with
 - **Server-Specific Prompts**: Custom AI behavior per server
 - **Safe Mode**: Family-friendly response toggles
 - **Health Monitoring**: Real-time system metrics and diagnostics
-- **Reasoning Logs**: Detailed AI thinking process tracking
+
 
 ## 📋 Table of Contents
 
@@ -184,12 +183,12 @@ Tools can be invoked by the AI automatically or manually:
 ```
 TOOL: send_dm userId="123456789" content="Hello!" reason="Greeting"
 TOOL: docker_exec command="ping example.com" timeout="10"
-TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
+
 ```
 
 ## 🛠️ Tool System
 
-### Available Tools (16 Total)
+### Available Tools (15 Total)
 
 #### Communication Tools
 - **`send_dm`**: Send direct messages with context tracking
@@ -205,7 +204,6 @@ TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
 - **`change_presence`**: Change bot presence status
 
 #### System Tools
-- **`reason_complex`**: Complex reasoning and analysis
 - **`docker_exec`**: Execute shell commands in Docker (when enabled)
 
 #### Relationship Tools
@@ -250,8 +248,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 - `;prompt clear all <text>` - Clear memory + set global prompt
 - `;prompt` - View current server and global prompts
 - `;nvidia <msg>` - Send message to NVIDIA AI provider
-- `;reasoning-log` - View recent reasoning activity logs
-- `;reasoning-mode brief` - Set reasoning display to brief mode
+
 - `;safemode` - Toggle safe mode for family-friendly responses
 
 ### System Features
@@ -336,7 +333,7 @@ data-selfbot/
 #### Log Files (`logs/`)
 - `bot.log` - General activity and events
 - `errors.log` - Error messages and stack traces
-- `reasoning.log` - AI reasoning activity with timestamps
+
 - `debug.log` - Detailed debugging information
 - `health.log` - System health metrics
 - `rate_limits.log` - Rate limiting events
@@ -411,15 +408,14 @@ tail -f logs/bot.log
 # Error messages
 tail -f logs/errors.log
 
-# Reasoning activity
-tail -f logs/reasoning.log
+
 
 # System health
 tail -f logs/health.log
 ```
 
 #### In-Di scord Commands
-- `;reasoning-log` - View recent AI reasoning activity
+
 - `;health` - Check system health and metrics
 - `;debug` - Show debug information and status
 

@@ -16,7 +16,7 @@ import { executeMessageManager } from './discord/messageManager.js';
 
 import { executeLeaveServer } from './discord/leaveServer.js';
 
-import { executeReasonComplex } from './system/reasonComplex.js';
+
 import { executeDockerExec } from './system/dockerExec.js';
 
 import { executeHandleFriendRequest } from './relationship/handleFriendRequest.js';
@@ -80,8 +80,7 @@ export class ToolExecutor {
         case 'leave_server':
           return await executeLeaveServer(args, client);
 
-         case 'reason_complex':
-           return await executeReasonComplex(args, message, client, providerManager);
+         
          case 'docker_exec':
            return await executeDockerExec(args);
 

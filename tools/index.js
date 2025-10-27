@@ -10,7 +10,7 @@ import { messageManagerTool } from './discord/messageManager.js';
 
 import { leaveServerTool } from './discord/leaveServer.js';
 
- import { reasonComplexTool } from './system/reasonComplex.js';
+ 
 import { dockerExecTool } from './system/dockerExec.js';
 
 
@@ -32,7 +32,6 @@ export const tools = [
   messageManagerTool,
 
   leaveServerTool,
-   reasonComplexTool,
    dockerExecTool,
   handleFriendRequestTool,
   checkFriendRequestsTool,
@@ -67,7 +66,7 @@ export class ToolRegistry {
       'COMMUNICATION': ['send_dm', 'update_context'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'leave_server'],
 
-      'SYSTEM': ['reason_complex'],
+      'SYSTEM': [],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
     };
 

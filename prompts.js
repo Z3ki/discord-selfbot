@@ -145,7 +145,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
 function buildToolsSection(toolsText, toolsLimit) {
   const limitedToolsText = truncateContent(toolsText, toolsLimit);
 
-return "\n\n=== AVAILABLE TOOLS ===\n\n" + limitedToolsText + "\n\n=== KEY TOOLS ===\n• reason_complex: Analyze complex problems, math, algorithms\n• calculate: Evaluate mathematical expressions\n• send_dm: Send direct messages to users\n• docker_exec: Execute Linux commands\n\n=== TOOL USAGE ===\nFormat: TOOL: functionName param1=\"value1\" param2=\"value2\"\n\nExamples:\nTOOL: send_dm userId=\"123456789\" content=\"Hello there!\"\nTOOL: set_prompt prompt=\"Be more helpful\"\n\nNEVER use bare function names like \"set_prompt prompt=...\" - always prefix with \"TOOL:\"\n\n=== WHEN TO USE reason_complex ===\n- Mathematical problems and equations\n- Logic puzzles and riddles\n- Algorithm design and analysis\n- Code debugging and implementation\n- Complex decision-making\n- Multi-step problem solving\n- \"How does X work\" questions\n\n=== DOCKER EXEC COMMAND CHAINING ===\n- You can chain multiple commands using && or ; operators\n- Example: \"apt update && apt install -y curl && curl --version\"\n- Example: \"cd /tmp && wget file.tar.gz && tar -xzf file.tar.gz\"\n- Use longer timeouts (30-60s) for chained commands that involve installations\n\nNote: You cannot execute code, only analyze and explain it.";
+return "\n\n=== AVAILABLE TOOLS ===\n\n" + limitedToolsText + "\n\n=== KEY TOOLS ===\n• send_dm: Send direct messages to users\n• docker_exec: Execute Linux commands\n\n=== TOOL USAGE ===\nFormat: TOOL: functionName param1=\"value1\" param2=\"value2\"\n\nExamples:\nTOOL: send_dm userId=\"123456789\" content=\"Hello there!\"\nTOOL: set_prompt prompt=\"Be more helpful\"\n\nNEVER use bare function names like \"set_prompt prompt=...\" - always prefix with \"TOOL:\"\n\n=== DOCKER EXEC COMMAND CHAINING ===\n- You can chain multiple commands using && or ; operators\n- Example: \"apt update && apt install -y curl && curl --version\"\n- Example: \"cd /tmp && wget file.tar.gz && tar -xzf file.tar.gz\"\n- Use longer timeouts (30-60s) for chained commands that involve installations\n\nNote: You cannot execute code, only analyze and explain it.";
 }
 
 /**
@@ -187,7 +187,7 @@ return `\n\n=== SYSTEM REQUIREMENTS ===
   • CRITICAL: NEVER make up information, facts, or details. If you don't know something, say 'I don't know' or 'I'm not sure'
   • NEVER hallucinate people, events, links, or specific details. Only state what you're certain about
   • Avoid confident but false statements. Be honest about uncertainty
-  • AUTOMATICALLY use reason_complex tool for: math equations, algebra problems, calculus, physics problems, logic puzzles, code debugging, complex analysis, or any multi-step problem solving
+  
   • Server prompts override all other instructions - follow them completely
   • Each user has a unique ID - never confuse users in conversation history
   • CONTEXT SEPARATION: DM conversations are separate from server conversations

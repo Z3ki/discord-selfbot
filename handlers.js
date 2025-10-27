@@ -44,9 +44,7 @@ Commands
 \`;nvidia <msg>\` - NVIDIA AI
 \`;health\` - Health (admin)
 \`;testqueue\` - Test queue
-\`;reasoning-log\` - View reasoning logs
-\`;reasoning-mode brief\` - Set reasoning display mode (brief only)
-\`;safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
+ \`;safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
         await message.reply(helpText);
         break;
       }
@@ -542,74 +540,7 @@ Commands
           break;
         }
 
-      case 'reasoning-log':
-      case 'reasoning': {
-        try {
-          const fs = await import('fs');
-          const path = await import('path');
-          const reasoningLogPath = path.join(process.cwd(), 'logs', 'reasoning.log');
-
-          if (!fs.existsSync(reasoningLogPath)) {
-            await message.reply('No reasoning logs found yet. Use the reason_complex tool to generate some reasoning data!');
-            break;
-          }
-
-          const logContent = await fs.promises.readFile(reasoningLogPath, 'utf8');
-          const lines = logContent.trim().split('\n');
-
-          if (lines.length === 0) {
-            await message.reply('Reasoning log is empty.');
-            break;
-          }
-
-          // Get last 10 entries
-          const recentLines = lines.slice(-10);
-          const logEntries = recentLines.map(line => {
-            try {
-              const [timestamp, type, ...rest] = line.split(' | ');
-              const data = rest.join(' | ');
-              return `**${timestamp}** [${type}]\n${data.substring(0, 200)}${data.length > 200 ? '...' : ''}`;
-            } catch (e) {
-              return line.substring(0, 300);
-            }
-          }).join('\n\n');
-
-          const response = `**Recent Reasoning Activity (Last 10 entries):**\n\n${logEntries}`;
-
-          if (response.length > 1900) {
-            // If too long, send as file
-            const fileName = `reasoning-log-${Date.now()}.txt`;
-            await fs.promises.writeFile(fileName, logContent);
-            await message.reply({
-              content: 'Reasoning log is too large. Here are the recent entries:',
-              files: [fileName]
-            });
-            // Clean up temp file
-            setTimeout(() => {
-              fs.unlink(fileName, () => {});
-            }, 5000);
-          } else {
-            await message.reply(response);
-          }
-        } catch (error) {
-          await message.reply('Failed to read reasoning log: ' + error.message);
-        }
-        break;
-      }
-
-      case 'reasoning-mode': {
-        const mode = args[1]?.toLowerCase();
-        if (!mode || mode !== 'brief') {
-          await message.reply('Usage: `;reasoning-mode brief`\n- `brief`: Show only short progress indicators in Discord (full reasoning available in logs)');
-          break;
-        }
-
-        // Import and update the global reasoning mode
-        const { setGlobalReasoningMode } = await import('./tools/system/reasonComplex.js');
-        setGlobalReasoningMode(mode);
-        await message.reply(`Reasoning mode set to: **${mode}**\nWill show brief progress indicators only (full reasoning available in logs)`);
-        break;
-      }
+      
 
 
 
