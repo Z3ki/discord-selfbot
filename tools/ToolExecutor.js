@@ -81,8 +81,12 @@ export class ToolExecutor {
           return await executeLeaveServer(args, client);
 
          
-         case 'docker_exec':
-           return await executeDockerExec(args);
+case 'docker_exec':
+            // For single docker_exec calls, we still need to use the special handling
+            // Create a mock toolCall object for consistency
+            const mockToolCall = { funcName: 'docker_exec', args };
+            const executionResult = await this.executeDockerExecWithUpdates(mockToolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+            return executionResult.result;
 
         case 'handle_friend_request':
           return await executeHandleFriendRequest(args, client);
