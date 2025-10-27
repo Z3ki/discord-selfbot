@@ -166,6 +166,23 @@ export async function executeDockerExec(args, progressCallback = null) {
       formattedOutput = '';
     } else {
       formattedOutput = 'Command failed (exit code: ' + exitCode + ')\n';
+      
+      // Add context about common error types to prevent AI confusion
+      if (stderr.toLowerCase().includes('json') || stderr.toLowerCase().includes('parse')) {
+        formattedOutput += 'NOTE: This is a server-side JSON parsing error, NOT a formatting issue with your command. The command executed but the server could not parse the response.\n';
+      }
+      if (stderr.toLowerCase().includes('connection') || stderr.toLowerCase().includes('network') || stderr.toLowerCase().includes('refused')) {
+        formattedOutput += 'NOTE: This is a network connectivity error, NOT a formatting issue. The server is unreachable or the port is closed.\n';
+      }
+      if (stderr.toLowerCase().includes('401') || stderr.toLowerCase().includes('403') || stderr.toLowerCase().includes('unauthorized') || stderr.toLowerCase().includes('forbidden')) {
+        formattedOutput += 'NOTE: This is an authentication error, NOT a formatting issue. Your credentials are invalid or missing.\n';
+      }
+      if (stderr.toLowerCase().includes('404') || stderr.toLowerCase().includes('not found')) {
+        formattedOutput += 'NOTE: This is a "not found" error, NOT a formatting issue. The endpoint or resource does not exist.\n';
+      }
+      if (exitCode === 127) {
+        formattedOutput += 'NOTE: Command not found error. The executable does not exist in the container.\n';
+      }
     }
     
     // Show stdout if there is any

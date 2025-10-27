@@ -688,7 +688,20 @@ export async function generateResponse(message, providerManager, channelMemories
           }
 
           // Build tool results text for this round
-          const toolResultsText = validToolResults.map(r => `TOOL_RESULT_${r.tool.toUpperCase()}: ${r.result}`).join('\n');
+          const toolResultsText = validToolResults.map(r => {
+            let result = r.result;
+            // Add special context for docker_exec to prevent confusion about formatting issues
+            if (r.tool === 'docker_exec') {
+              if (result.includes('exit code') && result.includes('Command failed')) {
+                result = `DOCKER_EXECUTION_RESULT: ${result}\nIMPORTANT: This is a command execution result, NOT a formatting issue. The command was parsed and executed successfully, but failed during execution. Do not try different JSON formats - analyze the actual error cause.`;
+              } else {
+                result = `DOCKER_EXECUTION_RESULT: ${result}`;
+              }
+            } else {
+              result = `TOOL_RESULT_${r.tool.toUpperCase()}: ${result}`;
+            }
+            return result;
+          }).join('\n');
 
           // Build follow-up prompt with accumulated tool results
           const followUpPrompt = buildFollowUpContent(
