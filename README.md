@@ -1,184 +1,225 @@
 # Maxwell Discord Selfbot
 
-A sophisticated Discord selfbot powered by Google's Gemma AI model, featuring advanced reasoning capabilities, comprehensive tool integration, and intelligent conversation management.
+A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with NVIDIA NIM fallback, featuring advanced reasoning capabilities, comprehensive tool integration, multimodal support, and intelligent conversation management.
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 **This is a selfbot. Selfbots violate Discord's Terms of Service. Use at your own risk. The developers are not responsible for any consequences of using this software.**
 
-## Features
+## 🌟 Key Features
 
-### AI-Powered Conversations
-- Powered by Google's Gemma 3-27B-IT model (primary)
-- Automatic fallback to NVIDIA NIM for reliability
-- Multimodal support (images, videos, GIFs, stickers)
-- Context-aware responses with conversation memory
+### 🤖 Advanced AI System
+- **Primary AI**: Google Gemma 3-27B-IT model with multimodal capabilities
+- **Fallback AI**: NVIDIA NIM with automatic failover for reliability
+- **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
+- **Progressive Reasoning**: Configurable display modes (brief/full) with detailed logging
+- **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
-### Advanced Tool System
-- 16 consolidated tools for Discord interactions and system operations
-- **Multi-Round Tool Execution**: AI can make multiple sequential tool calls in a single conversation turn for complex operations
-- Comprehensive investigation and analysis tools
-- Consolidated tool architecture for better maintainability
-- Live progress updates during tool execution
-- Dynamic tool availability based on server permissions
-- **Shared Message Editing**: Multiple tool calls edit the same Discord message for cleaner user experience
+### 🔧 Comprehensive Tool System (16 Tools)
+- **Communication Tools**: Direct messaging, user context management
+- **Discord Management**: Reactions, messages, threads, invites, server utilities
+- **System Tools**: Complex reasoning, Docker shell execution (optional)
+- **Relationship Tools**: Friend request management and monitoring
 
-### System Intelligence
-- Progressive reasoning display with brief indicators
-- Full reasoning logged for detailed analysis
-- Complexity assessment and adaptive processing
-- Configurable reasoning modes (brief/full display)
-- Reasoning activity logs with timestamps
-
-### Communication Tools
-- Direct message management with context tracking
-- User investigation and profile analysis
-- Friend request handling
-- Cross-server presence monitoring
-
-### Discord Integration
-- Consolidated reaction management (add, remove, get)
-- Thread management (create, join, archive, leave)
-- Message management (pin, unpin)
-- Server analytics and member information
-- Invite link management (create, join, get invites)
-- Enhanced server joining with fallback methods
-
-### System Tools
-- Complex reasoning and analysis
-- Server-specific and global prompt customization
-- Health monitoring and diagnostics
-- Safe mode for family-friendly responses
-- Reasoning log viewing and management
-
-## Audio Transcription
-The bot includes a Python-based transcription service using OpenAI's Whisper model for processing audio messages and video audio tracks.
-
-### Features
-- Automatic audio extraction from videos
-- Real-time transcription with language detection
-- Integrated into AI conversations for multimodal understanding
-
-### Requirements
-- Python 3.8+
-- torch
-- faster-whisper
-- CUDA-compatible GPU (optional, uses CPU fallback)
-
-## Multimodal Support
-The bot processes various media types for AI analysis:
-
-### Supported Formats
-- **Images**: JPEG, PNG, GIF, WebP, BMP
-- **Videos**: MP4, WebM, QuickTime, AVI (with frame extraction and audio transcription)
+### 🎯 Multimodal Support
+- **Images**: JPEG, PNG, GIF, WebP, BMP with AI analysis
+- **Videos**: MP4, WebM, QuickTime, AVI with frame extraction
+- **Audio**: MP3, WAV, OGG, WebM, M4A, AAC, FLAC, Opus with Whisper transcription
 - **Animated GIFs**: Frame-by-frame processing
-- **Audio**: MP3, WAV, OGG, WebM, M4A, AAC, FLAC, Opus (with transcription)
 
-### Processing Features
-- Automatic media download and validation
-- Video frame extraction with dynamic parameters
-- Audio transcription using Whisper
-- Base64 encoding for AI input
- - Security validation and file type checking
+### 🛡️ Security & Privacy
+- **Admin Management**: Environment-based permanent admin system
+- **Per-Server Controls**: Shell access, safe mode, and prompts per server
+- **Rate Limiting**: Built-in protection against API abuse
+- **Local Data Storage**: All data stored locally with JSON persistence
 
-## Docker Shell Access
+### 📊 Advanced Features
+- **Docker Shell Access**: Optional isolated command execution
+- **Server-Specific Prompts**: Custom AI behavior per server
+- **Safe Mode**: Family-friendly response toggles
+- **Health Monitoring**: Real-time system metrics and diagnostics
+- **Reasoning Logs**: Detailed AI thinking process tracking
 
-The bot includes optional Docker shell execution capabilities for advanced system operations.
+## 📋 Table of Contents
 
-### Features
-- Execute Linux terminal commands in an isolated Docker container
-- **Clean Terminal Output**: Commands display in clean terminal format instead of JSON, showing just command and output like a real terminal
-- Network diagnostics (ping, traceroute, nslookup, dig)
-- File operations and system information
-- AI-controlled timeout selection based on command type
-- Live progress updates during command execution
-- Per-server access control (disabled by default)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Tool System](#-tool-system)
+- [Commands](#-commands)
+- [Architecture](#-architecture)
+- [Security](#-security--privacy)
+- [Troubleshooting](#-troubleshooting)
+- [Development](#-development)
 
-### Security & Access Control
-- **Disabled by default** for security
-- **Per-server toggle** using `;shell` command (admin only)
-- **DM toggle** using `;shell` command in DMs (admin only)
-- **No persistence** - settings reset on bot restart
-- **Isolated execution** in Docker container
-- **AI-controlled timeouts** prevents hanging commands
-- **Live progress feedback** during execution
-
-### Usage
-1. Enable shell access: `;shell` (in the desired server or DM)
-2. AI can now execute commands like:
-   - `ping example.com` - Network connectivity testing
-   - `curl -I https://example.com` - HTTP header inspection
-   - `ls -la /etc` - Directory listing
-   - `ps aux | head -10` - Process information
-
-The AI automatically selects appropriate timeouts:
-- **5-10 seconds** for quick commands (ls, ps, cat)
-- **15-30 seconds** for network tests (ping, traceroute, curl)
-- **30-60 seconds** for downloads/installations
-
-### Requirements
-- Docker installed and running on host system
-- `mcp-shell` container available (auto-started by bot)
-- Admin privileges to enable shell access
-
-## Installation
+## 🚀 Installation
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Python 3.8+ with pip
-- FFmpeg (for media processing)
-- Docker (for shell access functionality)
-- Discord user token (⚠️ **Never share this**)
+- **Node.js 18+** with npm
+- **Python 3.8+** with pip
+- **FFmpeg** for media processing
+- **Docker** (optional, for shell access)
+- **Discord user token** (⚠️ Never share this)
 
-### Setup
-1. Clone this repository
-2. Install Node.js dependencies:
+### Quick Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd maxwell-selfbot
+   ```
+
+2. **Install Node.js dependencies**
    ```bash
    npm install
    ```
 
-3. Install Python dependencies:
+3. **Install Python dependencies**
    ```bash
    pip install torch faster-whisper
    ```
 
-   **Note**: The bot uses a persistent transcription service with a virtual environment at `/root/whisper_venv/bin/python3`. Ensure this path exists or modify the transcription service configuration.
-
-4. Create a `.env` file:
-   ```env
-   DISCORD_USER_TOKEN=your_discord_user_token_here
-   GOOGLE_API_KEY=your_google_ai_api_key_here
-   NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
-   LOG_LEVEL=info
-   ADMIN_USER_ID=your_admin_user_id_here
+4. **Create environment file**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-5. Start the bot:
+5. **Start the bot**
    ```bash
    npm start
    ```
 
-## Configuration
+### Docker Setup (Optional)
 
-### Environment Variables
+For shell access functionality, ensure Docker is running:
+```bash
+# Start Docker daemon
+sudo systemctl start docker
+sudo systemctl enable docker
 
-#### Required
-- `DISCORD_USER_TOKEN`: Your Discord user token (required)
-- `GOOGLE_API_KEY`: Google AI API key for primary AI (required)
+# Test Docker installation
+docker --version
+```
 
-#### Optional
-- `DISCORD_USER_ID`: Your Discord user ID (auto-detected from token)
-- `GOOGLE_AI_MODEL`: Google AI model (default: models/gemma-3-27b-it)
-- `NVIDIA_NIM_API_KEY`: NVIDIA NIM API key for fallback AI
-- `NVIDIA_NIM_BASE_URL`: NVIDIA NIM endpoint (default: https://integrate.api.nvidia.com/v1)
-- `NVIDIA_NIM_MODEL`: NVIDIA NIM model (default: google/gemma-3-27b-it)
-- `NVIDIA_NIM_MAX_TOKENS`: Max tokens for NVIDIA (default: 32768)
-- `NVIDIA_NIM_TEMPERATURE`: Temperature for NVIDIA (default: 0.7)
-- `ADMIN_USER_ID`: User ID with admin privileges (permanent admin, falls back to DISCORD_USER_ID if not set)
-- `LOG_LEVEL`: Logging verbosity (info/warn/error/debug)
+## ⚙️ Configuration
 
-## Usage
+### Required Environment Variables
+
+Create a `.env` file with these required settings:
+
+```env
+# Discord Configuration
+DISCORD_USER_TOKEN=your_discord_user_token_here
+
+# AI Configuration
+GOOGLE_API_KEY=your_google_ai_api_key_here
+
+# Admin Configuration
+ADMIN_USER_ID=your_admin_user_id_here
+```
+
+### Optional Configuration
+
+```env
+# Discord User ID (auto-detected from token if not provided)
+DISCORD_USER_ID=your_discord_user_id_here
+
+# AI Model Settings
+GOOGLE_AI_MODEL=models/gemma-3-27b-it
+GOOGLE_AI_TEMPERATURE=0.7
+
+# NVIDIA NIM Fallback (Optional)
+NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
+NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_NIM_MODEL=google/gemma-3-27b-it
+NVIDIA_NIM_MAX_TOKENS=32768
+NVIDIA_NIM_TEMPERATURE=0.7
+
+# Logging
+LOG_LEVEL=info  # debug, info, warn, error
+```
+
+### Getting Required Values
+
+**Discord User Token:**
+1. Open Discord in browser
+2. Press `Ctrl+Shift+I` (DevTools)
+3. Go to Application → Local Storage → discord.com
+4. Copy the value of `token`
+
+**Google AI API Key:**
+1. Visit [Google AI Studio](https://aistudio.google.com/)
+2. Create new API key
+3. Copy the key
+
+**User ID:**
+1. Enable Developer Mode in Discord settings
+2. Right-click your profile → Copy User ID
+
+## 📖 Usage
+
+### Basic Interaction
+
+The bot responds to:
+- **Direct mentions**: `@bot your message`
+- **Replies**: Replying to bot messages
+- **Direct messages**: Any DM sent to the bot
+
+### Media Processing
+
+Simply send messages with attachments:
+- **Images**: Automatically analyzed by AI
+- **Videos**: Frame extraction + audio transcription
+- **Audio files**: Transcribed using Whisper
+- **GIFs**: Processed frame by frame
+
+### Tool Usage
+
+Tools can be invoked by the AI automatically or manually:
+
+```
+TOOL: send_dm userId="123456789" content="Hello!" reason="Greeting"
+TOOL: docker_exec command="ping example.com" timeout="10"
+TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
+```
+
+## 🛠️ Tool System
+
+### Available Tools (16 Total)
+
+#### Communication Tools
+- **`send_dm`**: Send direct messages with context tracking
+- **`update_context`**: Update user context for personalized responses
+
+#### Discord Management Tools
+- **`reaction_manager`**: Add, remove, and get reactions
+- **`message_manager`**: Pin/unpin messages, thread management
+- **`server_utils`**: Server info, channel info, member lists
+- **`invite_manager`**: Create/join invites, get server invites
+- **`get_server_list`**: List all servers bot is in
+- **`leave_server`**: Leave specified servers
+- **`change_presence`**: Change bot presence status
+
+#### System Tools
+- **`reason_complex`**: Complex reasoning and analysis
+- **`docker_exec`**: Execute shell commands in Docker (when enabled)
+
+#### Relationship Tools
+- **`check_friend_requests`**: Check incoming friend requests
+- **`handle_friend_request`**: Accept/decline friend requests
+- **`send_friend_request`**: Send friend requests to users
+
+### Multi-Round Execution
+
+The AI can execute multiple tools in sequence:
+1. Investigate a user profile
+2. Send them a personalized DM
+3. Update their context for future interactions
+
+All sequential tool calls edit the same Discord message for a clean experience.
+
+## 🎮 Commands
 
 ### Basic Commands
 - `;help` - Show all available commands
@@ -187,281 +228,349 @@ The AI automatically selects appropriate timeouts:
 - `;info` - Get bot information
 - `;health` - Show system health (admin only)
 - `;restart` - Restart the bot (admin only)
-- `;refresh` - Refresh bot state
+- `;refresh <type>` - Clear data (memories/context/dm/all)
 - `;servers` - List all servers the bot is in
 - `;blacklist` - Manage blacklisted servers (admin only)
-- `;shell` - Toggle Docker shell access (admin only)
-- `;prompt` - Set server-specific or global AI prompt
-- `;nvidia` - Send message to NVIDIA AI provider
 - `;testqueue` - Test queue system
 
 ### Admin Management
 - `;admin add <userId>` - Add user as administrator
-- `;admin remove <userId>` - Remove admin from user (cannot remove permanent admin)
+- `;admin remove <userId>` - Remove admin from user
 - `;admin toggle <userId>` - Toggle admin status
 - `;admin list` - Show all administrators
-- `;admin clear` - Remove all admins (permanent admin cannot be removed)
+- `;admin clear` - Remove all admins
 
-### Advanced Commands
-- `;reasoning-log` - View recent reasoning activity logs
-- `;reasoning-mode brief` - Set reasoning display to brief mode
-- `;safemode` - Toggle safe mode for family-friendly responses
-
-
-### Prompt Commands
-- `;prompt <text>` - Set server-specific prompt (default behavior)
+### AI & Prompt Management
+- `;prompt <text>` - Set server-specific prompt
 - `;prompt all <text>` - Set global prompt across all servers
 - `;prompt clear <text>` - Clear memory + set server prompt
 - `;prompt clear all <text>` - Clear memory + set global prompt
 - `;prompt` - View current server and global prompts
+- `;nvidia <msg>` - Send message to NVIDIA AI provider
+- `;reasoning-log` - View recent reasoning activity logs
+- `;reasoning-mode brief` - Set reasoning display to brief mode
+- `;safemode` - Toggle safe mode for family-friendly responses
 
-### System Commands
-- Use `TOOL: reason_complex problem="..." type="..."` for complex analysis
-- Use `TOOL: docker_exec command="..." timeout="..."` for shell commands (when shell access enabled)
-- Use `TOOL: send_friend_request userId="..."` to send friend requests
-- Use `TOOL: investigate_user userId="..."` to investigate users
+### System Features
+- `;shell` - Toggle Docker shell access (admin only, disabled by default)
 
-**Note**: The `docker_exec` tool now requires a timeout parameter. The AI will automatically select appropriate timeouts based on command type. When multiple tool calls are made in sequence, they will edit the same message for a cleaner experience.
+### Command Examples
 
-### AI Interaction
-The bot responds to:
-- Direct mentions (@bot)
-- Replies to bot messages
-- Direct messages
-
-### Prompt System
-The bot supports server-specific and global prompts:
-
-#### Server-Specific Prompts
-- `;prompt <text>` - Sets a prompt for the current server only
-- Affects all conversations in that server
-- Overrides global prompt when set
-- Stored per-server in `data-selfbot/serverPrompts.json`
-
-#### Global Prompts
-- `;prompt all <text>` - Sets a prompt across all servers
-- `;prompt <text>` in DMs also sets global prompt
-- Used as fallback when no server prompt is set
-- Stored in `globalPrompt.txt`
-
-#### Memory Management
-- `;prompt clear <text>` - Clears channel memory + sets server prompt
-- `;prompt clear all <text>` - Clears channel memory + sets global prompt
-- Memory clearing affects the current channel only
-
-### Tool Usage
-Tools are invoked automatically by the AI or manually:
+**Enable Shell Access:**
 ```
-TOOL: send_dm userId="123456" content="Hello!" reason="Greeting"
-TOOL: docker_exec command="ping example.com"
-TOOL: reason_complex problem="Solve x^2 + 2x + 1 = 0" type="math"
-TOOL: investigate_user userId="123456789"
+;shell  # In server or DM to enable/disable
 ```
 
-**Multi-Round Execution**: The AI can execute multiple tools in sequence within a single response, enabling complex workflows like:
-1. Investigating a user
-2. Sending them a DM based on the investigation
-3. Updating their context for future interactions
+**Set Custom Prompt:**
+```
+;prompt You are a helpful assistant specializing in programming
+;prompt all You are a helpful assistant for all servers
+```
 
-All sequential tool calls will edit the same Discord message, providing a clean, consolidated output instead of multiple separate messages.
+**Admin Management:**
+```
+;admin add 123456789012345678
+;admin list
+;admin remove 123456789012345678
+```
 
-## Tool Categories
-
-### Communication (2 tools)
-- `send_dm` - Send direct messages with context tracking
-- `update_context` - Update user context for personalized responses
-
-### Discord Integration (7 tools)
-- `reaction_manager` - Add, remove, and get reactions
-- `message_manager` - Pin/unpin messages, thread management
-- `server_utils` - Server info, channel info, member lists
-- `invite_manager` - Create/join invites, get server invites
-- `get_server_list` - List all servers bot is in
-- `leave_server` - Leave specified servers
-- `change_presence` - Change bot presence status
-
-### Investigation (2 tools)
-- `investigate_user` - Comprehensive user analysis (public data only)
-- `get_user_profile_complete` - Full profile information (public data only)
-
-
-
-### System (2 tools)
-- `reason_complex` - Complex reasoning and analysis with configurable display modes
-- `docker_exec` - Execute shell commands in Docker container with AI-controlled timeouts and clean terminal output (when shell access enabled)
-
-### Relationships (3 tools)
-- `check_friend_requests` - Check incoming friend requests
-- `handle_friend_request` - Accept or decline friend requests
-- `send_friend_request` - Send friend requests to users
-
-## Architecture
+## 🏗️ Architecture
 
 ### Core Components
-- **Bot Service**: Main orchestrator with data persistence and stability features
-- **AI System**: Multi-provider AI with automatic failover (Google Gemini + NVIDIA NIM)
-- **Tool Executor**: Modular tool system with 16 consolidated tools, multi-round execution, and shared message editing
-- **Reasoning System**: Progressive thinking with configurable display modes and detailed logging
-- **Memory System**: LRU-cached conversation context with automatic cleanup
-- **Queue System**: Request management with rate limiting and spam detection
-- **Media Processor**: Multimodal content handling (images, videos, audio, GIFs)
-- **Transcription Service**: Persistent Python-based Whisper audio processing
-- **Security Layer**: Command validation, file type checking, and rate limiting
+
+#### Bot Service (`services/Bot.js`)
+- Main orchestrator with stability features
+- LRU-cached memory management (50 channels, 100 DM contexts)
+- Automatic reconnection with exponential backoff
+- Periodic data saving and memory cleanup
+
+#### AI System (`providers.js`, `ai.js`)
+- Multi-provider AI with automatic failover
+- Google Gemma 3-27B-IT (primary) + NVIDIA NIM (fallback)
+- Enhanced response metadata extraction
+- Stealth features for API requests
+
+#### Tool Executor (`tools/ToolExecutor.js`)
+- 16 consolidated tools across 4 categories
+- Multi-round execution with shared message editing
+- Live progress updates for long-running operations
+- Dynamic tool availability based on permissions
+
+#### Media Processor (`media.js`)
+- Multimodal content handling (images, videos, audio, GIFs)
+- Automatic download and validation
+- Frame extraction and audio transcription
+- Base64 encoding for AI input
+
+#### Transcription Service (`services/TranscriptionService.py`)
+- Persistent Python-based Whisper service
+- Real-time audio transcription
+- Video audio track extraction
+- Language detection and processing
 
 ### Data Persistence
-- JSON-based storage in `data-selfbot/` directory
-- LRU caches for memory efficiency (50 channels, 100 DM contexts)
-- Server-specific and global prompt storage
-- Server-specific safe mode and shell access settings
-- Automatic cleanup and memory management
-- Conversation history and user contexts
-- Cross-session continuity with periodic saving
+
+#### Storage Structure
+```
+data-selfbot/
+├── channelMemories.json     # Channel conversation history
+├── dmContexts.json          # DM conversation contexts
+├── dmOrigins.json          # DM origin tracking
+├── serverPrompts.json      # Server-specific prompts
+├── safeModeServers.json    # Safe mode settings per server
+├── blacklist.json          # Blacklisted servers
+└── globalPrompt.txt        # Global AI prompt
+```
+
+#### Memory Management
+- **LRU Caches**: Automatic cleanup of old data
+- **Channel Memories**: Last 50 messages per channel
+- **DM Contexts**: User preferences and conversation history
+- **Cross-Session Continuity**: Periodic data saving every 10 minutes
 
 ### Logging System
-- Structured logging with rotation
-- Multiple log levels and files
-- Performance monitoring and debugging
-- Reasoning activity logs with timestamps and detailed analysis
-- Health metrics tracking
 
-## Security & Privacy
-
-### Data Handling
-- All data stored locally in JSON files
-- No external data transmission except API calls to Google/NVIDIA
-- Sensitive information never logged
-- Environment variables for secrets
-- File type validation and command allowlisting
-- Investigation tools only access public user data (no MFA, verification status, or private info)
-
-### API Safety
-- Rate limiting and request queuing (10 req/min per user)
-- Automatic failover between AI providers
-- Timeout protection and error handling
-- Resource usage monitoring and quotas
-- Input sanitization and XSS prevention
-
-## Troubleshooting
-
-### Common Issues
-- **Invalid token**: Check `DISCORD_USER_TOKEN` in .env
-- **API errors**: Verify Google AI and NVIDIA keys
-- **Rate limiting**: Wait for cooldown or reduce usage
-- **Memory issues**: Check `;health` command
-- **Transcription fails**: Ensure Python dependencies are installed
-- **Media processing errors**: Check FFmpeg installation and file permissions
-
-### Logs
-Check logs in the `logs/` directory (created automatically):
-- `bot.log` - General activity
-- `errors.log` - Error messages
-- `reasoning.log` - Reasoning activity with timestamps
-- `debug.log` - Debug information
-- `health.log` - Health metrics
+#### Log Files (`logs/`)
+- `bot.log` - General activity and events
+- `errors.log` - Error messages and stack traces
+- `reasoning.log` - AI reasoning activity with timestamps
+- `debug.log` - Detailed debugging information
+- `health.log` - System health metrics
 - `rate_limits.log` - Rate limiting events
 
-Use `;reasoning-log` command to view recent reasoning activity directly in Discord.
+#### Features
+- Structured logging with rotation
+- Performance monitoring and debugging
+- Reasoning activity tracking
+- Automatic log cleanup (7 days)
 
-### Performance
-- Monitor with `;health` command
-- Check memory usage and API calls
-- Review logs for bottlenecks
-- Adjust configuration as needed
+## 🔒 Security & Privacy
 
-## Recent Updates
+### Data Protection
+- **Local Storage Only**: All data stored locally in JSON files
+- **No External Transmission**: Only API calls to Google/NVIDIA for AI processing
+- **Environment Variables**: Sensitive configuration via .env file
+- **File Type Validation**: Security checking for all uploaded media
+- **Public Data Only**: Investigation tools access only public user information
 
-### Latest Features
-- **Environment-Based Permanent Admin**: Permanent admin now uses ADMIN_USER_ID environment variable (falls back to DISCORD_USER_ID), removing hardcoded values and initial setup logic
-- **DM Shell Access**: Shell access now works in DMs with `;shell` command, in addition to server-specific access
-- **Anti-Hallucination Guidelines**: Added prompts to prevent AI from making up false information, people, or details
-- **Multi-Round Tool Execution**: AI can now execute multiple sequential tool calls in a single conversation turn, enabling complex multi-step operations
-- **Clean Terminal Output**: Docker shell commands now display in clean terminal format instead of JSON, showing just the command and its output like a real terminal
-- **Shared Message Editing**: When the AI makes multiple tool calls (especially docker_exec commands), it edits the same Discord message instead of creating new messages for each round, providing a cleaner experience
+### Access Control
+- **Environment-Based Admin**: Permanent admin via `ADMIN_USER_ID` environment variable
+- **Per-Server Settings**: Shell access, safe mode, and prompts configurable per server
+- **Rate Limiting**: Built-in protection against API abuse (10 req/min per user)
+- **Command Validation**: Input sanitization and XSS prevention
 
-### Docker Shell Access Improvements
-- **AI-Controlled Timeouts**: Removed auto-detection logic, AI now chooses appropriate timeouts based on command type
-- **Live Progress Updates**: Real-time feedback during command execution with status indicators
-- **Enhanced Error Handling**: Better timeout management and error reporting
+### Docker Shell Security
+- **Disabled by Default**: Shell access must be explicitly enabled per server/DM
+- **Isolated Execution**: Commands run in isolated Docker container
+- **AI-Controlled Timeouts**: Automatic timeout selection prevents hanging commands
+- **No Persistence**: Shell access settings reset on bot restart
+- **Admin Only**: Only administrators can enable shell access
 
-### New Commands
-- **`;reasoning-log`**: View recent reasoning activity with timestamps directly in Discord
-- **`;reasoning-mode brief`**: Configure reasoning display to show brief indicators only
-- **`;safemode`**: Toggle family-friendly response mode per server
+## 🔧 Troubleshooting
 
-### Enhanced Features
-- **Persistent Transcription Service**: Improved Python service with virtual environment support
-- **Live Tool Updates**: Real-time progress feedback during tool execution
-- **Enhanced Logging**: Better structured logs with detailed reasoning activity tracking
-- **New Dependencies**: Added `duck-duck-scrape` for web search capabilities
+### Common Issues
 
-### Tool System Updates
-- **16 Total Tools**: Updated tool count including docker_exec
-- **Dynamic Tool Availability**: Tools shown based on server permissions and settings
-- **Progress Callbacks**: Live updates during long-running operations
-- **Multi-Round Execution**: Sequential tool calls with shared message editing for cleaner UX
+#### Bot Won't Start
+```bash
+# Check Discord token
+echo $DISCORD_USER_TOKEN
 
-## Development
+# Validate configuration
+node -e "console.log(process.env.DISCORD_USER_TOKEN ? 'Token set' : 'Token missing')"
+```
+
+#### API Errors
+- **Google AI**: Verify `GOOGLE_API_KEY` is valid and has quota
+- **NVIDIA NIM**: Check `NVIDIA_NIM_API_KEY` and service availability
+- **Rate Limits**: Wait for cooldown or reduce usage frequency
+
+#### Media Processing Issues
+```bash
+# Check FFmpeg installation
+ffmpeg -version
+
+# Test Python dependencies
+python3 -c "import torch; import faster_whisper; print('Dependencies OK')"
+```
+
+#### Memory Issues
+- Use `;health` command to check system status
+- Monitor memory usage in logs
+- Restart bot if memory usage exceeds 1GB
+
+### Log Analysis
+
+#### Viewing Logs
+```bash
+# Recent bot activity
+tail -f logs/bot.log
+
+# Error messages
+tail -f logs/errors.log
+
+# Reasoning activity
+tail -f logs/reasoning.log
+
+# System health
+tail -f logs/health.log
+```
+
+#### In-Di scord Commands
+- `;reasoning-log` - View recent AI reasoning activity
+- `;health` - Check system health and metrics
+- `;debug` - Show debug information and status
+
+### Performance Optimization
+
+#### Memory Management
+- LRU caches automatically clean old entries
+- Periodic garbage collection every 5 minutes
+- Memory warnings at 500MB usage, forced GC at 1GB
+
+#### API Usage
+- Automatic failover between providers
+- Request queuing and rate limiting
+- Stealth features to avoid detection
+
+## 🛠️ Development
 
 ### Project Structure
 ```
 maxwell-selfbot/
-├── services/                 # Core services (Bot, DataManager, TranscriptionService)
-├── tools/                    # Tool modules and executor
+├── services/                 # Core services
+│   ├── Bot.js               # Main bot orchestrator
+│   ├── DataManager.js       # Data persistence
+│   └── TranscriptionService.py # Audio transcription
+├── tools/                    # Tool system (16 tools)
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
-│   ├── investigation/       # User analysis tools
 │   ├── relationship/        # Friend management tools
-│   └── system/              # System and calculation tools
-│       ├── dockerExec.js    # Docker shell execution tool
-│       ├── reasonComplex.js # Complex reasoning tool
+│   ├── system/              # System and calculation tools
+│   ├── ToolExecutor.js     # Tool execution engine
+│   └── index.js            # Tool registry
 ├── utils/                    # Utilities and helpers
+│   ├── logger.js           # Structured logging
+│   ├── LRUCache.js         # Memory management
+│   ├── adminManager.js     # Admin management
+│   └── errorHandler.js     # Error handling
 ├── config/                   # Configuration management
-├── logs/                     # Log files (created automatically)
-├── data-selfbot/            # Persistent data (created automatically)
-├── cache/                    # Media cache (created automatically)
 ├── handlers.js              # Discord event handlers
 ├── ai.js                    # AI processing logic
 ├── providers.js             # AI provider implementations
 ├── prompts.js               # Prompt construction
 ├── media.js                 # Multimodal processing
-├── queues.js                # Queue management system
+├── queues.js                # Queue management
 ├── health.js                # Health monitoring
-├── security.js              # Security utilities
-├── subagentCoordinator.js   # Subagent management
-├── apiResourceManager.js    # API quota management
-├── transcription_service.py # Python audio transcription
 ├── bot.js                   # Main entry point
-├── globalPrompt.txt         # Global AI prompt
-├── .env.example             # Environment variables template
-├── .eslintrc.cjs            # ESLint configuration
-├── .gitignore               # Git ignore rules
-├── API_CAPABILITIES.md      # API capabilities documentation
-├── DISCORD_API_CAPABILITIES.md # Discord API capabilities
+├── .env.example             # Environment template
 └── README.md                # This file
 ```
 
-### Adding Tools
-1. Create tool file in appropriate `tools/` subdirectory
-2. Export tool definition with name, description, parameters
-3. Add execution function to `ToolExecutor.js`
-4. Register tool in `tools/index.js`
-5. Update documentation
-6. Consider consolidating similar functionality into existing tools
+### Adding New Tools
+
+1. **Create Tool File**
+```javascript
+// tools/category/newTool.js
+export const newTool = {
+  name: 'new_tool',
+  description: 'Description of what this tool does',
+  parameters: {
+    type: 'object',
+    properties: {
+      param1: { type: 'string', description: 'Parameter description' }
+    },
+    required: ['param1']
+  }
+};
+
+export async function executeNewTool(args, client, message) {
+  // Tool implementation
+  return 'Tool result';
+}
+```
+
+2. **Register Tool**
+```javascript
+// tools/index.js
+import { newTool } from './category/newTool.js';
+
+export const tools = [
+  // ... existing tools
+  newTool
+];
+```
+
+3. **Add Execution Logic**
+```javascript
+// tools/ToolExecutor.js
+case 'new_tool':
+  return await executeNewTool(args, client, message);
+```
 
 ### Code Quality
-- Run `npm run lint` for ESLint checking
-- Follow existing patterns and conventions
-- Add proper error handling
-- Test thoroughly before deployment
 
-## License
+#### Linting
+```bash
+# Run ESLint
+npm run lint
+
+# Fix auto-fixable issues
+npm run lint -- --fix
+```
+
+#### Testing
+```bash
+# Run tests
+npm test
+
+# Run specific test
+npm run test:unit
+```
+
+#### Best Practices
+- Follow existing patterns and conventions
+- Add comprehensive error handling
+- Include detailed logging for debugging
+- Test thoroughly before deployment
+- Update documentation for new features
+
+### API Integration
+
+#### Adding New AI Providers
+1. Extend `AIProvider` class in `providers.js`
+2. Implement `initialize()` and `generateContent()` methods
+3. Register in `ProviderManager`
+4. Update configuration in `config/config.js`
+
+#### Enhanced Metadata Extraction
+The bot extracts comprehensive metadata from AI responses:
+- Token usage breakdown
+- Safety ratings and finish reasons
+- Response timing and provider information
+- Raw response data for analysis
+
+See `API_CAPABILITIES.md` for detailed information about available API features.
+
+## 📄 License
 
 This project is provided as-is without warranty. Use at your own risk.
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome. Please ensure code quality and follow the existing architecture patterns.
+Contributions are welcome! Please ensure:
+- Code follows existing patterns and conventions
+- All tests pass
+- Documentation is updated for new features
+- Security considerations are addressed
 
-## Support
+## 📞 Support
 
-For issues or questions, please check the logs and configuration first. Ensure all environment variables are set correctly.
+For issues or questions:
+1. Check logs in the `logs/` directory
+2. Verify all environment variables are set correctly
+3. Use `;health` and `;debug` commands for diagnostics
+4. Review this README for configuration details
+
+---
+
+**Maxwell Selfbot** - Advanced AI-powered Discord automation with comprehensive tool integration and multimodal support.
