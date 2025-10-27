@@ -1,0 +1,27 @@
+{
+  "name": "discord-selfbot",
+  "version": "1.0.0",
+  "description": "Basic Maxwell Selfbot",
+  "type": "module",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "lint": "eslint *.js **/*.js",
+    "test": "node tests/run-tests.js",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:verbose": "VERBOSE_TESTS=true node tests/run-tests.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.6.0",
+    "discord.js-selfbot-v13": "^3.7.1",
+    "dotenv": "^17.2.3",
+    "duck-duck-scrape": "^2.2.5",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "undici": "^5.28.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

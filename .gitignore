@@ -120,6 +120,8 @@ Desktop.ini
 # Data directories (should not be committed)
 data-selfbot/
 *.json
+!package.json
+!package-lock.json
 
 # Test files
 test-*.js
