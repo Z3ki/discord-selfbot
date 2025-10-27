@@ -29,8 +29,35 @@ class AdminManager {
       if (existsSync(ADMIN_FILE)) {
         const data = readFileSync(ADMIN_FILE, 'utf8');
         const adminList = JSON.parse(data);
-        this.admins = new Set(adminList);
+        
+        // Filter and validate admin IDs
+        const validAdmins = adminList.filter(adminId => {
+          if (typeof adminId !== 'string') return false;
+          
+          // Handle comma-separated IDs (legacy format)
+          if (adminId.includes(',')) {
+            const ids = adminId.split(',').filter(id => id.trim());
+            ids.forEach(id => {
+              if (validateDiscordId(id.trim())) {
+                this.admins.add(id.trim());
+              }
+            });
+            return false; // Don't add the original comma-separated string
+          }
+          
+          return validateDiscordId(adminId);
+        });
+        
+        // Add valid individual admin IDs
+        validAdmins.forEach(adminId => this.admins.add(adminId));
+        
         logger.info(`Loaded ${this.admins.size} admin(s) from file`);
+        
+        // Save cleaned admin list if we filtered anything
+        if (this.admins.size !== adminList.length || adminList.some(id => typeof id !== 'string' || id.includes(','))) {
+          this.saveAdmins();
+          logger.info('Cleaned and saved admin list');
+        }
       } else {
         // Create empty admin file if it doesn't exist
         this.saveAdmins();
