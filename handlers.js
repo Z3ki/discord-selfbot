@@ -35,7 +35,7 @@ Commands
 \`;restart\` - Restart
 \`;refresh <type>\` - Clear data (memories/context/dm/all)
 \`;info\` - Bot info
-\`;servers\` - Server list
+
 \`;blacklist\` - Manage blacklisted servers
 \`;shell\` - Toggle Docker shell access (default: off)
 \`;prompt <text>\` - Set server prompt
@@ -612,17 +612,7 @@ Commands
         break;
       }
 
-       case 'servers': {
-           try {
-             const guilds = client.guilds.cache;
-             const serverList = guilds.map(g => `${g.name} (${g.id}) - ${g.memberCount} members`).join('\n');
-             const response = guilds.size > 0 ? `Bot is in ${guilds.size} servers:\n${serverList}` : 'Bot is not in any servers';
-             await message.reply(response);
-           } catch (error) {
-             await message.reply('Failed to get server list: ' + error.message);
-           }
-           break;
-         }
+       
 
        case 'blacklist': {
          const subcommand = args[0]?.toLowerCase();

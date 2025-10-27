@@ -13,7 +13,7 @@ import { executeReactionManager } from './discord/reactionManager.js';
 import { executeInviteManager } from './discord/inviteManager.js';
 import { executeServerUtils } from './discord/serverUtils.js';
 import { executeMessageManager } from './discord/messageManager.js';
-import { executeGetServerList } from './discord/getServerList.js';
+
 import { executeLeaveServer } from './discord/leaveServer.js';
 
 import { executeReasonComplex } from './system/reasonComplex.js';
@@ -76,8 +76,7 @@ export class ToolExecutor {
           return await executeServerUtils(args, client, message);
         case 'message_manager':
           return await executeMessageManager(args, client);
-        case 'get_server_list':
-          return await executeGetServerList(args, client);
+        
         case 'leave_server':
           return await executeLeaveServer(args, client);
         

@@ -65,7 +65,7 @@ export class ToolRegistry {
     // Group tools by category
     const categories = {
       'COMMUNICATION': ['send_dm', 'update_context'],
-      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'get_server_list', 'leave_server'],
+      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'leave_server'],
       
       'SYSTEM': ['reason_complex'],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
