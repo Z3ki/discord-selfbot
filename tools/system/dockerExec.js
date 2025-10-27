@@ -170,7 +170,14 @@ export async function executeDockerExec(args, progressCallback = null) {
     
     // Show stdout if there is any
     if (stdout.trim()) {
-      formattedOutput += stdout;
+      // For very long outputs, show the last parts (most recent)
+      if (stdout.length > 1500) {
+        const tailLength = 1400; // Leave room for error messages
+        formattedOutput += '... (showing last ' + tailLength + ' characters of output)\n';
+        formattedOutput += stdout.substring(-tailLength);
+      } else {
+        formattedOutput += stdout;
+      }
     }
     
     // Show stderr if there is any

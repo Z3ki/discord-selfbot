@@ -292,7 +292,9 @@ export class ToolExecutor {
 
           // Ensure content doesn't exceed Discord limit
           if (content.length > 1990) {
-            content = content.substring(0, 1990) + '`\n... (truncated)';
+            // Show the END of the output (most recent) instead of beginning
+            const truncatedLength = 1990 - '`\n... (truncated)'.length;
+            content = '... (showing last ' + truncatedLength + ' chars)\n' + content.substring(-truncatedLength) + '`\n... (truncated)';
           }
 
           try {
