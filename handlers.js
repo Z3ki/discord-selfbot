@@ -282,9 +282,13 @@ Commands
           // Clear both bot's memory and handlers reference
           bot.channelMemories.clear();
           channelMemories.clear();
+          dmContexts.clear();
+          dmOrigins.clear();
 
           // Save empty state to disk
           await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+          await saveMapToJSON(dmContexts, 'data-selfbot/dmContexts.json');
+          await saveMapToJSON(dmOrigins, 'data-selfbot/dmOrigins.json');
 
           // Force reload to ensure consistency
           await bot.loadData();
@@ -292,7 +296,9 @@ Commands
           // Verify memory was cleared
           const verifyCleared = () => {
             const memory = channelMemories.get(message.channel?.id || message.channelId) || [];
-            return memory.length === 0;
+            const dmContext = dmContexts.get(message.channel?.id || message.channelId) || [];
+            const dmOrigin = dmOrigins.get(message.channel?.id || message.channelId);
+            return memory.length === 0 && dmContext.length === 0 && !dmOrigin;
           };
 
           if (!verifyCleared()) {
@@ -300,7 +306,7 @@ Commands
             return;
           }
 
-          clearedItems.push('conversation memories');
+          clearedItems.push('conversation memories, DM contexts, and DM origins');
         }
 
         if (refreshType === 'context' || refreshType === 'all') {

@@ -290,15 +290,15 @@ export async function generateResponse(message, providerManager, channelMemories
         contextText += `\n\nCURRENT_USER_CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
       }
 
-      if (originalChannelId) {
+      if (originalChannelId && dmMetadata && dmMetadata.includeContext) {
         const channelMemory = channelMemories.get(originalChannelId) || [];
-        const recentChannelMemory = channelMemory.slice(-10); // Increased to 10 messages for 32k token context
+        const recentChannelMemory = channelMemory.slice(-3); // Reduced to prevent confusion
         const channelMemoryText = recentChannelMemory.map(m => {
-          // Truncate individual messages (32k tokens ~ 128k chars)
-          const msg = `[CHANNEL_USER: ${m.user}]: ${m.message}`;
-          return msg.length > 5000 ? msg.substring(0, 5000) + '...' : msg;
+          // Truncate individual messages and add clear separation
+          const msg = `[ORIGINAL_CHANNEL_USER: ${m.user}]: ${m.message}`;
+          return msg.length > 2000 ? msg.substring(0, 2000) + '...' : msg;
         }).join('\n');
-        finalMemoryText = `=== ORIGINAL CHANNEL CONTEXT ===\n${channelMemoryText}\n\n=== DM CONVERSATION ===\n${memoryText}${contextText}`;
+        finalMemoryText = `=== DM CONVERSATION ===\n${memoryText}${contextText}\n\n=== NOTE: Previous conversation from server ===\n${channelMemoryText}\n=== END SERVER CONTEXT ===`;
       } else {
         finalMemoryText = `=== DM CONVERSATION ===\n${memoryText}${contextText}`;
       }
@@ -514,9 +514,10 @@ export async function generateResponse(message, providerManager, channelMemories
     const botDisplayName = (client && client.user) ? (client.user.displayName || client.user.username) : 'Bot';
     botDisplayName; // Mark as used
     
-    // Get server-specific prompt if available
+    // Get server-specific prompt if available (NEVER for DMs)
     let serverPrompt = null;
     let safeMode = false;
+    
     logger.debug('Bot instance check', { 
       bot: !!bot,
       botType: typeof bot,
@@ -525,11 +526,14 @@ export async function generateResponse(message, providerManager, channelMemories
       hasServerPrompts: bot?.serverPrompts?.size > 0,
       serverPromptsSize: bot?.serverPrompts?.size || 0,
       guildId: message.guild?.id,
+      isDM: isDM,
       botString: String(bot),
       serverPromptsKeys: bot?.serverPrompts ? Array.from(bot.serverPrompts.keys()) : [],
       hasThisServerPrompt: bot?.serverPrompts?.has(message.guild?.id)
     });
-    if (bot && bot.serverPrompts && message.guild?.id) {
+    
+    // CRITICAL: Never use server prompts in DMs
+    if (bot && bot.serverPrompts && message.guild?.id && !isDM) {
       serverPrompt = bot.serverPrompts.get(message.guild.id) || null;
       logger.debug('Server prompt lookup', { 
         guildId: message.guild.id,
@@ -538,14 +542,17 @@ export async function generateResponse(message, providerManager, channelMemories
         serverPromptKeys: Array.from(bot.serverPrompts.keys()),
         foundServerPrompt: !!serverPrompt,
         serverPromptLength: serverPrompt ? serverPrompt.length : 0,
-        serverPromptPreview: serverPrompt ? serverPrompt.substring(0, 100) : null
+        serverPromptPreview: serverPrompt ? serverPrompt.substring(0, 100) : null,
+        isDM: isDM
       });
     } else {
-      logger.debug('Server prompt lookup failed', { 
+      logger.debug('Server prompt lookup skipped', { 
         hasBot: !!bot,
         hasServerPrompts: bot?.serverPrompts?.size > 0,
         hasGuildId: !!message.guild?.id,
-        guildId: message.guild?.id
+        guildId: message.guild?.id,
+        isDM: isDM,
+        reason: isDM ? 'DM - no server prompts' : (!message.guild?.id ? 'no guildId' : 'no bot/serverPrompts')
       });
     }
 
