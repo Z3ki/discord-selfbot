@@ -133,3 +133,6 @@ ecosystem.config.js
 
 # Configuration files
 globalPrompt.txt
+
+# Cache directories
+cache/
