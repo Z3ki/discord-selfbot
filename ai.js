@@ -214,7 +214,7 @@ export async function generateResponse(message, providerManager, channelMemories
       for (const msg of targetMessages.slice().reverse()) { // Start from most recent
         // Add clearer user identification with bot message distinction
         const isBotMessage = msg.user.includes && msg.user.includes(client.user.id);
-        const prefix = isBotMessage ? '[BOT_RESPONSE' : '[USER_MESSAGE';
+        const prefix = isBotMessage ? '[MY_PREVIOUS_RESPONSE' : '[USER_MESSAGE';
         const msgText = `${prefix}: ${msg.user}]: ${msg.message}`;
         const newText = msgText + '\n---\n' + memoryText;
         if (newText.length <= maxLength) {
@@ -226,39 +226,17 @@ export async function generateResponse(message, providerManager, channelMemories
       return memoryText.trim();
     }
 
-    // Filter and prepare target messages - prioritize current user and prevent self-confusion
+    // Filter and prepare target messages - include all messages for context with clear identity labeling
     let targetMessages = memory.slice(-50).filter(m => m.user !== 'SYSTEM');
 
-    // Always filter out bot messages to prevent self-confusion, except when replying to bot
-    if (!message.isReplyToBot) {
-      // Remove all bot messages to prevent AI from talking to itself
-      targetMessages = targetMessages.filter(m => !m.user.includes(client.user.id));
-      
-      logger.debug('Filtered out bot messages to prevent self-confusion', {
-        channelId: message.channel?.id || message.channelId,
-        totalMessages: targetMessages.length,
-        originalCount: memory.slice(-50).filter(m => m.user !== 'SYSTEM').length,
-        filteredBotMessages: memory.slice(-50).filter(m => m.user !== 'SYSTEM' && m.user.includes(client.user.id)).length
-      });
-    } else {
-      // If replying to bot, keep only the most recent bot message for context
-      const recentBotMessages = targetMessages.filter(m => m.user.includes(client.user.id));
-      const mostRecentBotMessage = recentBotMessages.length > 0 ? recentBotMessages[recentBotMessages.length - 1] : null;
-
-      // Keep only non-bot messages plus the most recent bot message
-      targetMessages = targetMessages.filter(m => !m.user.includes(client.user.id));
-      if (mostRecentBotMessage) {
-        targetMessages.push(mostRecentBotMessage);
-        // Sort by timestamp to maintain chronological order
-        targetMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      }
-
-      logger.debug('Kept most recent bot message in context for reply - SELF CONTEXT', {
-        channelId: message.channel?.id || message.channelId,
-        totalMessages: targetMessages.length,
-        keptBotMessage: !!mostRecentBotMessage
-      });
-    }
+    // No filtering needed - bot messages are now clearly labeled as MY_PREVIOUS_RESPONSE
+    // This prevents identity confusion while maintaining full conversation context
+    logger.debug('Using full conversation context with identity-reframed messages', {
+      channelId: message.channel?.id || message.channelId,
+      totalMessages: targetMessages.length,
+      botMessagesCount: targetMessages.filter(m => m.user.includes(client.user.id)).length,
+      userMessagesCount: targetMessages.filter(m => !m.user.includes(client.user.id)).length
+    });
 
     // Build memory text efficiently
     const memoryText = buildOptimizedMemoryText(targetMessages);
