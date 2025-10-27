@@ -44,8 +44,7 @@ export const messageManagerTool = {
       autoArchiveDuration: { 
         type: 'number', 
         description: 'Auto archive duration in minutes for create_thread (60, 1440, 4320, 10080)' 
-      }
-    },
+      },
       reason: {
         type: 'string',
         description: 'Reason for performing this action'
