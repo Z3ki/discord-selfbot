@@ -33,6 +33,10 @@ export class Bot {
     this.reconnectDelay = 5000; // 5 seconds
     this.heartbeatInterval = null;
     this.lastHeartbeat = Date.now();
+    
+    // Data persistence timing
+    this.lastSaveTime = Date.now();
+    this.lastMemoryCleanupTime = Date.now();
 
     // Debug variables
     this.globalPrompt = [''];
@@ -399,20 +403,24 @@ export class Bot {
         return;
       }
       
-       // Memory cleanup and monitoring (every 5 minutes)
-       if (now % (5 * 60 * 1000) < 60000) { // Roughly every 5 minutes
-         await this.performMemoryCleanup();
-       }
+// Memory cleanup and monitoring (every 5 minutes)
+        const timeSinceLastCleanup = now - this.lastMemoryCleanupTime;
+        if (timeSinceLastCleanup >= 5 * 60 * 1000) { // Every 5 minutes
+          await this.performMemoryCleanup();
+          this.lastMemoryCleanupTime = now;
+        }
 
-       // Periodic data saving (every 10 minutes)
-       if (now % (10 * 60 * 1000) < 60000) { // Roughly every 10 minutes
-         try {
-           await this.saveData();
-           logger.info('Periodic data save completed');
-         } catch (error) {
-           logger.error('Failed to save data periodically', { error: error.message });
-         }
-       }
+        // Periodic data saving (every 10 minutes)
+        const timeSinceLastSave = now - this.lastSaveTime;
+        if (timeSinceLastSave >= 10 * 60 * 1000) { // Every 10 minutes
+          try {
+            await this.saveData();
+            this.lastSaveTime = now;
+            logger.info('Periodic data save completed');
+          } catch (error) {
+            logger.error('Failed to save data periodically', { error: error.message });
+          }
+        }
       
       // Keep presence invisible for stealth - no status updates
       // Only update if we need to appear online briefly

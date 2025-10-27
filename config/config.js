@@ -41,9 +41,9 @@ export const CONFIG = {
   },
   limits: {
     maxMemoryMessages: parseInt(process.env.MAX_MEMORY_MESSAGES) || 30, // Reduced from 50 for better memory management
-    maxMemoryChannels: parseInt(process.env.MAX_MEMORY_CHANNELS) || 50, // LRU cache limit for channel memories
-    maxDMContexts: parseInt(process.env.MAX_DM_CONTEXTS) || 100, // LRU cache limit for DM contexts
-    maxDMOrigins: parseInt(process.env.MAX_DM_ORIGINS) || 100, // LRU cache limit for DM origins
+    maxMemoryChannels: parseInt(process.env.MAX_MEMORY_CHANNELS) || 200, // Increased LRU cache limit for channel memories
+    maxDMContexts: parseInt(process.env.MAX_DM_CONTEXTS) || 500, // Increased LRU cache limit for DM contexts
+    maxDMOrigins: parseInt(process.env.MAX_DM_ORIGINS) || 500, // Increased LRU cache limit for DM origins
     maxShellHistory: parseInt(process.env.MAX_SHELL_HISTORY) || 20,
     apiTimeout: parseInt(process.env.API_TIMEOUT) || 30000,
     maxImages: parseInt(process.env.MAX_IMAGES) || 15,

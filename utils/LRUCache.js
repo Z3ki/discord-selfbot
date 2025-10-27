@@ -44,8 +44,8 @@ export class LRUCache {
   }
 
   proactiveCleanup() {
-    // Remove 20% of oldest entries when approaching limit
-    const entriesToRemove = Math.floor(this.size() * 0.2);
+    // Remove 10% of oldest entries when approaching limit (less aggressive)
+    const entriesToRemove = Math.floor(this.size() * 0.1);
     for (let i = 0; i < entriesToRemove; i++) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) this.cache.delete(firstKey);

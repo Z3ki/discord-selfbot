@@ -19,6 +19,22 @@ export class DataManager {
     return path.join(this.dataDir, filename);
   }
 
+  async atomicWriteFile(filePath, data) {
+    const tempPath = `${filePath}.tmp.${Date.now()}.${Math.random()}`;
+    try {
+      await fs.promises.writeFile(tempPath, data);
+      await fs.promises.rename(tempPath, filePath);
+    } catch (error) {
+      // Clean up temp file if something went wrong
+      try {
+        await fs.promises.unlink(tempPath);
+      } catch (unlinkError) {
+        // Ignore unlink errors
+      }
+      throw error;
+    }
+  }
+
   async loadData(filename, defaultValue = new Map()) {
     try {
       const filePath = this.getFilePath(filename);
@@ -82,7 +98,7 @@ export class DataManager {
         Object.assign(serialized, data);
       }
 
-      await fs.promises.writeFile(filePath, JSON.stringify(serialized, null, 2));
+      await this.atomicWriteFile(filePath, JSON.stringify(serialized, null, 2));
       logger.debug('Saved data to file', { filename, entries: Object.keys(serialized).length });
     } catch (error) {
       logger.error('Error saving data', { filename, error: error.message });
