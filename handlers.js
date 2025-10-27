@@ -26,7 +26,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
     switch (command) {
       case 'help': {
         const helpText = `**Commands**
-Commands
+
 \`;help\` - Show commands
 \`;admin <action> [userId]\` - Manage administrators (add/remove/toggle/list/clear)
 \`;debug\` - Debug info
