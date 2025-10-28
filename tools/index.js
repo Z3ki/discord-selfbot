@@ -5,7 +5,7 @@ import { changePresenceTool } from './discord/changePresence.js';
 
 import { reactionManagerTool } from './discord/reactionManager.js';
 import { inviteManagerTool } from './discord/inviteManager.js';
-import { serverUtilsTool } from './discord/serverUtils.js';
+
 import { messageManagerTool } from './discord/messageManager.js';
 
 import { leaveServerTool } from './discord/leaveServer.js';
@@ -28,7 +28,7 @@ export const tools = [
   changePresenceTool,
   reactionManagerTool,
   inviteManagerTool,
-  serverUtilsTool,
+
   messageManagerTool,
 
   leaveServerTool,
@@ -64,7 +64,7 @@ export class ToolRegistry {
     // Group tools by category
     const categories = {
       'COMMUNICATION': ['send_dm', 'update_context'],
-      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'server_utils', 'message_manager', 'leave_server'],
+       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'message_manager', 'leave_server'],
 
       'SYSTEM': [],
       'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']

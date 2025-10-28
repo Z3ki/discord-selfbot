@@ -196,9 +196,7 @@ TOOL: docker_exec command="ping example.com" timeout="10"
 #### Discord Management Tools
 - **`reaction_manager`**: Add, remove, and get reactions
 - **`message_manager`**: Pin/unpin messages, thread management
-- **`server_utils`**: Server info, channel info, member lists
 - **`invite_manager`**: Create/join invites, get server invites
-- **`get_server_list`**: List all servers bot is in
 - **`leave_server`**: Leave specified servers
 - **`change_presence`**: Change bot presence status
 
@@ -290,7 +288,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 - Stealth features for API requests
 
 #### Tool Executor (`tools/ToolExecutor.js`)
-- 16 consolidated tools across 4 categories
+- 14 consolidated tools across 4 categories
 - Multi-round execution with shared message editing
 - Live progress updates for long-running operations
 - Dynamic tool availability based on permissions
@@ -439,7 +437,7 @@ maxwell-selfbot/
 │   ├── Bot.js               # Main bot orchestrator
 │   ├── DataManager.js       # Data persistence
 │   └── TranscriptionService.py # Audio transcription
-├── tools/                    # Tool system (16 tools)
+├── tools/                    # Tool system (14 tools)
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
 │   ├── relationship/        # Friend management tools

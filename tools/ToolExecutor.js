@@ -11,7 +11,7 @@ import { executeChangePresence } from './discord/changePresence.js';
 
 import { executeReactionManager } from './discord/reactionManager.js';
 import { executeInviteManager } from './discord/inviteManager.js';
-import { executeServerUtils } from './discord/serverUtils.js';
+
 import { executeMessageManager } from './discord/messageManager.js';
 
 import { executeLeaveServer } from './discord/leaveServer.js';
@@ -72,8 +72,7 @@ export class ToolExecutor {
           return await executeReactionManager(args, client, message);
         case 'invite_manager':
           return await executeInviteManager(args, client);
-        case 'server_utils':
-          return await executeServerUtils(args, client, message);
+
         case 'message_manager':
           return await executeMessageManager(args, client);
 

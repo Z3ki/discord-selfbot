@@ -190,7 +190,24 @@ export async function generateResponseWithProvider(message, providerManager, pro
 }
 
 export async function generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, bot = null) {
-  const memory = channelMemories.get(message.channel?.id || message.channelId) || [];
+  // Check if this is a DM reply without bot mention - if so, use empty memory
+  const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+  const isReply = message.reference && message.reference.messageId;
+  const isMentioned = message.mentions.has(client.user.id);
+
+  let memory;
+  if (isDM && isReply && !isMentioned) {
+    // DM reply without mention - use empty memory to prevent context leakage
+    memory = [];
+    logger.debug('Using empty memory for DM reply without mention', {
+      channelId: message.channel?.id || message.channelId,
+      isReply: true,
+      isMentioned: false
+    });
+  } else {
+    // Normal case - use full conversation memory
+    memory = channelMemories.get(message.channel?.id || message.channelId) || [];
+  }
 
   // Self-response loop prevention disabled for faster responses
 
@@ -261,7 +278,6 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
     // If DM, include context from original channel and DM metadata (with length limits)
-    const isDM = message.channel?.type === 'DM' || message.channel?.type === 1; // Discord.js v13 uses numbers for channel types
     let finalMemoryText = memoryText;
 
     if (isDM) {

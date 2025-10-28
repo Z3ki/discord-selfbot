@@ -3,10 +3,10 @@
 ## Overview
 This document outlines Discord API features and data that we're not currently utilizing in the Maxwell selfbot.
 
-## Currently Implemented Discord Tools (14 tools)
+## Currently Implemented Discord Tools (12 tools)
 - send_dm, update_context
 - investigate_user, change_presence, reaction_manager, message_manager
-- server_utils, invite_manager, get_server_list, leave_server
+- invite_manager, leave_server
 - get_user_profile_complete, reason_complex
 - check_friend_requests, handle_friend_request
 
