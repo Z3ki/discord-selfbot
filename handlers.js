@@ -836,8 +836,9 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
         logger.debug('Fetching replied message', { repliedMessageId: message.reference.messageId, channelId: message.channel?.id || message.channelId });
         const repliedMessage = await message.channel?.messages?.fetch(message.reference.messageId);
 
-        // Process replies to users and other bots, but skip replies to self to prevent AI confusion
-        if (!isReplyToBot) {
+        // Skip all reply context - bot should not see what user is replying to
+        // Process replies only if bot is mentioned/pinged, otherwise ignore reply context
+        if (!isReplyToBot && message.mentions.has(client.user.id)) {
           logger.debug('Fetched replied message', { repliedAuthor: repliedMessage.author.username, repliedContentLength: repliedMessage.content.length, repliedAttachments: repliedMessage.attachments.size, repliedEmbeds: repliedMessage.embeds?.length || 0, isBot: repliedMessage.author.bot, hasRepliedEmbeds: !!(repliedMessage.embeds?.length > 0) });
 
           // Process replied message embeds

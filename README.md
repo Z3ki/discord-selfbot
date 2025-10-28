@@ -165,7 +165,6 @@ LOG_LEVEL=info  # debug, info, warn, error
 
 The bot responds to:
 - **Direct mentions**: `@bot your message`
-- **Replies**: Replying to bot messages
 - **Direct messages**: Any DM sent to the bot
 
 ### Media Processing
