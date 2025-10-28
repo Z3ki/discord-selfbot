@@ -5,23 +5,13 @@ import { logger } from '../utils/logger.js';
 
 // Import tool execution functions
 import { executeSendDM } from './communication/sendDM.js';
-import { executeUpdateContext } from './communication/updateContext.js';
 
 import { executeChangePresence } from './discord/changePresence.js';
 
 import { executeReactionManager } from './discord/reactionManager.js';
-import { executeInviteManager } from './discord/inviteManager.js';
-
-import { executeMessageManager } from './discord/messageManager.js';
+import { executeJoinServer } from './discord/joinServer.js';
 
 import { executeLeaveServer } from './discord/leaveServer.js';
-
-
-
-
-import { executeHandleFriendRequest } from './relationship/handleFriendRequest.js';
-import { executeCheckFriendRequests } from './relationship/checkFriendRequests.js';
-import { executeSendFriendRequest } from './relationship/sendFriendRequest.js';
 
 
 
@@ -63,37 +53,24 @@ export class ToolExecutor {
       switch (funcName) {
         case 'send_dm':
           return await executeSendDM(args, client, message, dmOrigins);
-        case 'update_context':
-          return await executeUpdateContext(args, client);
 
         case 'change_presence':
           return await executeChangePresence(args, client);
         case 'reaction_manager':
           return await executeReactionManager(args, client, message);
-        case 'invite_manager':
-          return await executeInviteManager(args, client);
-
-        case 'message_manager':
-          return await executeMessageManager(args, client);
+        case 'join_server':
+          return await executeJoinServer(args, client);
 
         case 'leave_server':
           return await executeLeaveServer(args, client);
 
-         
-case 'docker_exec': {
+        case 'docker_exec': {
             // For single docker_exec calls, we still need to use the special handling
             // Create a mock toolCall object for consistency
             const mockToolCall = { funcName: 'docker_exec', args };
             const executionResult = await this.executeDockerExecWithUpdates(mockToolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
             return executionResult.result;
           }
-
-        case 'handle_friend_request':
-          return await executeHandleFriendRequest(args, client);
-        case 'check_friend_requests':
-          return await executeCheckFriendRequests(args, client);
-        case 'send_friend_request':
-          return await executeSendFriendRequest(args, client);
 
 
 

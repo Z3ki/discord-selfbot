@@ -1,22 +1,15 @@
 import { sendDMTool } from './communication/sendDM.js';
-import { updateContextTool } from './communication/updateContext.js';
 
 import { changePresenceTool } from './discord/changePresence.js';
 
 import { reactionManagerTool } from './discord/reactionManager.js';
-import { inviteManagerTool } from './discord/inviteManager.js';
 
-import { messageManagerTool } from './discord/messageManager.js';
+import { joinServerTool } from './discord/joinServer.js';
 
 import { leaveServerTool } from './discord/leaveServer.js';
 
- 
+
 import { dockerExecTool } from './system/dockerExec.js';
-
-
-import { handleFriendRequestTool } from './relationship/handleFriendRequest.js';
-import { checkFriendRequestsTool } from './relationship/checkFriendRequests.js';
-import { sendFriendRequestTool } from './relationship/sendFriendRequest.js';
 
 
 
@@ -24,19 +17,11 @@ import { sendFriendRequestTool } from './relationship/sendFriendRequest.js';
 // Combine all tools
 export const tools = [
   sendDMTool,
-  updateContextTool,
   changePresenceTool,
   reactionManagerTool,
-  inviteManagerTool,
-
-  messageManagerTool,
-
+  joinServerTool,
   leaveServerTool,
-   dockerExecTool,
-  handleFriendRequestTool,
-  checkFriendRequestsTool,
-  sendFriendRequestTool,
-
+  dockerExecTool,
 ];
 
 // Tool registry for execution
@@ -63,11 +48,10 @@ export class ToolRegistry {
   getToolsText(serverId, bot) {
     // Group tools by category
     const categories = {
-      'COMMUNICATION': ['send_dm', 'update_context'],
-       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'invite_manager', 'message_manager', 'leave_server'],
-
+      'COMMUNICATION': ['send_dm'],
+      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
       'SYSTEM': [],
-      'RELATIONSHIPS': ['handle_friend_request', 'check_friend_requests', 'send_friend_request']
+      'RELATIONSHIPS': []
     };
 
     // Add docker_exec only if shell access is enabled for this server
