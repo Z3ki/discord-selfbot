@@ -18,19 +18,20 @@ export const wikipediaInfoTool = {
     try {
       const { query } = args;
 
-      // First try direct page summary
+      // First try direct page extracts (full content, not just intro)
       const encodedQuery = encodeURIComponent(query.replace(/\s+/g, '_'));
-      const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`;
+      const extractsUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodedQuery}&exintro=0&explaintext=1&exsectionformat=plain&format=json`;
 
-      let response = await fetch(summaryUrl);
+      let response = await fetch(extractsUrl);
       if (response.ok) {
         const data = await response.json();
-        if (data.extract) {
-          let result = `**${data.title}**\n\n${data.extract}`;
-          if (data.description) {
-            result = `**${data.title}**\n*${data.description}*\n\n${data.extract}`;
-          }
-          return result.substring(0, 2000); // Limit length
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const page = pages[pageId];
+
+        if (page.extract && pageId !== '-1') {
+          let result = `**${page.title}**\n\n${page.extract}`;
+          return result.substring(0, 4000); // Increased limit for more details
         }
       }
 
@@ -41,16 +42,17 @@ export const wikipediaInfoTool = {
         const data = await response.json();
         if (data.query && data.query.search && data.query.search.length > 0) {
           const topResult = data.query.search[0];
-          const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topResult.title)}`;
-          const pageResponse = await fetch(pageUrl);
+          const pageExtractsUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&titles=${encodeURIComponent(topResult.title)}&exintro=0&explaintext=1&exsectionformat=plain&format=json`;
+          const pageResponse = await fetch(pageExtractsUrl);
           if (pageResponse.ok) {
             const pageData = await pageResponse.json();
-            if (pageData.extract) {
-              let result = `**${pageData.title}** (searched for "${query}")\n\n${pageData.extract}`;
-              if (pageData.description) {
-                result = `**${pageData.title}** (searched for "${query}")\n*${pageData.description}*\n\n${pageData.extract}`;
-              }
-              return result.substring(0, 2000);
+            const pages = pageData.query.pages;
+            const pageId = Object.keys(pages)[0];
+            const page = pages[pageId];
+
+            if (page.extract && pageId !== '-1') {
+              let result = `**${page.title}** (searched for "${query}")\n\n${page.extract}`;
+              return result.substring(0, 4000);
             }
           }
           // Fallback to search snippet
