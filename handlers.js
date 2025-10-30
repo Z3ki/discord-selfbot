@@ -960,53 +960,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
       }
     }
 
-    // Add to memory with error handling
-    try {
-      if (!channelMemories.has(message.channel?.id || message.channelId)) {
-        channelMemories.set(message.channel?.id || message.channelId, []);
-      }
-      const memory = channelMemories.get(message.channel?.id || message.channelId);
-      const userMessage = {
-        user: `${message.author.displayName || message.author.username} (${message.author.username}) [${message.author.id}]`,
-        message: message.content + embedInfo + mediaInfo + repliedMediaInfo + transcriptionInfo,
-        timestamp: Date.now()
-      };
-      memory.push(userMessage);
-      if (memory.length > 50) {
-        memory.shift();
-      }
 
-      logger.debug('Added user message to memory', {
-        channelId: message.channel?.id || message.channelId,
-        user: userMessage.user,
-        messageLength: userMessage.message.length,
-        totalMessages: memory.length
-      });
-
-      await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
-
-      // Also add to dmContexts if this is a DM
-      if (isDM) {
-        if (!dmContexts.has(message.channel?.id || message.channelId)) {
-          dmContexts.set(message.channel?.id || message.channelId, []);
-        }
-        const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
-        dmMemory.push(userMessage);
-        if (dmMemory.length > 100) { // dmContexts has higher limit
-          dmMemory.shift();
-        }
-        logger.debug('Added DM message to dmContexts', {
-          dmChannelId: message.channel?.id || message.channelId,
-          totalMessages: dmMemory.length
-        });
-      }
-    } catch (memoryError) {
-      logger.error('Error saving message to memory', {
-        error: memoryError.message,
-        channelId: message.channel.id
-      });
-      // Continue processing even if memory save fails
-    }
 
     // Process message in queue
       try {
@@ -1063,6 +1017,54 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           ignored: response === null
         });
         if (response) {
+            // Add user message to memory now that we're responding
+            try {
+              if (!channelMemories.has(message.channel?.id || message.channelId)) {
+                channelMemories.set(message.channel?.id || message.channelId, []);
+              }
+              const memory = channelMemories.get(message.channel?.id || message.channelId);
+              const userMessage = {
+                user: `${message.author.displayName || message.author.username} (${message.author.username}) [${message.author.id}]`,
+                message: message.content + embedInfo + mediaInfo + repliedMediaInfo + transcriptionInfo,
+                timestamp: Date.now()
+              };
+              memory.push(userMessage);
+              if (memory.length > 50) {
+                memory.shift();
+              }
+
+              logger.debug('Added user message to memory', {
+                channelId: message.channel?.id || message.channelId,
+                user: userMessage.user,
+                messageLength: userMessage.message.length,
+                totalMessages: memory.length
+              });
+
+              await saveMapToJSON(channelMemories, 'data-selfbot/channelMemories.json');
+
+              // Also add to dmContexts if this is a DM
+              if (isDM) {
+                if (!dmContexts.has(message.channel?.id || message.channelId)) {
+                  dmContexts.set(message.channel?.id || message.channelId, []);
+                }
+                const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
+                dmMemory.push(userMessage);
+                if (dmMemory.length > 100) { // dmContexts has higher limit
+                  dmMemory.shift();
+                }
+                logger.debug('Added DM message to dmContexts', {
+                  dmChannelId: message.channel?.id || message.channelId,
+                  totalMessages: dmMemory.length
+                });
+              }
+            } catch (memoryError) {
+              logger.error('Error saving message to memory', {
+                error: memoryError.message,
+                channelId: message.channel.id
+              });
+              // Continue processing even if memory save fails
+            }
+
             logger.debug('Sending follow-up response to Discord', {
               responseLength: response.length,
               channelId: message.channel?.id || message.channelId,
