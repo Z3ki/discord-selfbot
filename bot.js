@@ -6,7 +6,7 @@ import { transcriptionService } from './services/TranscriptionService.js';
 import { logger } from './utils/logger.js';
 
 // Clean old logs on startup
-logger.cleanOldLogs();
+// logger.cleanOldLogs();
 
 // Validate configuration
 validateConfig();
