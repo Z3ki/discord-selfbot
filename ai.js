@@ -209,7 +209,8 @@ export async function generateResponse(message, providerManager, channelMemories
     memory = channelMemories.get(message.channel?.id || message.channelId) || [];
   }
 
-  // Self-response loop prevention disabled for faster responses
+  // Self-response loop prevention: Filter out bot messages from memory by default
+  // Only include bot messages when directly replying to prevent AI confusion
 
     // Optimize memory: limit to last 20 messages and clean old entries
     if (memory.length > 50) {
@@ -229,9 +230,9 @@ export async function generateResponse(message, providerManager, channelMemories
       // Single pass to build optimal memory from most recent
       let memoryText = '';
       for (const msg of targetMessages.slice().reverse()) { // Start from most recent
-        // Add clearer user identification with bot message distinction
+        // Add user identification - bot messages are only included when replying to bot
         const isBotMessage = msg.user.includes && msg.user.includes(client.user.id);
-        const prefix = isBotMessage ? '[MY_PREVIOUS_RESPONSE' : '[USER_MESSAGE';
+        const prefix = isBotMessage ? '[BOT_RESPONSE' : '[USER_MESSAGE';
         const msgText = `${prefix}: ${msg.user}]: ${msg.message}`;
         const newText = msgText + '\n---\n' + memoryText;
         if (newText.length <= maxLength) {
@@ -243,17 +244,27 @@ export async function generateResponse(message, providerManager, channelMemories
       return memoryText.trim();
     }
 
-    // Filter and prepare target messages - include all messages for context with clear identity labeling
+    // Filter and prepare target messages - filter out bot messages by default to prevent self-reference
+    // Only include bot messages when directly replying to a bot message
     let targetMessages = memory.slice(-50).filter(m => m.user !== 'SYSTEM');
 
-    // No filtering needed - bot messages are now clearly labeled as MY_PREVIOUS_RESPONSE
-    // This prevents identity confusion while maintaining full conversation context
-    logger.debug('Using full conversation context with identity-reframed messages', {
-      channelId: message.channel?.id || message.channelId,
-      totalMessages: targetMessages.length,
-      botMessagesCount: targetMessages.filter(m => m.user.includes(client.user.id)).length,
-      userMessagesCount: targetMessages.filter(m => !m.user.includes(client.user.id)).length
-    });
+    if (!message.isReplyToBot) {
+      // Filter out bot messages to prevent AI confusion with its own responses
+      targetMessages = targetMessages.filter(m => !m.user.includes(client.user.id));
+      logger.debug('Filtered out bot messages from memory (not replying to bot)', {
+        channelId: message.channel?.id || message.channelId,
+        totalMessages: targetMessages.length,
+        filteredBotMessages: true
+      });
+    } else {
+      // Include bot messages when directly replying to bot message
+      logger.debug('Including bot messages in memory (replying to bot)', {
+        channelId: message.channel?.id || message.channelId,
+        totalMessages: targetMessages.length,
+        botMessagesCount: targetMessages.filter(m => m.user.includes(client.user.id)).length,
+        userMessagesCount: targetMessages.filter(m => !m.user.includes(client.user.id)).length
+      });
+    }
 
     // Build memory text efficiently
     const memoryText = buildOptimizedMemoryText(targetMessages);

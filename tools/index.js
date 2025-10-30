@@ -9,7 +9,10 @@ import { joinServerTool } from './discord/joinServer.js';
 import { leaveServerTool } from './discord/leaveServer.js';
 
 
+
 import { dockerExecTool } from './system/dockerExec.js';
+
+import { wikipediaInfoTool } from './information/wikipedia.js';
 
 
 
@@ -22,6 +25,7 @@ export const tools = [
   joinServerTool,
   leaveServerTool,
   dockerExecTool,
+  wikipediaInfoTool,
 ];
 
 // Tool registry for execution
@@ -51,6 +55,7 @@ export class ToolRegistry {
       'COMMUNICATION': ['send_dm'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
       'SYSTEM': [],
+      'INFORMATION': ['wikipedia_info'],
       'RELATIONSHIPS': []
     };
 

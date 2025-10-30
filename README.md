@@ -17,10 +17,11 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
-### 🔧 Comprehensive Tool System (16 Tools)
+### 🔧 Comprehensive Tool System (17 Tools)
 - **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
 - **System Tools**: Docker shell execution (optional)
+- **Information Tools**: Wikipedia information lookup
 - **Relationship Tools**: Friend request management and monitoring
 
 ### 🎯 Multimodal Support
@@ -187,7 +188,7 @@ TOOL: docker_exec command="ping example.com" timeout="10"
 
 ## 🛠️ Tool System
 
-### Available Tools (15 Total)
+### Available Tools (16 Total)
 
 #### Communication Tools
 - **`send_dm`**: Send direct messages with context tracking
@@ -202,6 +203,9 @@ TOOL: docker_exec command="ping example.com" timeout="10"
 
 #### System Tools
 - **`docker_exec`**: Execute shell commands in Docker (when enabled)
+
+#### Information Tools
+- **`wikipedia_info`**: Get up-to-date information from Wikipedia for facts, biographies, and current events
 
 #### Relationship Tools
 - **`check_friend_requests`**: Check incoming friend requests (read-only)
@@ -288,7 +292,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 - Stealth features for API requests
 
 #### Tool Executor (`tools/ToolExecutor.js`)
-- 14 consolidated tools across 4 categories
+- 15 consolidated tools across 5 categories
 - Multi-round execution with shared message editing
 - Live progress updates for long-running operations
 - Dynamic tool availability based on permissions
@@ -437,9 +441,10 @@ maxwell-selfbot/
 │   ├── Bot.js               # Main bot orchestrator
 │   ├── DataManager.js       # Data persistence
 │   └── TranscriptionService.py # Audio transcription
-├── tools/                    # Tool system (14 tools)
+├── tools/                    # Tool system (15 tools)
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
+│   ├── information/          # Information lookup tools
 │   ├── relationship/        # Friend management tools
 │   ├── system/              # System and calculation tools
 │   ├── ToolExecutor.js     # Tool execution engine
@@ -548,6 +553,22 @@ The bot extracts comprehensive metadata from AI responses:
 See `API_CAPABILITIES.md` for detailed information about available API features.
 
 ## 🐛 Bug Fixes & Improvements
+
+### New Features
+
+#### Wikipedia Information Tool (2025-10-30)
+**Addition**: New `wikipedia_info` tool for accessing up-to-date information from Wikipedia.
+
+**Features**:
+- Direct article summary retrieval for known topics
+- Automatic search fallback for ambiguous queries
+- Formatted output with descriptions and extracts
+- Useful for checking current facts, biographies, and events
+
+**Usage**: The AI can now automatically query Wikipedia for information like "latest presidents" or "COVID-19 statistics".
+
+**Files Added**:
+- `tools/information/wikipedia.js` - Wikipedia API integration tool
 
 ### Recent Fixes
 
