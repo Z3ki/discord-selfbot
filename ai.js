@@ -735,7 +735,8 @@ export async function generateResponse(message, providerManager, channelMemories
             currentPrompt,
             toolResultsText,
             hasMedia,
-            multimodalContent
+            multimodalContent,
+            safeMode
           );
 
           logger.debug('Built follow-up prompt for multi-round execution', {

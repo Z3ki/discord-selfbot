@@ -218,42 +218,105 @@ async function handleCommand(message, channelMemories, client, providerManager, 
       }
 
         case 'debug': {
-          const channelCount = channelMemories.size();
-         const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
-         const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
+           const channelCount = channelMemories.size();
+          const totalMessages = Array.from(channelMemories.values()).reduce((sum, mem) => sum + mem.length, 0);
+          const truncate = (str, len) => str && str.length > len ? str.substring(0, len) + '...' : str;
 
-         // Helper to safely stringify objects
-         const safeStringify = (obj, len = 400) => {
-           if (obj === null || obj === undefined) return 'None';
-           if (typeof obj === 'string') return truncate(obj, len);
-           try {
-             const str = JSON.stringify(obj);
-             return truncate(str, len);
-           } catch (e) {
-             return truncate(String(obj), len);
-           }
-         };
+          // Helper to safely stringify objects
+          const safeStringify = (obj, len = 400) => {
+            if (obj === null || obj === undefined) return 'None';
+            if (typeof obj === 'string') return truncate(obj, len);
+            try {
+              const str = JSON.stringify(obj);
+              return truncate(str, len);
+            } catch (e) {
+              return truncate(String(obj), len);
+            }
+          };
 
 // Get memory usage
-          const memoryUsage = process.memoryUsage();
-          const memoryInfo = `Memory: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`;
+           const memoryUsage = process.memoryUsage();
+           const memoryInfo = `Memory: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`;
 
-          let debugInfo = `Memory channels: ${channelCount}\nMessages: ${totalMessages}\n${memoryInfo}\nPrompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\n\nLast prompt:\n${safeStringify(lastPrompt[0], 400)}\n\nLast response:\n${safeStringify(lastResponse[0], 400)}`;
-          if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
-            const callsStr = JSON.stringify(lastToolCalls[0]);
-            debugInfo += `\n\nTool calls: ${callsStr.length > 400 ? callsStr.substring(0, 400) + '...' : callsStr}`;
+           // Get current channel memory
+           const currentMemory = channelMemories.get(message.channel?.id || message.channelId) || [];
+           const memoryPreview = currentMemory.slice(-5).map(m => `[${m.user.includes(client.user.id) ? 'BOT' : 'USER'}:${m.user.split(' ')[0]}]: ${truncate(m.message, 100)}`).join('\n');
+
+           // Get server-specific info
+           const serverId = message.guild?.id;
+           const isDM = !serverId;
+           let serverPrompt = null;
+           let safeMode = false;
+           if (bot && bot.serverPrompts && serverId && !isDM) {
+             serverPrompt = bot.serverPrompts.get(serverId) || null;
+           }
+           if (bot && bot.safeModeServers && serverId) {
+             safeMode = bot.safeModeServers.get(serverId) || false;
+           }
+
+           // Get shell access status
+           const shellAccessEnabled = (serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId)) || (!serverId && bot && bot.shellAccessDMs);
+
+           // Build what the AI would see for a sample message
+           const { buildPromptContent } = await import('./prompts.js');
+           const { toolRegistry } = await import('./tools/index.js');
+
+           // Simulate memory text building
+           const memoryText = currentMemory.slice(-25).map(m => {
+             const isBotMessage = m.user.includes(client.user.id);
+             const prefix = isBotMessage ? '[BOT_RESPONSE' : '[USER_MESSAGE';
+             return `${prefix}: ${m.user}]: ${m.message}`;
+           }).join('\n---\n');
+
+           const toolsText = toolRegistry.getToolsText(serverId, bot);
+           const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}`;
+           const currentTime = new Date().toLocaleString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'long' });
+           const mentionInfo = message.isMentioned ? 'YOU ARE BEING MENTIONED/PINGED IN THIS MESSAGE. The user is directly addressing you.' : 'You are not mentioned in this message.';
+           const messageInfo = `=== MESSAGE INFO ===\nCurrent message ID: ${message.id}, Channel ID: ${message.channel?.id || message.channelId} (this is a channel, not a user), Channel Type: ${message.channel?.type || 'unknown'}, Time: ${currentTime} UTC. ${mentionInfo}`;
+           const presenceInfo = 'Bot status: available';
+
+           // Sample message content
+           const sampleMessageContent = 'Hello, can you help me with something?';
+           const samplePrompt = buildPromptContent(globalPrompt[0], memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', sampleMessageContent, false, [], '', '', null, serverPrompt, safeMode, shellAccessEnabled);
+
+           let debugInfo = `**FULL AI CONTEXT DEBUG**\nMemory channels: ${channelCount}\nTotal messages: ${totalMessages}\n${memoryInfo}\nGlobal prompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\nServer prompt: ${serverPrompt ? 'Set' : 'None'}\nSafe mode: ${safeMode ? 'ENABLED (restricted)' : 'DISABLED (unrestricted)'}\nShell access: ${shellAccessEnabled ? 'ENABLED' : 'DISABLED'}\n\n**RECENT MEMORY (${currentMemory.length} messages):**\n${memoryPreview || 'None'}\n\n**WHAT AI SEES (Sample Prompt Structure):**\n${typeof samplePrompt === 'string' ? truncate(samplePrompt, 800) : 'MULTIMODAL_PROMPT'}\n\n**LAST AI RESPONSE:**\n${safeStringify(lastResponse[0], 200)}`;
+
+           if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
+             const callsStr = JSON.stringify(lastToolCalls[0]);
+             debugInfo += `\n\n**LAST TOOL CALLS:** ${callsStr.length > 200 ? callsStr.substring(0, 200) + '...' : callsStr}`;
+           }
+           if (lastToolResults.length > 0 && lastToolResults[0] && lastToolResults[0].length > 0) {
+             const resultsStr = JSON.stringify(lastToolResults[0]);
+             debugInfo += `\n\n**LAST TOOL RESULTS:** ${resultsStr.length > 200 ? resultsStr.substring(0, 200) + '...' : resultsStr}`;
+           }
+
+          // Send the main debug info first
+          await message.reply(debugInfo);
+
+          // Send the full last prompt in separate messages if it exists
+          if (lastPrompt[0]) {
+            const fullPrompt = typeof lastPrompt[0] === 'string' ? lastPrompt[0] : JSON.stringify(lastPrompt[0]);
+            const maxChunkSize = 1900;
+
+            if (fullPrompt.length <= maxChunkSize) {
+              await message.reply(`**FULL LAST PROMPT SENT TO AI:**\n${fullPrompt}`);
+            } else {
+              // Split into chunks
+              const chunks = [];
+              for (let i = 0; i < fullPrompt.length; i += maxChunkSize) {
+                chunks.push(fullPrompt.substring(i, i + maxChunkSize));
+              }
+
+              for (let i = 0; i < chunks.length; i++) {
+                const title = i === 0 ? '**FULL LAST PROMPT SENT TO AI (Part 1):**\n' : `**FULL LAST PROMPT (Part ${i + 1}/${chunks.length}):**\n`;
+                await message.reply(title + chunks[i]);
+              }
+            }
+          } else {
+            await message.reply('**No last prompt available**');
           }
-          if (lastToolResults.length > 0 && lastToolResults[0] && lastToolResults[0].length > 0) {
-            const resultsStr = JSON.stringify(lastToolResults[0]);
-            debugInfo += `\n\nTool results: ${resultsStr.length > 400 ? resultsStr.substring(0, 400) + '...' : resultsStr}`;
-          }
-         // Truncate to fit Discord limit
-         if (debugInfo.length > 1900) {
-           debugInfo = debugInfo.substring(0, 1900) + '...';
-         }
-         await message.reply(debugInfo);
-         break;
-       }
+          break;
+        }
 
       case 'restart':
         await message.reply('Restarting bot...');
