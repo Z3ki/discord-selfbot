@@ -3,7 +3,7 @@ very shitty code that is vibe coded.
 
 # Maxwell Discord Selfbot
 
-A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with NVIDIA NIM fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
+A sophisticated Discord selfbot powered by NVIDIA NIM AI model with Google Gemma 3-27B-IT fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
 
 ## ⚠️ Disclaimer
 
@@ -12,8 +12,8 @@ A sophisticated Discord selfbot powered by Google's Gemma 3-27B-IT AI model with
 ## 🌟 Key Features
 
 ### 🤖 Advanced AI System
-- **Primary AI**: Google Gemma 3-27B-IT model with multimodal capabilities
-- **Fallback AI**: NVIDIA NIM with automatic failover for reliability
+- **Primary AI**: NVIDIA NIM model with multimodal capabilities
+- **Fallback AI**: Google Gemma 3-27B-IT with automatic failover for reliability
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
@@ -115,7 +115,8 @@ Create a `.env` file with these required settings:
 # Discord Configuration
 DISCORD_USER_TOKEN=your_discord_user_token_here
 
-# AI Configuration
+# AI Configuration (Primary: NVIDIA, Fallback: Google)
+NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
 GOOGLE_API_KEY=your_google_ai_api_key_here
 
 # Admin Configuration
@@ -128,16 +129,17 @@ ADMIN_USER_ID=your_admin_user_id_here
 # Discord User ID (auto-detected from token if not provided)
 DISCORD_USER_ID=your_discord_user_id_here
 
-# AI Model Settings
-GOOGLE_AI_MODEL=models/gemma-3-27b-it
-GOOGLE_AI_TEMPERATURE=0.7
-
-# NVIDIA NIM Fallback (Optional)
+# AI Model Settings (Primary: NVIDIA)
 NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
 NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
 NVIDIA_NIM_MODEL=google/gemma-3-27b-it
 NVIDIA_NIM_MAX_TOKENS=32768
 NVIDIA_NIM_TEMPERATURE=0.7
+
+# Google AI Fallback (Optional)
+GOOGLE_API_KEY=your_google_ai_api_key_here
+GOOGLE_AI_MODEL=models/gemma-3-27b-it
+GOOGLE_AI_TEMPERATURE=0.7
 
 # Logging
 LOG_LEVEL=info  # debug, info, warn, error
@@ -287,7 +289,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 #### AI System (`providers.js`, `ai.js`)
 - Multi-provider AI with automatic failover
-- Google Gemma 3-27B-IT (primary) + NVIDIA NIM (fallback)
+- NVIDIA NIM (primary) + Google Gemma 3-27B-IT (fallback)
 - Enhanced response metadata extraction
 - Stealth features for API requests
 
@@ -571,6 +573,34 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 - `tools/information/wikipedia.js` - Wikipedia API integration tool
 
 ### Recent Fixes
+
+#### Response Sending Bug Fix (2025-10-31)
+**Problem**: Bot was generating AI responses but sending empty messages to Discord, causing "Cannot send an empty message" errors.
+
+**Symptoms**:
+- AI generated responses with correct length (e.g., 35 characters)
+- Debug logs showed "Generated response" with content
+- But "Sending follow-up response" showed responseLength 0
+- Discord rejected empty message content
+
+**Root Cause**:
+- Code was accessing `response.text` but the response object used `response.response` property
+- Safe mode rules were too restrictive, causing AI to generate empty content
+
+**Solution**:
+- **Fixed Property Access**: Changed `response.text` to `response.response` in handlers.js
+- **Relaxed Safe Mode**: Modified safe mode rules to be less restrictive while maintaining safety
+- **Added Debug Logging**: Added logging for response cleaning to identify future issues
+- **Provider Swap**: Swapped NVIDIA to primary provider, Google to fallback for better reliability
+
+**Files Modified**:
+- `handlers.js` - Fixed response property access and added debug logging
+- `prompts.js` - Relaxed safe mode response rules
+- `bot.js` - Swapped primary/fallback providers
+- `ai.js` - Added response cleaning debug log
+- `data-selfbot/safeModeServers.json` - Updated safe mode settings
+
+**Impact**: Bot now properly sends AI-generated responses instead of empty messages. Safe mode works without blocking responses.
 
 #### Friend Request Auto-Accept Removal (2025-10-27)
 **Problem**: Automatic friend request acceptance was causing CAPTCHA loops and excessive bot restarts.
