@@ -666,9 +666,6 @@ case 'shell': {
             const newMode = !currentMode;
             bot.shellAccessServers.set(serverId, newMode);
 
-            // Save the data
-            await bot.saveData();
-
             const modeText = newMode ? 'ENABLED' : 'DISABLED';
             const statusText = newMode ? 'Docker shell commands are now available' : 'Docker shell commands are now disabled';
             await message.reply(`Shell access ${modeText} for this server. ${statusText}.`);
@@ -677,9 +674,6 @@ case 'shell': {
             const currentMode = bot.shellAccessDMs || false;
             const newMode = !currentMode;
             bot.shellAccessDMs = newMode;
-
-            // Save the data
-            await bot.saveData();
 
             const modeText = newMode ? 'ENABLED' : 'DISABLED';
             const statusText = newMode ? 'Docker shell commands are now available in DMs' : 'Docker shell commands are now disabled in DMs';
