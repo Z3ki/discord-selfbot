@@ -35,13 +35,7 @@ export const CONFIG = {
         maxTokens: parseInt(process.env.NVIDIA_NIM_MAX_TOKENS) || 32768,
        temperature: parseFloat(process.env.NVIDIA_NIM_TEMPERATURE) || 0.5
      },
-     groq: {
-       apiKey: process.env.GROQ_API_KEY,
-       baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
-       model: process.env.GROQ_MODEL || 'qwen/qwen3-32b',
-       maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 32768,
-       temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0.7
-     }
+
   },
   admin: {
     userIds: process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [process.env.DISCORD_USER_ID]
@@ -77,8 +71,8 @@ export const CONFIG = {
 };
 
 export function validateConfig() {
-  const required = ['GROQ_API_KEY'];
-  const optional = ['GOOGLE_API_KEY', 'NVIDIA_NIM_API_KEY'];
+  const required = ['NVIDIA_NIM_API_KEY'];
+  const optional = ['GOOGLE_API_KEY', 'NVIDIA_NIM_API_KEY', 'GROQ_API_KEY'];
   const discordTokenRequired = !process.env.DISCORD_TOKEN && !process.env.DISCORD_USER_TOKEN;
 
   const missing = [];

@@ -116,8 +116,7 @@ Create a `.env` file with these required settings:
 # Discord Configuration
 DISCORD_USER_TOKEN=your_discord_user_token_here
 
-# AI Configuration (Primary: Groq, Secondary: NVIDIA, Tertiary: Google)
-GROQ_API_KEY=your_groq_api_key_here
+# AI Configuration (Primary: NVIDIA, Secondary: Google)
 NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
 GOOGLE_API_KEY=your_google_ai_api_key_here
 
@@ -131,14 +130,7 @@ ADMIN_USER_ID=your_admin_user_id_here
 # Discord User ID (auto-detected from token if not provided)
 DISCORD_USER_ID=your_discord_user_id_here
 
-# AI Model Settings (Primary: Groq)
-GROQ_API_KEY=your_groq_api_key_here
-GROQ_BASE_URL=https://api.groq.com/openai/v1
-GROQ_MODEL=qwen/qwen3-32b
-GROQ_MAX_TOKENS=32768
-GROQ_TEMPERATURE=0.7
-
-# NVIDIA NIM Secondary (Optional)
+# NVIDIA NIM Primary (Required)
 NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
 NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
 NVIDIA_NIM_MODEL=google/gemma-3-27b-it
@@ -161,11 +153,6 @@ LOG_LEVEL=info  # debug, info, warn, error
 2. Press `Ctrl+Shift+I` (DevTools)
 3. Go to Application → Local Storage → discord.com
 4. Copy the value of `token`
-
-**Groq API Key:**
-1. Visit [Groq Console](https://console.groq.com/)
-2. Create new API key
-3. Copy the key
 
 **Google AI API Key:**
 1. Visit [Google AI Studio](https://aistudio.google.com/)
