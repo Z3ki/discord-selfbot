@@ -264,7 +264,7 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
    const finalInstructions = buildFinalInstructions(safeMode);
 
   // Assemble complete system prompt
-  let systemPrompt = jailbreakPrefix + messageSection + responseRules + toolsSection + historySection + finalInstructions + globalSection;
+  let systemPrompt = jailbreakPrefix + messageSection + toolsSection + responseRules + historySection + finalInstructions + globalSection;
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
