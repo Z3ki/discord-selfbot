@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { ProviderManager, GoogleAIProvider, NvidiaNIMProvider } from './providers.js';
+import { ProviderManager, GoogleAIProvider, NvidiaNIMProvider, GroqProvider } from './providers.js';
 import { CONFIG, validateConfig } from './config/config.js';
 import { Bot } from './services/Bot.js';
 import { transcriptionService } from './services/TranscriptionService.js';
@@ -32,9 +32,19 @@ validateConfig();
   });
   providerManager.registerProvider(nvidiaProvider);
 
+  // Register Groq provider
+  const groqProvider = new GroqProvider({
+    apiKey: CONFIG.ai.groq.apiKey,
+    baseUrl: CONFIG.ai.groq.baseUrl,
+    model: CONFIG.ai.groq.model,
+    maxTokens: CONFIG.ai.groq.maxTokens,
+    temperature: CONFIG.ai.groq.temperature
+  });
+  providerManager.registerProvider(groqProvider);
+
   // Set primary and fallback providers
-  providerManager.setPrimaryProvider('nvidia-nim');
-  providerManager.setFallbackProvider('google');
+  providerManager.setPrimaryProvider('groq');
+  providerManager.setFallbackProvider('nvidia-nim');
 
   // Start transcription service
   try {

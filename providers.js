@@ -605,6 +605,314 @@ export class NvidiaNIMProvider extends AIProvider {
 }
 
 /**
+ * Groq Provider (OpenAI-compatible API)
+ */
+export class GroqProvider extends AIProvider {
+  constructor(config) {
+    super('groq', config);
+    this.baseURL = config.baseUrl || 'https://api.groq.com/openai/v1';
+    this.model = config.model || 'llama-3.3-70b-versatile';
+  }
+
+  async initialize() {
+    try {
+      if (!this.config.apiKey) {
+        logger.warn('Groq API key not provided, provider will be unavailable');
+        return false;
+      }
+
+      // Test the connection with a simple request
+      const response = await fetch(`${this.baseURL}/models`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Groq API test failed: ${response.status} ${response.statusText}`);
+      }
+
+      this.isAvailable = true;
+      logger.info('Groq provider initialized successfully', {
+        baseURL: this.baseURL,
+        model: this.model
+      });
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize Groq provider', { error: error.message });
+      return false;
+    }
+  }
+
+  async generateContent(content) {
+    if (!this.isAvailable) {
+      throw new Error('Groq provider is not available');
+    }
+
+    // Stealth: Add random delay before API call
+    await apiStealth.randomDelay();
+
+    try {
+      const messages = [];
+
+      // Handle different content types
+      if (typeof content === 'string') {
+        messages.push({
+          role: 'user',
+          content: content
+        });
+      } else if (Array.isArray(content)) {
+        // Handle multimodal content (images, etc.) - convert to string format for Groq
+        let contentString = '';
+        for (const part of content) {
+          if (part.text) {
+            contentString += part.text;
+          } else if (part.inlineData) {
+            // Convert images to base64 img tags
+            const mimeType = part.inlineData.mimeType || 'image/png';
+            const base64Data = part.inlineData.data;
+            contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
+          }
+        }
+        messages.push({
+          role: 'user',
+          content: contentString || 'Please analyze the attached media.'
+        });
+      } else if (content.parts) {
+        // Handle Google AI style content
+        const textParts = content.parts.filter(part => part.text).map(part => part.text).join('');
+        const imageParts = content.parts.filter(part => part.inlineData);
+
+        if (imageParts.length > 0) {
+          // Convert images to Groq format with base64 img tags
+          let contentString = textParts || 'What is shown in this image?';
+
+          for (const imagePart of imageParts) {
+            // Extract MIME type and base64 data
+            const mimeType = imagePart.inlineData.mimeType || 'image/png';
+            const base64Data = imagePart.inlineData.data;
+
+            // Add image to content
+            contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
+          }
+
+          messages.push({
+            role: 'user',
+            content: contentString
+          });
+        } else {
+          messages.push({
+            role: 'user',
+            content: textParts
+          });
+        }
+      }
+
+       // Stealth: Add random headers to mimic browser requests
+       const headers = {
+         'Authorization': `Bearer ${this.config.apiKey}`,
+         'Content-Type': 'application/json',
+         ...apiStealth.getRandomHeaders()
+       };
+
+       const response = await fetch(`${this.baseURL}/chat/completions`, {
+         method: 'POST',
+         headers: headers,
+         body: JSON.stringify({
+           model: this.model,
+           messages: messages,
+           max_tokens: Math.min(this.config.maxTokens || 32768, 120000),
+           temperature: this.config.temperature || 0.7
+         })
+       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response choices returned from Groq');
+      }
+
+      // Extract comprehensive information from Groq response
+      const fullResponse = {
+        text: data.choices[0].message.content,
+        metadata: {
+          provider: 'groq',
+          model: data.model || this.model,
+          usage: data.usage ? {
+            prompt_tokens: data.usage.prompt_tokens,
+            completion_tokens: data.usage.completion_tokens,
+            total_tokens: data.usage.total_tokens
+          } : null,
+          finish_reason: data.choices[0].finish_reason,
+          created: data.created,
+          id: data.id,
+          // Additional Groq specific data
+          object: data.object,
+          choices_count: data.choices?.length || 0,
+          system_fingerprint: data.system_fingerprint,
+          timestamp: Date.now()
+        },
+        // Include full raw response for analysis (can be removed in production)
+        rawResponse: data
+      };
+      return fullResponse;
+
+    } catch (error) {
+      logger.error('Groq generation failed', { error: error.message });
+      throw error;
+    }
+  }
+
+  async generateContentStream(content) {
+    if (!this.isAvailable) {
+      throw new Error('Groq provider is not available');
+    }
+
+    // Stealth: Add random delay before API call
+    await apiStealth.randomDelay();
+
+    try {
+      const messages = [];
+
+      // Handle different content types (same as generateContent)
+      if (typeof content === 'string') {
+        messages.push({
+          role: 'user',
+          content: content
+        });
+      } else if (Array.isArray(content)) {
+        // Handle multimodal content (images, etc.) - convert to string format for Groq
+        let contentString = '';
+        for (const part of content) {
+          if (part.text) {
+            contentString += part.text;
+          } else if (part.inlineData) {
+            // Convert images to base64 img tags
+            const mimeType = part.inlineData.mimeType || 'image/png';
+            const base64Data = part.inlineData.data;
+            contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
+          }
+        }
+        messages.push({
+          role: 'user',
+          content: contentString || 'Please analyze the attached media.'
+        });
+      } else if (content.parts) {
+        // Handle Google AI style content
+        const textParts = content.parts.filter(part => part.text).map(part => part.text).join('');
+        const imageParts = content.parts.filter(part => part.inlineData);
+
+        if (imageParts.length > 0) {
+          // Convert images to Groq format with base64 img tags
+          let contentString = textParts || 'What is shown in this image?';
+
+          for (const imagePart of imageParts) {
+            // Extract MIME type and base64 data
+            const mimeType = imagePart.inlineData.mimeType || 'image/png';
+            const base64Data = imagePart.inlineData.data;
+
+            // Add image to content
+            contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
+          }
+
+          messages.push({
+            role: 'user',
+            content: contentString
+          });
+        } else {
+          messages.push({
+            role: 'user',
+            content: textParts
+          });
+        }
+      }
+
+       // Stealth: Add random headers to mimic browser requests
+       const headers = {
+         'Authorization': `Bearer ${this.config.apiKey}`,
+         'Content-Type': 'application/json',
+         ...apiStealth.getRandomHeaders()
+       };
+
+       const response = await fetch(`${this.baseURL}/chat/completions`, {
+         method: 'POST',
+         headers: headers,
+         body: JSON.stringify({
+           model: this.model,
+           messages: messages,
+           max_tokens: Math.min(this.config.maxTokens || 32768, 120000),
+           temperature: this.config.temperature || 0.7,
+           stream: true  // Enable streaming
+         })
+       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Groq streaming API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      // Return an async generator that yields chunks from the stream
+      return {
+        async *[Symbol.asyncIterator]() {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
+
+                  try {
+                    const parsed = JSON.parse(data);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    if (content) {
+                      yield {
+                        text: content,
+                        done: false
+                      };
+                    }
+                  } catch (e) {
+                    // Ignore parsing errors for incomplete chunks
+                  }
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock();
+          }
+
+          yield {
+            text: '',
+            done: true
+          };
+        }
+      };
+
+    } catch (error) {
+      logger.error('Groq streaming failed', { error: error.message });
+      throw error;
+    }
+  }
+}
+
+/**
  * Provider Manager - handles multiple AI providers with fallback
  */
 export class ProviderManager {
