@@ -1049,7 +1049,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 }
                 const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
                 dmMemory.push(userMessage);
-                if (dmMemory.length > 100) { // dmContexts has higher limit
+                if (dmMemory.length > 50) { // dmContexts has higher limit
                   dmMemory.shift();
                 }
                 logger.debug('Added DM message to dmContexts', {

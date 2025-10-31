@@ -212,9 +212,9 @@ export async function generateResponse(message, providerManager, channelMemories
   // Self-response loop prevention: Filter out bot messages from memory by default
   // Only include bot messages when directly replying to prevent AI confusion
 
-    // Optimize memory: limit to last 20 messages and clean old entries
-    if (memory.length > 50) {
-      // Keep only last 50 messages to prevent memory bloat
+    // Optimize memory: limit to last 25 messages and clean old entries
+    if (memory.length > 25) {
+      // Keep only last 25 messages to prevent memory bloat
       const excess = memory.length - 50;
       memory.splice(0, excess);
       channelMemories.set(message.channel?.id || message.channelId, memory);
