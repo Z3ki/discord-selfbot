@@ -1093,57 +1093,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
           ignored: responseText === null
         });
 
-        // Display tool results to user if any tools were executed
-        if (toolResults.length > 0) {
-          try {
-            let resultsMessage = '**Tool Execution Results:**\n\n';
-            for (const result of toolResults) {
-              if (result.tool === 'docker_exec') {
-                resultsMessage += `🔧 **${result.tool.toUpperCase()}**: ${result.result}\n\n`;
-              } else {
-                resultsMessage += `🔧 **${result.tool.toUpperCase()}**: ${result.result}\n\n`;
-              }
-            }
 
-            // Split long results into multiple messages if needed
-            const maxLength = 1900;
-            if (resultsMessage.length > maxLength) {
-              const chunks = [];
-              let currentChunk = '';
-              const lines = resultsMessage.split('\n');
-
-              for (const line of lines) {
-                if ((currentChunk + line + '\n').length > maxLength) {
-                  if (currentChunk.trim()) {
-                    chunks.push(currentChunk.trim());
-                  }
-                  currentChunk = line + '\n';
-                } else {
-                  currentChunk += line + '\n';
-                }
-              }
-              if (currentChunk.trim()) {
-                chunks.push(currentChunk.trim());
-              }
-
-              for (const chunk of chunks) {
-                if (isDM) {
-                  await message.channel.send(chunk);
-                } else {
-                  await message.reply(chunk);
-                }
-              }
-            } else {
-              if (isDM) {
-                await message.channel.send(resultsMessage);
-              } else {
-                await message.reply(resultsMessage);
-              }
-            }
-          } catch (error) {
-            logger.warn('Failed to send tool results to user', { error: error.message });
-          }
-        }
 
         if (responseText) {
             // Add user message to memory now that we're responding
