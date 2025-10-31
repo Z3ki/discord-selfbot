@@ -651,6 +651,12 @@ export class GroqProvider extends AIProvider {
       throw new Error('Groq provider is not available');
     }
 
+    // Check for multimodal content - Groq doesn't support images
+    const hasImages = this._hasMultimodalContent(content);
+    if (hasImages) {
+      throw new Error('Groq does not support multimodal content (images). Falling back to compatible provider.');
+    }
+
     // Stealth: Add random delay before API call
     await apiStealth.randomDelay();
 
@@ -770,9 +776,24 @@ export class GroqProvider extends AIProvider {
     }
   }
 
+  _hasMultimodalContent(content) {
+    if (Array.isArray(content)) {
+      return content.some(part => part.inlineData || part.image_url);
+    } else if (content && content.parts) {
+      return content.parts.some(part => part.inlineData);
+    }
+    return false;
+  }
+
   async generateContentStream(content) {
     if (!this.isAvailable) {
       throw new Error('Groq provider is not available');
+    }
+
+    // Check for multimodal content - Groq doesn't support images
+    const hasImages = this._hasMultimodalContent(content);
+    if (hasImages) {
+      throw new Error('Groq does not support multimodal content (images). Falling back to compatible provider.');
     }
 
     // Stealth: Add random delay before API call

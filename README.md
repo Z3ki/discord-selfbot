@@ -12,9 +12,9 @@ A sophisticated Discord selfbot powered by Groq AI model with NVIDIA NIM and Goo
 ## 🌟 Key Features
 
 ### 🤖 Advanced AI System
-- **Primary AI**: Groq Llama 3.3-70B-Versatile model with high-speed inference
-- **Secondary AI**: NVIDIA NIM with automatic failover
-- **Tertiary AI**: Google Gemma 3-27B-IT as final fallback
+- **Primary AI**: Groq Llama 3.3-70B-Versatile model with high-speed inference (text-only)
+- **Secondary AI**: NVIDIA NIM with multimodal support and automatic failover
+- **Tertiary AI**: Google Gemma 3-27B-IT with multimodal support as final fallback
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
