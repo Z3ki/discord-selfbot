@@ -134,7 +134,7 @@ DISCORD_USER_ID=your_discord_user_id_here
 # AI Model Settings (Primary: Groq)
 GROQ_API_KEY=your_groq_api_key_here
 GROQ_BASE_URL=https://api.groq.com/openai/v1
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=qwen/qwen-2.5-32b
 GROQ_MAX_TOKENS=32768
 GROQ_TEMPERATURE=0.7
 

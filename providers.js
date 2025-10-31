@@ -610,8 +610,8 @@ export class NvidiaNIMProvider extends AIProvider {
 export class GroqProvider extends AIProvider {
   constructor(config) {
     super('groq', config);
-    this.baseURL = config.baseUrl || 'https://api.groq.com/openai/v1';
-    this.model = config.model || 'llama-3.3-70b-versatile';
+    this.baseURL = config.baseUrl || CONFIG.ai.groq.baseUrl;
+    this.model = config.model || CONFIG.ai.groq.model;
   }
 
   async initialize() {

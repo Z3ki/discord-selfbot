@@ -38,7 +38,7 @@ export const CONFIG = {
      groq: {
        apiKey: process.env.GROQ_API_KEY,
        baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
-       model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+       model: process.env.GROQ_MODEL || 'qwen/qwen-2.5-32b',
        maxTokens: parseInt(process.env.GROQ_MAX_TOKENS) || 32768,
        temperature: parseFloat(process.env.GROQ_TEMPERATURE) || 0.7
      }
