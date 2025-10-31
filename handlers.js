@@ -1049,37 +1049,103 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
               guildId: message.guild?.id
             });
             response = await generateResponse(message, providerManager, channelMemories, dmOrigins, client, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, bot);
-         } catch (error) {
-          logger.error('Message processing failed', {
-            error: error.message,
-            stack: error.stack,
-            messageId: message.id,
-            channelId: message.channel?.id,
-            authorId: message.author?.id
-          });
+          } catch (error) {
+           logger.error('Message processing failed', {
+             error: error.message,
+             stack: error.stack,
+             messageId: message.id,
+             channelId: message.channel?.id,
+             authorId: message.author?.id
+           });
 
-          if (error.message.includes('rate limit') || error.message.includes('User rate limit exceeded')) {
-            // Stealth: More human-like rate limit message
-            const humanMessages = [
-              'Whoa, slow down there! The API is getting hammered. Give me a sec...',
-              'Looks like I\'m getting rate limited. Too many people talking to me at once!',
-              'Hold on, the servers are getting overwhelmed. Try again in a moment.',
-              'API is getting hammered right now. Give me a bit to catch up.'
-            ];
-            const randomMessage = humanMessages[Math.floor(Math.random() * humanMessages.length)];
-            await message.reply(randomMessage);
-          } else {
-            // Generic error message for other failures
-            await message.reply('Sorry, I\'m having trouble processing your message right now. Please try again later.');
+           if (error.message.includes('rate limit') || error.message.includes('User rate limit exceeded')) {
+             // Stealth: More human-like rate limit message
+             const humanMessages = [
+               'Whoa, slow down there! The API is getting hammered. Give me a sec...',
+               'Looks like I\'m getting rate limited. Too many people talking to me at once!',
+               'Hold on, the servers are getting overwhelmed. Try again in a moment.',
+               'API is getting hammered right now. Give me a bit to catch up.'
+             ];
+             const randomMessage = humanMessages[Math.floor(Math.random() * humanMessages.length)];
+             await message.reply(randomMessage);
+           } else {
+             // Generic error message for other failures
+             await message.reply('Sorry, I\'m having trouble processing your message right now. Please try again later.');
+           }
+            return; // Don't continue processing if there's an error
           }
-           return; // Don't continue processing if there's an error
-         }
+
+        // Handle new response format { response, toolResults }
+        let responseText = null;
+        let toolResults = [];
+        if (response && typeof response === 'object') {
+          responseText = response.response;
+          toolResults = response.toolResults || [];
+        } else if (typeof response === 'string') {
+          // Backward compatibility for string responses
+          responseText = response;
+        }
+
         logger.debug('Generated response', {
-          responseLength: response?.length || 0,
+          responseLength: responseText?.length || 0,
+          toolResultsCount: toolResults.length,
           channelId: message.channel?.id || message.channelId,
-          ignored: response === null
+          ignored: responseText === null
         });
-        if (response) {
+
+        // Display tool results to user if any tools were executed
+        if (toolResults.length > 0) {
+          try {
+            let resultsMessage = '**Tool Execution Results:**\n\n';
+            for (const result of toolResults) {
+              if (result.tool === 'docker_exec') {
+                resultsMessage += `🔧 **${result.tool.toUpperCase()}**: ${result.result}\n\n`;
+              } else {
+                resultsMessage += `🔧 **${result.tool.toUpperCase()}**: ${result.result}\n\n`;
+              }
+            }
+
+            // Split long results into multiple messages if needed
+            const maxLength = 1900;
+            if (resultsMessage.length > maxLength) {
+              const chunks = [];
+              let currentChunk = '';
+              const lines = resultsMessage.split('\n');
+
+              for (const line of lines) {
+                if ((currentChunk + line + '\n').length > maxLength) {
+                  if (currentChunk.trim()) {
+                    chunks.push(currentChunk.trim());
+                  }
+                  currentChunk = line + '\n';
+                } else {
+                  currentChunk += line + '\n';
+                }
+              }
+              if (currentChunk.trim()) {
+                chunks.push(currentChunk.trim());
+              }
+
+              for (const chunk of chunks) {
+                if (isDM) {
+                  await message.channel.send(chunk);
+                } else {
+                  await message.reply(chunk);
+                }
+              }
+            } else {
+              if (isDM) {
+                await message.channel.send(resultsMessage);
+              } else {
+                await message.reply(resultsMessage);
+              }
+            }
+          } catch (error) {
+            logger.warn('Failed to send tool results to user', { error: error.message });
+          }
+        }
+
+        if (responseText) {
             // Add user message to memory now that we're responding
             try {
               if (!channelMemories.has(message.channel?.id || message.channelId)) {
@@ -1129,7 +1195,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             }
 
             logger.debug('Sending follow-up response to Discord', {
-              responseLength: response.length,
+              responseLength: responseText.length,
               channelId: message.channel?.id || message.channelId,
               userId: message.author.id
             });
@@ -1153,26 +1219,26 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
               } else {
                 await message.reply(response);
               }
-              logger.debug('Follow-up response sent successfully', {
-                channelId: message.channel?.id || message.channelId,
-                userId: message.author.id,
-                usedReply: !isDM
-              });
-            } catch (error) {
-              if (error.code === 50035 && error.message.includes('message_reference')) {
-                // Fallback: send without reply if reference is invalid
-                logger.warn('Reply failed due to invalid message_reference, sending without reply', { error: error.message });
-                await message.channel.send(response);
-              } else {
-                throw error;
-              }
+            logger.debug('Follow-up response sent successfully', {
+              channelId: message.channel?.id || message.channelId,
+              userId: message.author.id,
+              usedReply: !isDM
+            });
+          } catch (error) {
+            if (error.code === 50035 && error.message.includes('message_reference')) {
+              // Fallback: send without reply if reference is invalid
+              logger.warn('Reply failed due to invalid message_reference, sending without reply', { error: error.message });
+              await message.channel.send(responseText);
+            } else {
+              throw error;
             }
+          }
             // Add follow-up response to memory
             const memory = channelMemories.get(message.channel?.id || message.channelId);
             if (memory) {
               const botMessage = {
                 user: `${client.user.displayName || client.user.username} (${client.user.username}) [${client.user.id}]`,
-                message: response,
+                message: responseText,
                 timestamp: Date.now()
               };
               memory.push(botMessage);

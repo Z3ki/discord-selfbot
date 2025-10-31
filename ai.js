@@ -795,10 +795,10 @@ export async function generateResponse(message, providerManager, channelMemories
             channelId: message.channel.id
           });
           // Truncate to 1990 characters to show latest output only
-          return cleanedFollowUp.substring(0, 1990);
+          return { response: cleanedFollowUp.substring(0, 1990), toolResults: allToolResults };
         }
 
-        return cleanedFollowUp;
+        return { response: cleanedFollowUp, toolResults: allToolResults };
     } else {
       // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
       let cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
@@ -819,9 +819,9 @@ export async function generateResponse(message, providerManager, channelMemories
           channelId: message.channel.id
         });
         // Truncate to 1990 characters to show latest output only
-        return cleanedResponse.substring(0, 1990);
+        return { response: cleanedResponse.substring(0, 1990), toolResults: [] };
       }
 
-      return cleanedResponse;
+      return { response: cleanedResponse, toolResults: [] };
     }
 }

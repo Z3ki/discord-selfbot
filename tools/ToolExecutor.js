@@ -202,10 +202,39 @@ export class ToolExecutor {
       // Update existing message with new command
       try {
         const currentContent = statusMessage.content;
-        const newContent = currentContent.replace(/```$/, '') + `$ ${command}\n[Executing...]\n\`\`\``;
+        // More robust replacement - look for the end of code blocks or add to end
+        let newContent;
+        if (currentContent.endsWith('```')) {
+          // Remove the closing ``` and add new command
+          newContent = currentContent.slice(0, -3) + `$ ${command}\n[Executing...]\n\`\`\``;
+        } else if (currentContent.includes('```')) {
+          // Message has code blocks but doesn't end with ``` - append carefully
+          newContent = currentContent + `\n\n$ ${command}\n[Executing...]\n\`\`\``;
+        } else {
+          // No code blocks, add new command block
+          newContent = currentContent + `\n\n\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
+        }
+
+        // Ensure we don't exceed Discord limits
+        if (newContent.length > 1950) {
+          newContent = newContent.substring(0, 1950) + '...\n```';
+        }
+
         await statusMessage.edit(newContent);
       } catch (error) {
         logger.warn('Failed to update existing status message', { error: error.message });
+        // Try to create a new message if update fails
+        try {
+          const fallbackContent = `\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
+          const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+          if (isDM) {
+            statusMessage = await message.channel.send(fallbackContent);
+          } else {
+            statusMessage = await message.reply(fallbackContent);
+          }
+        } catch (fallbackError) {
+          logger.warn('Failed to create fallback status message', { error: fallbackError.message });
+        }
       }
     }
 
