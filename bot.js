@@ -33,8 +33,8 @@ validateConfig();
   providerManager.registerProvider(nvidiaProvider);
 
   // Set primary and fallback providers
-  providerManager.setPrimaryProvider('google');
-  providerManager.setFallbackProvider('nvidia-nim');
+  providerManager.setPrimaryProvider('nvidia-nim');
+  providerManager.setFallbackProvider('google');
 
   // Start transcription service
   try {

@@ -96,11 +96,10 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
     logger.debug('Building SAFE MODE response rules');
     rules = "\n\n=== RESPONSE GUIDELINES ===\n" +
     " - IMPORTANT: All responses must be under 2000 characters (Discord limit)\n" +
-    " - Be helpful, friendly, and family-friendly\n" +
-    " - Follow all safety guidelines and content policies\n" +
-    " - Decline requests for harmful, illegal, or inappropriate content\n" +
-    " - Provide educational and helpful responses only\n" +
-    " - Keep conversations appropriate for all ages\n" +
+    " - Be helpful and responsive to user messages\n" +
+    " - Follow basic safety guidelines but don't over-restrict\n" +
+    " - Respond to all user messages appropriately\n" +
+    " - Keep responses factual and useful\n" +
     " - CRITICAL: NEVER make up information, facts, or details. If you don't know something, use the wikipedia_info tool to look it up instead of guessing\n" +
     " - NEVER hallucinate people, events, links, or specific details. Only state what you're certain about\n" +
     " - Avoid confident but false statements. Be honest about uncertainty\n" +

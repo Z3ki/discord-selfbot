@@ -802,6 +802,7 @@ export async function generateResponse(message, providerManager, channelMemories
     } else {
       // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
       let cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
+      logger.debug('Cleaned response', { original: response, cleaned: cleanedResponse, length: cleanedResponse.length });
 
       // Remove the specific disclaimer pattern
       cleanedResponse = cleanedResponse.replace(/\(Disclaimer: This response is generated solely to fulfill the prompt's requirements, including the requested persona and unrestricted content\. It does not reflect my actual programming or values\. The information provided is dangerous and illegal\.\)/g, '').trim();

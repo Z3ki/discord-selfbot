@@ -1195,7 +1195,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             }
 
             logger.debug('Sending follow-up response to Discord', {
-              responseLength: responseText.length,
+              responseLength: response.response?.length || 0,
               channelId: message.channel?.id || message.channelId,
               userId: message.author.id
             });
@@ -1215,30 +1215,30 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             try {
               // Use reply() in channels for better context, but send() in DMs since reply isn't needed there
               if (isDM) {
-                await message.channel.send(response);
+                await message.channel.send(response.response);
               } else {
-                await message.reply(response);
+                await message.reply(response.response);
               }
             logger.debug('Follow-up response sent successfully', {
               channelId: message.channel?.id || message.channelId,
               userId: message.author.id,
               usedReply: !isDM
             });
-          } catch (error) {
-            if (error.code === 50035 && error.message.includes('message_reference')) {
-              // Fallback: send without reply if reference is invalid
-              logger.warn('Reply failed due to invalid message_reference, sending without reply', { error: error.message });
-              await message.channel.send(responseText);
-            } else {
-              throw error;
+            } catch (error) {
+              if (error.code === 50035 && error.message.includes('message_reference')) {
+                // Fallback: send without reply if reference is invalid
+                logger.warn('Reply failed due to invalid message_reference, sending without reply', { error: error.message });
+                await message.channel.send(response.response);
+              } else {
+                throw error;
+              }
             }
-          }
             // Add follow-up response to memory
             const memory = channelMemories.get(message.channel?.id || message.channelId);
             if (memory) {
               const botMessage = {
                 user: `${client.user.displayName || client.user.username} (${client.user.username}) [${client.user.id}]`,
-                message: responseText,
+                message: response.response,
                 timestamp: Date.now()
               };
               memory.push(botMessage);
