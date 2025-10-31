@@ -43,8 +43,8 @@ validateConfig();
   providerManager.registerProvider(groqProvider);
 
   // Set primary and fallback providers
-  providerManager.setPrimaryProvider('nvidia-nim');
-  providerManager.setFallbackProvider('google');
+  providerManager.setPrimaryProvider('groq');
+  providerManager.setFallbackProvider('nvidia-nim');
 
   // Start transcription service
   try {

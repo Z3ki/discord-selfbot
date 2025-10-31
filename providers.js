@@ -686,53 +686,60 @@ export class GroqProvider extends AIProvider {
           role: 'user',
           content: contentString || 'Please analyze the attached media.'
         });
-      } else if (content.parts) {
-        // Handle Google AI style content
-        const textParts = content.parts.filter(part => part.text).map(part => part.text).join('');
-        const imageParts = content.parts.filter(part => part.inlineData);
+       } else if (content.parts) {
+         // Handle Google AI style content
+         const textParts = content.parts.filter(part => part.text).map(part => part.text).join('');
+         const imageParts = content.parts.filter(part => part.inlineData);
 
-        if (imageParts.length > 0) {
-          // Convert images to Groq format with base64 img tags
-          let contentString = textParts || 'What is shown in this image?';
+         if (imageParts.length > 0) {
+           // Convert images to Groq format with base64 img tags
+           let contentString = textParts || 'What is shown in this image?';
 
-          for (const imagePart of imageParts) {
-            // Extract MIME type and base64 data
-            const mimeType = imagePart.inlineData.mimeType || 'image/png';
-            const base64Data = imagePart.inlineData.data;
+           for (const imagePart of imageParts) {
+             // Extract MIME type and base64 data
+             const mimeType = imagePart.inlineData.mimeType || 'image/png';
+             const base64Data = imagePart.inlineData.data;
 
-            // Add image to content
-            contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
-          }
+             // Add image to content
+             contentString += ` <img src="data:${mimeType};base64,${base64Data}" />`;
+           }
 
-          messages.push({
-            role: 'user',
-            content: contentString
-          });
-        } else {
-          messages.push({
-            role: 'user',
-            content: textParts
-          });
+           messages.push({
+             role: 'user',
+             content: contentString
+           });
+         } else {
+           messages.push({
+             role: 'user',
+             content: textParts
+           });
+         }
+       }
+
+        // Stealth: Add random headers to mimic browser requests
+        const headers = {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+          ...apiStealth.getRandomHeaders()
+        };
+
+        const requestBody = {
+          model: this.model,
+          messages: messages,
+          max_tokens: Math.min(this.config.maxTokens || 32768, 120000),
+          temperature: this.config.temperature || 0.7
+        };
+
+        // Disable reasoning for Qwen models to prevent <think> tags
+        if (this.model.includes('qwen')) {
+          requestBody.reasoning_effort = 'none';
         }
-      }
 
-       // Stealth: Add random headers to mimic browser requests
-       const headers = {
-         'Authorization': `Bearer ${this.config.apiKey}`,
-         'Content-Type': 'application/json',
-         ...apiStealth.getRandomHeaders()
-       };
-
-       const response = await fetch(`${this.baseURL}/chat/completions`, {
-         method: 'POST',
-         headers: headers,
-         body: JSON.stringify({
-           model: this.model,
-           messages: messages,
-           max_tokens: Math.min(this.config.maxTokens || 32768, 120000),
-           temperature: this.config.temperature || 0.7
-         })
-       });
+        const response = await fetch(`${this.baseURL}/chat/completions`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(requestBody)
+        });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -745,9 +752,9 @@ export class GroqProvider extends AIProvider {
         throw new Error('No response choices returned from Groq');
       }
 
-      // Extract comprehensive information from Groq response
-      const fullResponse = {
-        text: data.choices[0].message.content,
+       // Extract comprehensive information from Groq response
+       const fullResponse = {
+         text: data.choices[0].message.content,
         metadata: {
           provider: 'groq',
           model: data.model || this.model,
