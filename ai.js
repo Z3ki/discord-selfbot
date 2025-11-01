@@ -266,6 +266,24 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
 
+    // Enhanced memory sanitization to remove confusing entries
+    function sanitizeMemory(memory) {
+      return memory.filter(msg => {
+        // Remove messages that could cause confusion
+        const hasConfusion = /I am the (bot|AI|assistant)/i.test(msg.message) &&
+                             msg.user.includes(client.user.id);
+        if (hasConfusion) {
+          logger.debug('Removed confusing memory entry', {
+            user: msg.user,
+            message: msg.message.substring(0, 100)
+          });
+        }
+        return !hasConfusion;
+      });
+    }
+
+    targetMessages = sanitizeMemory(targetMessages);
+
     // Build memory text efficiently
     const memoryText = buildOptimizedMemoryText(targetMessages);
 
@@ -288,48 +306,41 @@ export async function generateResponse(message, providerManager, channelMemories
         containsRemember: memoryText.toLowerCase().includes('remember')
       });
     }
-    // If DM, include context from original channel and DM metadata (with length limits)
-    let finalMemoryText = memoryText;
+     // If DM, use ONLY dmContexts to prevent identity confusion - never mix with server memories
+     let finalMemoryText = memoryText;
 
-    if (isDM) {
-      const originalChannelId = dmOrigins.get(message.channel?.id || message.channelId);
-      const dmMetadata = getDMMetadata(message.channel?.id || message.channelId);
-      const userContext = (await loadUserContext()).get(message.author.id);
+     if (isDM) {
+       const dmMetadata = getDMMetadata(message.channel?.id || message.channelId);
+       const userContext = (await loadUserContext()).get(message.author.id);
 
-      let contextText = '';
+       let contextText = '';
 
-      if (dmMetadata) {
-        // Truncate long trigger messages (32k tokens ~ 128k chars)
-        const truncatedTrigger = dmMetadata.triggerMessage && dmMetadata.triggerMessage.length > 5000
-          ? dmMetadata.triggerMessage.substring(0, 5000) + '...'
-          : dmMetadata.triggerMessage || 'None';
+       if (dmMetadata) {
+         // Truncate long trigger messages (32k tokens ~ 128k chars)
+         const truncatedTrigger = dmMetadata.triggerMessage && dmMetadata.triggerMessage.length > 5000
+           ? dmMetadata.triggerMessage.substring(0, 5000) + '...'
+           : dmMetadata.triggerMessage || 'None';
 
-        contextText = `\n\nDM PURPOSE: ${dmMetadata.reason || 'Direct message'}\nTriggered by: ${dmMetadata.triggerUser || 'Unknown'}\nOriginal message: "${truncatedTrigger}"`;
-      }
+         contextText = `\n\nDM PURPOSE: ${dmMetadata.reason || 'Direct message'}\nTriggered by: ${dmMetadata.triggerUser || 'Unknown'}\nOriginal message: "${truncatedTrigger}"`;
+       }
 
-      if (userContext) {
-        // Limit user context to prevent bloat (32k tokens ~ 128k chars)
-        const themes = userContext.themes ? userContext.themes.slice(0, 10).join(', ') : 'None';
-        const prefs = userContext.preferences && userContext.preferences.length > 2000
-          ? userContext.preferences.substring(0, 2000) + '...'
-          : userContext.preferences || 'None';
-        const displayName = userContext.displayName || 'Unknown';
-        contextText += `\n\nCURRENT_USER_CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
-      }
+       if (userContext) {
+         // Limit user context to prevent bloat (32k tokens ~ 128k chars)
+         const themes = userContext.themes ? userContext.themes.slice(0, 10).join(', ') : 'None';
+         const prefs = userContext.preferences && userContext.preferences.length > 2000
+           ? userContext.preferences.substring(0, 2000) + '...'
+           : userContext.preferences || 'None';
+         const displayName = userContext.displayName || 'Unknown';
+         contextText += `\n\nCURRENT_USER_CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
+       }
 
-      if (originalChannelId && dmMetadata && dmMetadata.includeContext) {
-        const channelMemory = channelMemories.get(originalChannelId) || [];
-        const recentChannelMemory = channelMemory.slice(-3); // Reduced to prevent confusion
-        const channelMemoryText = recentChannelMemory.map(m => {
-          // Truncate individual messages and add clear separation
-          const msg = `[ORIGINAL_CHANNEL_USER: ${m.user}]: ${m.message}`;
-          return msg.length > 2000 ? msg.substring(0, 2000) + '...' : msg;
-        }).join('\n');
-        finalMemoryText = `=== DM CONVERSATION ===\n${memoryText}${contextText}\n\n=== NOTE: Previous conversation from server ===\n${channelMemoryText}\n=== END SERVER CONTEXT ===`;
-      } else {
-        finalMemoryText = `=== DM CONVERSATION ===\n${memoryText}${contextText}`;
-      }
-    }
+       // CRITICAL: Use ONLY DM memory context - no server context mixing to prevent identity confusion
+       finalMemoryText = `=== PRIVATE DM CONVERSATION ===\n${memoryText}${contextText}`;
+       logger.debug('DM context isolation applied - using only DM memory, no server context mixing', {
+         channelId: message.channel?.id || message.channelId,
+         memoryLength: memoryText.length
+       });
+     }
 
     // Include all available tools
     const serverId = message.guild?.id;
@@ -618,34 +629,55 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
 
-    let response;
-    let responseMetadata = null;
-    try {
-      response = await generateWithRetry(providerManager, prompt);
+     let response;
+     let responseMetadata = null;
+     try {
+       response = await generateWithRetry(providerManager, prompt);
 
-      // Handle enhanced response format
-      if (typeof response === 'object' && response.text) {
-        responseMetadata = response.metadata;
-        response = response.text;
-        logger.debug('Enhanced AI response received', {
-          provider: responseMetadata?.provider,
-          model: responseMetadata?.model,
-          usage: responseMetadata?.usage,
-          finishReason: responseMetadata?.finish_reason || responseMetadata?.finishReason
-        });
-      } else if (typeof response === 'string') {
-        // Legacy string response
-        logger.debug('Legacy AI response received (string format)');
-      } else {
-        // Unexpected response type, convert to string properly
-        logger.warn('Unexpected AI response type, converting to string', { type: typeof response, value: response });
-        if (response && typeof response === 'object') {
-          response = JSON.stringify(response);
-        } else {
-          response = String(response || 'Error: Invalid AI response');
-        }
-      }
-    } catch (error) {
+       // Handle enhanced response format
+       if (typeof response === 'object' && response.text) {
+         responseMetadata = response.metadata;
+         response = response.text;
+         logger.debug('Enhanced AI response received', {
+           provider: responseMetadata?.provider,
+           model: responseMetadata?.model,
+           usage: responseMetadata?.usage,
+           finishReason: responseMetadata?.finish_reason || responseMetadata?.finishReason
+         });
+       } else if (typeof response === 'string') {
+         // Legacy string response
+         logger.debug('Legacy AI response received (string format)');
+       } else {
+         // Unexpected response type, convert to string properly
+         logger.warn('Unexpected AI response type, converting to string', { type: typeof response, value: response });
+         if (response && typeof response === 'object') {
+           response = JSON.stringify(response);
+         } else {
+           response = String(response || 'Error: Invalid AI response');
+         }
+       }
+
+       // Add response validation for identity confusion detection
+       const confusionPatterns = [
+         /I (said|told|mentioned|asked)/i,
+         /you (said|told|mentioned|asked) me/i,
+         /I am the user/i,
+         /you are the user/i,
+         /I made you/i,
+         /I own you/i
+       ];
+
+       const hasConfusion = confusionPatterns.some(pattern => pattern.test(response));
+       if (hasConfusion) {
+         logger.warn('Potential identity confusion detected in response', {
+           response: response.substring(0, 200),
+           userId: message.author.id,
+           botId: client.user.id
+         });
+         // Add correction prefix
+         response = "CORRECTION: I am the AI assistant. " + response;
+       }
+     } catch (error) {
       const { handleError } = await import('./utils/errorHandler.js');
       const result = handleError(error, {
         function: 'generateAIResponse',

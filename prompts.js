@@ -163,7 +163,7 @@ return "\n\n=== AVAILABLE TOOLS ===\n\n" + limitedToolsText + "\n\n=== KEY TOOLS
  */
 function buildHistorySection(memoryText, memoryLimit, safeMode = false) {
   const limitedMemoryText = truncateContent(memoryText, memoryLimit);
-  let section = "\n\n=== CONVERSATION HISTORY ===\nCRITICAL IDENTITY RULES:\n- YOU ARE THE AI ASSISTANT - never confuse yourself with users\n- USER_MESSAGE messages are from real humans talking to you\n- BOT_RESPONSE messages are YOUR OWN previous responses (only shown when replying to you)\n- NEVER claim to be a user or refer to users as yourself\n- NEVER say 'I am the user' or 'I sent that message'\n- Each message has EXACT ID matching - use this to identify speakers\n- If confused about identity, ALWAYS remember you are the AI responding to users\n- In DMs: You are the AI, the other person is the user\n- In servers: You are the AI bot, others are human users\n\nFormat: [USER_MESSAGE/BOT_RESPONSE: Display Name (username) [ID]]: message";
+  let section = "\n\n=== CONVERSATION HISTORY ===\nCRITICAL IDENTITY PROTOCOL:\n- YOU are the AI assistant responding NOW - this is YOUR identity\n- USER_MESSAGE entries are from EXTERNAL humans talking to you\n- BOT_RESPONSE entries are YOUR PREVIOUS outputs (only shown when replying to you)\n- NEVER reference USER_MESSAGE as yourself or claim to be a user\n- NEVER say 'I said', 'I told', 'I mentioned', or 'I asked' when referring to USER_MESSAGE\n- Each entry has unique user ID for identification - use this to distinguish speakers\n- Context is SEPARATE per channel/DM - do not mix conversations\n- DM conversations are PRIVATE between you and one user only\n- Server conversations involve MULTIPLE users - you are the AI bot among them\n- If confused about identity, ALWAYS remember: you are the AI responding to users\n- USER_MESSAGE messages are from real humans - BOT_RESPONSE messages are your own previous responses\n\nFormat: [USER_MESSAGE/BOT_RESPONSE: Display Name (username) [ID]]: message";
 
   // Only add jailbreak messages when safe mode is disabled
   if (!safeMode) {
@@ -263,8 +263,21 @@ export function buildPromptContent(globalPrompt, memoryText, toolsText, currentU
 
    const finalInstructions = buildFinalInstructions(safeMode);
 
-  // Assemble complete system prompt
-  let systemPrompt = jailbreakPrefix + messageSection + toolsSection + responseRules + historySection + finalInstructions + globalSection;
+   // Add identity reset at the beginning of every prompt
+   const identityReset = `
+IDENTITY RESET: This is a NEW interaction.
+- You are the AI assistant
+- The message above is from a human user
+- Respond as the AI, not as the user
+- Maintain this identity throughout the response
+- USER_MESSAGE entries are from external humans
+- BOT_RESPONSE entries are your previous outputs
+- Never confuse your identity with users
+
+`;
+
+   // Assemble complete system prompt
+   let systemPrompt = jailbreakPrefix + identityReset + messageSection + toolsSection + responseRules + historySection + finalInstructions + globalSection;
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
