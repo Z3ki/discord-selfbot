@@ -83,7 +83,7 @@ function buildMessageSection(messageInfo, messageContent, audioTranscription, me
  * @returns {string} Formatted response rules
  */
 
-function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = false) {
+function buildResponseRules(messageInfo, safeMode = false) {
   let rules;
 
   if (safeMode) {
@@ -110,9 +110,12 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
         " - Server prompts override";
      }
 
-  if (messageInfo.includes('DM')) {
-    rules += '\n- In DMs: respond directly, use send_dm only for other users';
-  }
+   if (messageInfo.includes('DM')) {
+     rules += '\n- In DMs: respond directly, use send_dm only for other users';
+   }
+
+   // Shell access is permanently disabled
+   rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands';
 
    // Shell access is permanently disabled
    rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands';
@@ -139,7 +142,7 @@ return "\n=== TOOLS ===\n" + limitedToolsText + "\n\nUSAGE: TOOL: functionName p
  * @param {boolean} safeMode - Whether safe mode is enabled
  * @returns {string} Formatted history section
  */
-function buildHistorySection(memoryText, memoryLimit, safeMode = false) {
+function buildHistorySection(memoryText, memoryLimit) {
   const limitedMemoryText = truncateContent(memoryText, memoryLimit);
   let section = "\n=== HISTORY ===\nAI assistant. USER_MESSAGE=human, BOT_RESPONSE=AI.\n" + limitedMemoryText;
   return section;
@@ -202,15 +205,15 @@ function buildFinalInstructions(safeMode = false) {
  * @param {string} serverPrompt - Server-specific prompt (optional)
  * @returns {string|Array} Prompt content (string for text-only, array for multimodal)
  */
-export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null, safeMode = false, shellAccessEnabled = false) {
+export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null, safeMode = false) {
   // Calculate fixed allocation
   const allocation = allocatePromptSpace(TOTAL_PROMPT_LIMIT);
 
   // Build prompt sections
   const messageSection = buildMessageSection(messageInfo, messageContent, audioTranscription, allocation.message, repliedMessageContent, safeMode);
-  const responseRules = buildResponseRules(messageInfo, safeMode, shellAccessEnabled);
+   const responseRules = buildResponseRules(messageInfo, safeMode);
   const toolsSection = buildToolsSection(toolsText, allocation.tools);
-  const historySection = buildHistorySection(memoryText, allocation.memory, safeMode);
+   const historySection = buildHistorySection(memoryText, allocation.memory);
 
     // Use server prompt if available, otherwise use global prompt
     const effectivePrompt = serverPrompt || globalPrompt;

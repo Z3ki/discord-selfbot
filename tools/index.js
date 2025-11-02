@@ -44,7 +44,7 @@ export class ToolRegistry {
     return tools;
   }
 
-  getToolsText(serverId, bot) {
+   getToolsText() {
     // Group tools by category
     const categories = {
       'COMMUNICATION': [],
@@ -53,10 +53,7 @@ export class ToolRegistry {
       'RELATIONSHIPS': []
     };
 
-    // Add shell only if shell access is enabled for this server
-    if ((serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId)) || (!serverId && bot && bot.shellAccessDMs)) {
-      categories['SYSTEM'].push('shell');
-    }
+
 
     const sections = [];
 

@@ -109,8 +109,8 @@ export class ToolExecutor {
   /**
    * Get tools text for AI prompt
    */
-  getToolsText(serverId, bot) {
-    return this.registry.getToolsText(serverId, bot);
+  getToolsText() {
+    return this.registry.getToolsText();
   }
 
   /**

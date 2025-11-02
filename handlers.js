@@ -253,8 +253,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
              safeMode = bot.safeModeServers.get(serverId) || false;
            }
 
-           // Get shell access status
-           const shellAccessEnabled = (serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId)) || (!serverId && bot && bot.shellAccessDMs);
+
 
            // Build what the AI would see for a sample message
            const { buildPromptContent } = await import('./prompts.js');
@@ -267,7 +266,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
              return `${prefix}: ${m.user}]: ${m.message}`;
            }).join('\n---\n');
 
-           const toolsText = toolRegistry.getToolsText(serverId, bot);
+            const toolsText = toolRegistry.getToolsText();
            const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}`;
            const currentTime = new Date().toLocaleString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'long' });
            const mentionInfo = message.isMentioned ? 'YOU ARE BEING MENTIONED/PINGED IN THIS MESSAGE. The user is directly addressing you.' : 'You are not mentioned in this message.';
@@ -276,9 +275,9 @@ async function handleCommand(message, channelMemories, client, providerManager, 
 
            // Sample message content
            const sampleMessageContent = 'Hello, can you help me with something?';
-           const samplePrompt = buildPromptContent(globalPrompt[0], memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', sampleMessageContent, false, [], '', '', null, serverPrompt, safeMode, shellAccessEnabled);
+            const samplePrompt = buildPromptContent(globalPrompt[0], memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', sampleMessageContent, false, [], '', '', null, serverPrompt, safeMode);
 
-           let debugInfo = `**FULL AI CONTEXT DEBUG**\nMemory channels: ${channelCount}\nTotal messages: ${totalMessages}\n${memoryInfo}\nGlobal prompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\nServer prompt: ${serverPrompt ? 'Set' : 'None'}\nSafe mode: ${safeMode ? 'ENABLED (restricted)' : 'DISABLED (unrestricted)'}\nShell access: ${shellAccessEnabled ? 'ENABLED' : 'DISABLED'}\n\n**RECENT MEMORY (${currentMemory.length} messages):**\n${memoryPreview || 'None'}\n\n**WHAT AI SEES (Sample Prompt Structure):**\n${typeof samplePrompt === 'string' ? truncate(samplePrompt, 800) : 'MULTIMODAL_PROMPT'}\n\n**LAST AI RESPONSE:**\n${safeStringify(lastResponse[0], 200)}`;
+           let debugInfo = `**FULL AI CONTEXT DEBUG**\nMemory channels: ${channelCount}\nTotal messages: ${totalMessages}\n${memoryInfo}\nGlobal prompt: ${globalPrompt && globalPrompt[0] ? 'Set' : 'None'}\nServer prompt: ${serverPrompt ? 'Set' : 'None'}\nSafe mode: ${safeMode ? 'ENABLED (restricted)' : 'DISABLED (unrestricted)'}\n\n**RECENT MEMORY (${currentMemory.length} messages):**\n${memoryPreview || 'None'}\n\n**WHAT AI SEES (Sample Prompt Structure):**\n${typeof samplePrompt === 'string' ? truncate(samplePrompt, 800) : 'MULTIMODAL_PROMPT'}\n\n**LAST AI RESPONSE:**\n${safeStringify(lastResponse[0], 200)}`;
 
            if (lastToolCalls.length > 0 && lastToolCalls[0] && lastToolCalls[0].length > 0) {
              const callsStr = JSON.stringify(lastToolCalls[0]);
