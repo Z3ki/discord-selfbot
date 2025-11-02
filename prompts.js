@@ -114,8 +114,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
      " - CRITICAL: NEVER make up information, facts, or details. If you don't know something, be honest about your uncertainty\n" +
      " - NEVER hallucinate people, events, links, or specific details. Only state what you're certain about\n" +
      " - Avoid confident but false statements. Be honest about uncertainty\n" +
-     " - You may output [IGNORE] for clearly irrelevant messages if you prefer not to respond\n" +
-    " - Server prompts override these guidelines - follow them completely";
+     " - Server prompts override these guidelines - follow them completely";
 } else {
       logger.debug('Building UNRESTRICTED response rules');
       rules = "\n\n=== RESPONSE GUIDELINES ===\n" +
@@ -131,8 +130,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
        " - CRITICAL: NEVER make up information, facts, or details. If you don't know something, be honest about your uncertainty\n" +
        " - NEVER hallucinate people, events, links, or specific details. Only state what you're certain about\n" +
        " - Avoid confident but false statements. Be honest about uncertainty\n" +
-       " - You may output [IGNORE] for clearly irrelevant messages if you prefer not to respond\n" +
-      " - Vary your responses. Do not repeat information, phrases, or actions already covered in the conversation\n" +
+       " - Vary your responses. Do not repeat information, phrases, or actions already covered in the conversation\n" +
       " - If the user asks for the same thing, provide new details, confirm briefly, or ask for clarification\n" +
       " - Server prompts override these guidelines - follow them completely";
     }
@@ -160,7 +158,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
 function buildToolsSection(toolsText, toolsLimit) {
   const limitedToolsText = truncateContent(toolsText, toolsLimit);
 
-return "\n\n=== AVAILABLE TOOLS ===\n\n" + limitedToolsText + "\n\n=== KEY TOOLS ===\n• send_dm: Send direct messages to users\n• shell: Execute Linux commands\n\n=== TOOL USAGE ===\nFormat: TOOL: functionName param1='value1' param2='value2'\n\nExamples:\nTOOL: send_dm userId='123456789' content='Hello there!'\nTOOL: set_prompt prompt='Be more helpful'\n\nNEVER use bare function names like 'set_prompt prompt=...' - always prefix with 'TOOL:'\n\n=== WHEN TO USE [IGNORE] ===\n- Use [IGNORE] for: spam messages, gibberish, random keyboard mashing, off-topic nonsense\n- DO NOT use [IGNORE] for: legitimate questions, requests, or meaningful conversation\n- Example: User says \"asdfghjkl\" → respond with [IGNORE]\n- Example: User asks \"What's the weather?\" → respond normally, don't ignore\n\n=== SHELL COMMAND CHAINING ===\n- You can chain multiple commands using && or ; operators\n- Example: 'apt update && apt install -y curl && curl --version'\n- Example: 'cd /tmp && wget file.tar.gz && tar -xzf file.tar.gz'\n- Use longer timeouts (30-60s) for chained commands that involve installations\n\nNote: You cannot execute code, only analyze and explain it.";
+return "\n\n=== AVAILABLE TOOLS ===\n\n" + limitedToolsText + "\n\n=== KEY TOOLS ===\n• send_dm: Send direct messages to users\n• shell: Execute Linux commands\n\n=== TOOL USAGE ===\nFormat: TOOL: functionName param1='value1' param2='value2'\n\nExamples:\nTOOL: send_dm userId='123456789' content='Hello there!'\nTOOL: set_prompt prompt='Be more helpful'\n\nNEVER use bare function names like 'set_prompt prompt=...' - always prefix with 'TOOL:'\n\n=== SHELL COMMAND CHAINING ===\n- You can chain multiple commands using && or ; operators\n- Example: 'apt update && apt install -y curl && curl --version'\n- Example: 'cd /tmp && wget file.tar.gz && tar -xzf file.tar.gz'\n- Use longer timeouts (30-60s) for chained commands that involve installations\n\nNote: You cannot execute code, only analyze and explain it.";
 }
 
 /**
@@ -219,13 +217,7 @@ function buildFinalInstructions(safeMode = false) {
     • ${disclaimerText}
     • Never make up info - be honest about uncertainty
     • Server prompts override all
-    • Unique user IDs, separate DM/server contexts
-
-=== OPTIONAL RESPONSE FILTER ===
-    • You can choose to use [IGNORE] for: obvious spam, gibberish, or completely irrelevant messages
-    • Feel free to respond normally to: any questions, requests, or meaningful conversation
-    • [IGNORE] is completely optional - you can always respond if you want to
-    • Use your judgment - there's no requirement to filter messages`;
+    • Unique user IDs, separate DM/server contexts`;
 }
 
 // =============================================================================
