@@ -12,36 +12,22 @@ const PROMPT_ALLOCATION = {
   system: 0.25          // 25% of total
 };
 
-const TOTAL_PROMPT_LIMIT = 128000; // 128k chars ~ 32k tokens
-
 /**
- * Allocates prompt space based on content type, media presence, and conversation complexity
+ * Allocates fixed prompt space based on predefined ratios
  * @param {number} totalLimit - Total character limit
- * @param {boolean} hasMedia - Whether media content is present
- * @param {number} memoryLength - Number of messages in memory (complexity indicator)
  * @returns {Object} Allocation object with character limits for each section
  */
-function allocatePromptSpace(totalLimit, hasMedia, memoryLength = 0) {
-  let adjusted = { ...PROMPT_ALLOCATION };
-
-  // Adjust based on media presence
-  if (hasMedia) {
-    adjusted = { ...adjusted, memory: 0.25, message: 0.3, tools: 0.1 };
-  }
-
-  // Adjust based on conversation complexity (more messages = less memory allocation)
-  if (memoryLength > 10) {
-    const complexityFactor = Math.min(memoryLength / 20, 2); // Max 2x adjustment
-    adjusted.memory = Math.max(0.15, adjusted.memory / complexityFactor);
-    adjusted.message = Math.min(0.4, adjusted.message + (adjusted.memory - 0.15) * 0.5);
-  }
-
+function allocatePromptSpace(totalLimit) {
   return Object.fromEntries(
-    Object.entries(adjusted).map(([key, ratio]) =>
+    Object.entries(PROMPT_ALLOCATION).map(([key, ratio]) =>
       [key, Math.floor(totalLimit * ratio)]
     )
   );
 }
+
+const TOTAL_PROMPT_LIMIT = 128000; // 128k chars ~ 32k tokens
+
+
 
 // =============================================================================
 // CONTENT TRUNCATION UTILITIES
@@ -220,9 +206,8 @@ function buildFinalInstructions(safeMode = false) {
  * @returns {string|Array} Prompt content (string for text-only, array for multimodal)
  */
 export function buildPromptContent(globalPrompt, memoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, debateContext, messageContent, hasMedia, multimodalContent, fallbackText, audioTranscription = '', repliedMessageContent = null, serverPrompt = null, safeMode = false, shellAccessEnabled = false) {
-  // Calculate dynamic allocation based on memory complexity
-  const memoryMessageCount = (memoryText.match(/\[USER_MESSAGE|\[BOT_RESPONSE/g) || []).length;
-  const allocation = allocatePromptSpace(TOTAL_PROMPT_LIMIT, hasMedia, memoryMessageCount);
+  // Calculate fixed allocation
+  const allocation = allocatePromptSpace(TOTAL_PROMPT_LIMIT);
 
   // Build prompt sections
   const messageSection = buildMessageSection(messageInfo, messageContent, audioTranscription, allocation.message, repliedMessageContent, safeMode);
