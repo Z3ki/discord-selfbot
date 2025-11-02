@@ -128,10 +128,6 @@ export const sendDMTool = {
     // Remove excessive consecutive empty lines (more than 2)
     processed = processed.replace(/\n{3,}/g, '\n\n');
 
-    // Handle semicolons in command chains - add line breaks for better splitting
-    // This helps prevent cutting off shell commands in the middle of command chains
-    processed = processed.replace(/;(?!\s*$)/g, ';\n');
-
     // Basic validation
     if (processed.length === 0) {
       throw new Error('Content cannot be empty after processing');
@@ -160,7 +156,7 @@ export const sendDMTool = {
         break;
       }
 
-      // Find the best split point (prefer line breaks, then semicolons, then spaces)
+      // Find the best split point (prefer line breaks, then spaces)
       let splitIndex = maxLength;
 
       // Try to split at line break first
@@ -168,16 +164,10 @@ export const sendDMTool = {
       if (lineBreakIndex > maxLength * 0.7) { // Only if it's reasonably close to maxLength
         splitIndex = lineBreakIndex;
       } else {
-        // Try to split at semicolon (for command chains)
-        const semicolonIndex = remaining.lastIndexOf(';', maxLength);
-        if (semicolonIndex > maxLength * 0.7) {
-          splitIndex = semicolonIndex + 1; // Include the semicolon in the current part
-        } else {
-          // Try to split at space
-          const spaceIndex = remaining.lastIndexOf(' ', maxLength);
-          if (spaceIndex > maxLength * 0.7) {
-            splitIndex = spaceIndex;
-          }
+        // Try to split at space
+        const spaceIndex = remaining.lastIndexOf(' ', maxLength);
+        if (spaceIndex > maxLength * 0.7) {
+          splitIndex = spaceIndex;
         }
       }
 
