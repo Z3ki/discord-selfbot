@@ -216,18 +216,18 @@ export async function generateResponse(message, providerManager, channelMemories
   // Self-response loop prevention: Filter out bot messages from memory by default
   // Only include bot messages when directly replying to prevent AI confusion
 
-    // Optimize memory: limit to last 18 messages and clean old entries (24 hours)
+    // Optimize memory: limit to last 15 messages and clean old entries (24 hours)
     const now = Date.now();
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
     // Remove messages older than 24 hours
     memory = memory.filter(msg => now - msg.timestamp < maxAge);
 
-    if (memory.length > 18) {
-      // Keep only last 18 messages to prevent memory bloat
-      const excess = memory.length - 18;
+    if (memory.length > 15) {
+      // Keep only last 15 messages to prevent memory bloat
+      const excess = memory.length - 15;
       memory.splice(0, excess);
-      logger.debug('Trimmed channel memory', {
+      logger.debug('Trimmed channel memory to 15 messages', {
         channelId: message.channel?.id || message.channelId,
         removed: excess,
         remaining: memory.length,
@@ -258,7 +258,7 @@ export async function generateResponse(message, providerManager, channelMemories
 
     // Filter and prepare target messages - filter out bot messages by default to prevent self-reference
     // Only include bot messages when directly replying to a bot message
-    let targetMessages = memory.slice(-18).filter(m => m.user !== 'SYSTEM');
+    let targetMessages = memory.slice(-15).filter(m => m.user !== 'SYSTEM');
 
     if (!message.isReplyToBot) {
       // Filter out bot messages to prevent AI confusion with its own responses

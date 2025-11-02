@@ -1140,10 +1140,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 message: message.content + embedInfo + mediaInfo + repliedMediaInfo + transcriptionInfo,
                 timestamp: Date.now()
               };
-              memory.push(userMessage);
-              if (memory.length > 50) {
-                memory.shift();
-              }
+               memory.push(userMessage);
+               if (memory.length > 15) {
+                 memory.shift();
+               }
 
               logger.debug('Added user message to memory', {
                 channelId: message.channel?.id || message.channelId,
@@ -1227,10 +1227,10 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 message: response.response,
                 timestamp: Date.now()
               };
-              memory.push(botMessage);
-              if (memory.length > 50) {
-                memory.shift();
-              }
+               memory.push(botMessage);
+               if (memory.length > 15) {
+                 memory.shift();
+               }
 
             logger.debug('Added bot response to memory', {
               channelId: message.channel?.id || message.channelId,
