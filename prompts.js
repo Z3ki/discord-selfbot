@@ -132,7 +132,7 @@ function buildResponseRules(messageInfo, safeMode = false) {
 function buildToolsSection(toolsText, toolsLimit) {
   const limitedToolsText = truncateContent(toolsText, toolsLimit);
 
-return "\n=== TOOLS ===\n" + limitedToolsText + "\n\nUSAGE: TOOL: functionName param='value'\nExamples: TOOL: send_dm userId='123' content='Hi'\nTOOL: shell command='ls -la'\n\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze.";
+return "\n=== TOOLS ===\n" + limitedToolsText + "\n\nUSAGE: TOOL: functionName param='value' OR functionName(param='value')\nExamples: TOOL: send_dm userId='123' content='Hi'\nmemory_reset(scope='channel', confirm=True)\n\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze.";
 }
 
 /**

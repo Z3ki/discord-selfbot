@@ -14,6 +14,74 @@ const responseCache = new LRUCache(200, 100); // Cache up to 200 responses, 100M
 
 
 
+function parseFunctionArgs(argsStr) {
+  const args = {};
+
+  if (!argsStr) return args;
+
+  // Split by comma, but handle nested quotes
+  const argPairs = [];
+  let current = '';
+  let inQuotes = false;
+  let quoteChar = '';
+  let parenDepth = 0;
+
+  for (let i = 0; i < argsStr.length; i++) {
+    const char = argsStr[i];
+
+    if (!inQuotes && (char === '"' || char === "'")) {
+      inQuotes = true;
+      quoteChar = char;
+      current += char;
+    } else if (inQuotes && char === quoteChar && (i === 0 || argsStr[i-1] !== '\\')) {
+      inQuotes = false;
+      current += char;
+    } else if (!inQuotes && char === '(') {
+      parenDepth++;
+      current += char;
+    } else if (!inQuotes && char === ')') {
+      parenDepth--;
+      current += char;
+    } else if (!inQuotes && parenDepth === 0 && char === ',') {
+      argPairs.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    argPairs.push(current.trim());
+  }
+
+  // Parse each arg=val pair
+  for (const pair of argPairs) {
+    const eqIndex = pair.indexOf('=');
+    if (eqIndex === -1) continue;
+
+    const key = pair.substring(0, eqIndex).trim();
+    let value = pair.substring(eqIndex + 1).trim();
+
+    // Remove surrounding quotes
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    // Convert boolean strings
+    if (value === 'True' || value === 'true') {
+      args[key] = true;
+    } else if (value === 'False' || value === 'false') {
+      args[key] = false;
+    } else if (!isNaN(value) && value !== '') {
+      args[key] = Number(value);
+    } else {
+      args[key] = value;
+    }
+  }
+
+  return args;
+}
+
 function parseToolArgs(funcName, paramsStr) {
   const args = {};
 
@@ -85,14 +153,18 @@ export function extractToolCalls(text) {
   // Get list of valid tool names to filter out invalid ones
   const validToolNames = new Set(toolRegistry.getAllTools().map(tool => tool.name));
 
+  // Get valid tool names pattern
+  const validToolNamesPattern = Array.from(validToolNames).join('|');
+
   // Support both TOOL: format and ```tool format
   const regex1 = /TOOL:\s*(\w+)\s+(.+?)(?:\n|$)/g;
+  // Support function call syntax: funcName(arg1='value', arg2=True)
+  const regex3 = new RegExp('(' + validToolNamesPattern + ')\\s*\\(([^)]*)\\)', 'g');
   // Only match ```tool blocks, not regular code blocks with language identifiers
   const regex2 = /```tool\s+([\s\S]*?)```/g;
   // Support ```funcName format but exclude common programming languages
   const regex4 = /```(python|javascript|js|java|cpp|c\+\+|c|go|rust|php|ruby|swift|kotlin|scala|typescript|ts|bash|shell|sh|sql|html|css|xml|json|yaml|yml|markdown|md|text|txt)\s+([\s\S]*?)```/g;
   // Support valid tool names in backticks
-  const validToolNamesPattern = Array.from(validToolNames).join('|');
   const regex5 = new RegExp('```(' + validToolNamesPattern + ')\\s+([\\s\\S]*?)```', 'g');
 
   // Check TOOL: format first
@@ -107,6 +179,22 @@ export function extractToolCalls(text) {
       }
     } catch (e) {
       logger.error('Failed to parse TOOL: call', { error: e.message, toolCallText: match[0] });
+    }
+  }
+
+  // Check function call syntax: funcName(arg1='value', arg2=True)
+  regex3.lastIndex = 0;
+  while ((match = regex3.exec(text)) !== null) {
+    try {
+      const funcName = match[1];
+      const argsStr = match[2].trim();
+      if (validToolNames.has(funcName)) {
+        toolCalls.push({ funcName, args: parseFunctionArgs(argsStr) });
+      } else {
+        logger.warn(`Invalid tool name in function call format: ${funcName}`);
+      }
+    } catch (e) {
+      logger.error('Failed to parse function call', { error: e.message, toolCallText: match[0] });
     }
   }
 
