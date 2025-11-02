@@ -20,7 +20,7 @@ export const memoryResetTool = {
   },
   execute: async function({ scope = 'channel', confirm = false }, message, client, channelMemories, dmOrigins) {
     if (!confirm) {
-      return 'Memory reset cancelled - confirmation required. Use confirm=true to proceed.';
+      return 'Memory reset cancelled - I need confirmation to proceed. Please use confirm=true.';
     }
 
     let resetCount = 0;
@@ -33,18 +33,18 @@ export const memoryResetTool = {
           resetCount++;
         }
       }
-      return `Reset all conversation memories across ${resetCount} channels/DMs.`;
+      return `I have cleared all my conversation memories across ${resetCount} channels and DMs.`;
     }
 
     const channelId = message.channel?.id || message.channelId;
     const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
 
     if (scope === 'dm' && !isDM) {
-      return 'Cannot reset DM memory - this is not a DM channel.';
+      return 'I cannot reset DM memory because this is not a DM channel.';
     }
 
     if (scope === 'channel' && isDM) {
-      return 'Cannot reset channel memory - this is a DM. Use scope="dm" instead.';
+      return 'I cannot reset channel memory because this is a DM. Please use scope="dm" instead.';
     }
 
     if (channelMemories.has(channelId)) {
@@ -54,6 +54,6 @@ export const memoryResetTool = {
     }
 
     const scopeText = scope === 'dm' ? 'DM' : 'channel';
-    return `Reset ${resetCount} messages from conversation memory in this ${scopeText}.`;
+    return `I have cleared my conversation memory for this ${scopeText}.`;
   }
 };
