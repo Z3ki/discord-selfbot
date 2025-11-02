@@ -1,7 +1,7 @@
 import { logger } from '../../utils/logger.js';
 
 export const dockerExecTool = {
-  name: 'docker_exec',
+  name: 'shell',
   description: 'Execute Linux terminal commands in a Docker container. Perfect for: network diagnostics (ping, traceroute, nslookup, dig), downloading files (curl, wget), system info (ifconfig, netstat, ps, ls), installing packages (apt, yum, pip), and any shell command. You can chain multiple commands by using && or ; in the command string. Use this when you need to run terminal commands that aren\'t available as Discord tools. YOU MUST choose an appropriate timeout based on the command: 5-10s for quick commands, 15-30s for network tests, 30-60s for downloads/installs. Always specify a timeout parameter to prevent timeouts.\n\nUse curl/wget for web content and system commands for host information.',
   parameters: {
     type: 'object',
@@ -13,7 +13,7 @@ export const dockerExecTool = {
   }
 };
 
-export async function executeDockerExec(args, progressCallback = null) {
+export async function executeShell(args, progressCallback = null) {
   const { command, timeout } = args;
 
   const finalTimeout = timeout || 15;

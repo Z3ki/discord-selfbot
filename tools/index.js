@@ -63,9 +63,9 @@ export class ToolRegistry {
       'RELATIONSHIPS': []
     };
 
-    // Add docker_exec only if shell access is enabled for this server
+    // Add shell only if shell access is enabled for this server
     if ((serverId && bot && bot.shellAccessServers && bot.shellAccessServers.get(serverId)) || (!serverId && bot && bot.shellAccessDMs)) {
-      categories['SYSTEM'].push('docker_exec');
+      categories['SYSTEM'].push('shell');
     }
 
     const sections = [];

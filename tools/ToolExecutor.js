@@ -64,11 +64,11 @@ export class ToolExecutor {
         case 'leave_server':
           return await executeLeaveServer(args, client);
 
-        case 'docker_exec': {
-            // For single docker_exec calls, we still need to use the special handling
+        case 'shell': {
+            // For single shell calls, we still need to use the special handling
             // Create a mock toolCall object for consistency
-            const mockToolCall = { funcName: 'docker_exec', args };
-            const executionResult = await this.executeDockerExecWithUpdates(mockToolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+            const mockToolCall = { funcName: 'shell', args };
+            const executionResult = await this.executeShellWithUpdates(mockToolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
             return executionResult.result;
           }
 
@@ -144,7 +144,7 @@ export class ToolExecutor {
       try {
         // Special handling for docker_exec with live updates
         if (toolCall.funcName === 'docker_exec') {
-          const executionResult = await this.executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, dockerStatusMessage);
+          const executionResult = await this.executeShellWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, dockerStatusMessage);
 
           // Store the status message for reuse in subsequent docker_exec calls
           if (!dockerStatusMessage && executionResult.statusMessage) {
@@ -177,7 +177,7 @@ export class ToolExecutor {
   /**
    * Execute docker_exec with live message updates
    */
-  async executeDockerExecWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, existingStatusMessage = null) {
+  async executeShellWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, existingStatusMessage = null) {
     const { args } = toolCall;
     const { command } = args;
 
@@ -240,7 +240,7 @@ export class ToolExecutor {
 
     // Execute the docker command with progress updates
     try {
-      const result = await this.executeDockerExecWithProgress(toolCall, message, client, statusMessage);
+      const result = await this.executeShellWithProgress(toolCall, message, client, statusMessage);
       return result;
     } catch (error) {
       logger.error('Docker exec with updates failed', { error: error.message });
@@ -262,12 +262,12 @@ export class ToolExecutor {
   /**
    * Execute docker_exec with progress updates
    */
-  async executeDockerExecWithProgress(toolCall, message, client, statusMessage) {
+  async executeShellWithProgress(toolCall, message, client, statusMessage) {
     const { args } = toolCall;
     const { command } = args;
 
     // Import the docker exec function
-    const { executeDockerExec } = await import('./system/dockerExec.js');
+    const { executeShell } = await import('./system/dockerExec.js');
 
     // Execute with progress callback
     let lastUpdate = 0;
@@ -328,7 +328,7 @@ export class ToolExecutor {
     };
 
     // Execute with progress updates
-    const result = await executeDockerExec(args, progressCallback);
+    const result = await executeShell(args, progressCallback);
 
     // Final update with complete results
     if (statusMessage) {
