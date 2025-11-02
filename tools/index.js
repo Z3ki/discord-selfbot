@@ -14,7 +14,7 @@ import { dockerExecTool } from './system/dockerExec.js';
 import { memoryResetTool } from './system/memoryReset.js';
 import { memoryInspectTool } from './system/memoryInspect.js';
 
-import { wikipediaInfoTool } from './information/wikipedia.js';
+
 
 
 
@@ -29,7 +29,6 @@ export const tools = [
   dockerExecTool,
   memoryResetTool,
   memoryInspectTool,
-  wikipediaInfoTool,
 ];
 
 // Tool registry for execution
@@ -59,7 +58,6 @@ export class ToolRegistry {
       'COMMUNICATION': ['send_dm'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
       'SYSTEM': ['memory_reset', 'memory_inspect'],
-      'INFORMATION': ['wikipedia_info'],
       'RELATIONSHIPS': []
     };
 
