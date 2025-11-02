@@ -8,7 +8,6 @@ import { LRUCache } from './utils/LRUCache.js';
 
 // Response caching
 const responseCache = new LRUCache(200, 100); // Cache up to 200 responses, 100MB limit
-const toolResultCache = new LRUCache(100, 50); // Cache tool results
 
 // Response quality monitoring removed for faster responses
 

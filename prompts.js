@@ -281,8 +281,8 @@ IDENTITY RESET: This is a NEW interaction.
 
 `;
 
-   // Assemble complete system prompt
-   let systemPrompt = jailbreakPrefix + identityReset + messageSection + toolsSection + responseRules + historySection + finalInstructions + globalSection;
+    // Assemble complete system prompt
+    let systemPrompt = jailbreakPrefix + identityReset + globalSection + responseRules + toolsSection + historySection + finalInstructions + messageSection;
 
   // CRITICAL: Ensure total prompt stays under 2000 characters
   if (systemPrompt.length > TOTAL_PROMPT_LIMIT) {
@@ -293,12 +293,12 @@ IDENTITY RESET: This is a NEW interaction.
 
     // Emergency truncation: prioritize keeping the most recent content
     const sections = [
-      { name: 'message', content: messageSection, priority: 1 },
-      { name: 'global', content: globalSection, priority: 2 },
+      { name: 'global', content: globalSection, priority: 1 },
+      { name: 'rules', content: responseRules, priority: 2 },
       { name: 'tools', content: toolsSection, priority: 3 },
       { name: 'memory', content: historySection, priority: 4 },
-      { name: 'rules', content: responseRules, priority: 5 },
-      { name: 'final', content: finalInstructions, priority: 6 }
+      { name: 'final', content: finalInstructions, priority: 5 },
+      { name: 'message', content: messageSection, priority: 6 }
     ];
 
     // Sort by priority and build prompt incrementally
