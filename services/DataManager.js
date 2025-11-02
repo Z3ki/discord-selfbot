@@ -107,7 +107,7 @@ export class DataManager {
   }
 
   // Memory cleanup methods
-  async cleanupChannelMemories(channelMemories, maxMessages = 50, maxAge = 7 * 24 * 60 * 60 * 1000) { // 7 days
+  async cleanupChannelMemories(channelMemories, maxMessages = 15, maxAge = 7 * 24 * 60 * 60 * 1000) { // 7 days
     const now = Date.now();
     let totalCleaned = 0;
     
