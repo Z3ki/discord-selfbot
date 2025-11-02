@@ -114,12 +114,8 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
     rules += '\n- In DMs: respond directly, use send_dm only for other users';
   }
 
-  // Add shell access information
-  if (shellAccessEnabled) {
-    rules += '\n- SHELL ACCESS ENABLED: You can use shell to run Linux commands (ping, install packages, system operations)';
-  } else {
-    rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands. If users ask for shell operations, tell them to ask a bot admin to enable shell access with ";shell" command';
-  }
+   // Shell access is permanently disabled
+   rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands';
 
   return rules;
 }

@@ -8,12 +8,8 @@ import { leaveServerTool } from './discord/leaveServer.js';
 
 
 
-import { dockerExecTool } from './system/dockerExec.js';
 import { memoryResetTool } from './system/memoryReset.js';
 import { memoryInspectTool } from './system/memoryInspect.js';
-
-
-
 
 
 
@@ -23,7 +19,6 @@ export const tools = [
   reactionManagerTool,
   joinServerTool,
   leaveServerTool,
-  dockerExecTool,
   memoryResetTool,
   memoryInspectTool,
 ];

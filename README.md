@@ -255,15 +255,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 - `;safemode` - Toggle safe mode for family-friendly responses
 
-### System Features
-- `;shell` - Toggle Docker shell access (admin only, disabled by default)
-
 ### Command Examples
-
-**Enable Shell Access:**
-```
-;shell  # In server or DM to enable/disable
-```
 
 **Set Custom Prompt:**
 ```
