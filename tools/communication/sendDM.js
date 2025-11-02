@@ -20,36 +20,53 @@ import { logger } from '../../utils/logger.js';
  */
 export const sendDMTool = {
   name: 'send_dm',
-  description: 'Send a direct message to a USER (not a channel). SELFBOT CAPABILITY: Selfbots can send DMs to users in mutual servers. The target user MUST be in at least one server that the selfbot is also in. You can use: user ID (numeric), username (plain text like "john_doe"), display name (server nickname), or Discord mention (@user). NEVER use channel IDs as user IDs. The bot will automatically resolve usernames and display names by searching through all servers it is in. If the user is not found in any mutual server, the DM will fail.',
+  description: 'Send a direct message to a USER (not a channel). SELFBOT CAPABILITY: Selfbots can send DMs to users in mutual servers. The target user MUST be in at least one server that the selfbot is also in. You can use: user ID (numeric), username (plain text like "john_doe"), display name (server nickname), or Discord mention (@user). NEVER use channel IDs as user IDs. The bot will automatically resolve usernames and display names by searching through all servers it is in. If the user is not found in any mutual server, the DM will fail. MULTI-LINE SUPPORT: Content can span multiple lines with proper formatting preserved.',
   parameters: {
     type: 'object',
     properties: {
-      userId: { 
+      userId: {
         type: 'string',
         description: 'Target user ID, username, display name, or Discord mention'
       },
-      content: { 
+      content: {
         type: 'string',
-        description: 'Message content to send'
+        description: 'Message content to send (supports multi-line with \\n, auto-splits long messages)'
       },
-      reason: { 
-        type: 'string', 
-        description: 'Detailed reason for sending the DM, e.g., "User requested information about server rules" or "Responding to user query about bot features"' 
+      reason: {
+        type: 'string',
+        description: 'Detailed reason for sending the DM, e.g., "User requested information about server rules" or "Responding to user query about bot features"'
       }
     },
     required: ['userId', 'content']
   },
 
   /**
-   * Execute the send DM tool
-   * @param {SendDMArgs} args - Tool arguments
-   * @param {ExecutionContext} context - Execution context
-   * @returns {Promise<string>} Result message
-   */
+    * Execute the send DM tool
+    * @param {SendDMArgs} args - Tool arguments
+    * @param {ExecutionContext} context - Execution context
+    * @returns {Promise<string>} Result message
+    */
   async execute(args, context) {
     try {
       const { client, message } = context;
-      const dmMessage = await sendDM(client, args.userId, args.content);
+
+      // Process and validate content
+      let processedContent = this.processContent(args.content);
+
+      // Check if content is too long and needs splitting
+      const messages = this.splitLongMessage(processedContent);
+
+      let firstMessage = null;
+      let messageCount = 0;
+
+      // Send all message parts
+      for (const contentPart of messages) {
+        const dmMessage = await sendDM(client, args.userId, contentPart);
+        if (!firstMessage) firstMessage = dmMessage;
+        messageCount++;
+      }
+
+      const dmMessage = firstMessage;
 
       if (dmMessage) {
         // Save DM metadata for context tracking
@@ -72,7 +89,8 @@ export const sendDMTool = {
           dmChannel: dmMessage.channel.id
         });
 
-        return `DM sent to user ${args.userId} successfully.`;
+        const messageText = messageCount === 1 ? 'DM sent' : `${messageCount} DMs sent`;
+        return `${messageText} to user ${args.userId} successfully.`;
       } else {
         return `Failed to send DM to user ${args.userId}. The user may not exist, not be in any mutual server with the bot, or have DMs disabled. Selfbots can only DM users in shared servers.`;
       }
@@ -89,6 +107,95 @@ export const sendDMTool = {
       }
       return `Error sending DM: ${error.message}`;
     }
+  },
+
+  /**
+   * Process and validate message content
+   * @param {string} content - Raw content
+   * @returns {string} Processed content
+   */
+  processContent(content) {
+    if (!content || typeof content !== 'string') {
+      throw new Error('Content must be a non-empty string');
+    }
+
+    // Trim excessive whitespace but preserve intentional formatting
+    let processed = content.trim();
+
+    // Normalize line endings to \n
+    processed = processed.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Remove excessive consecutive empty lines (more than 2)
+    processed = processed.replace(/\n{3,}/g, '\n\n');
+
+    // Basic validation
+    if (processed.length === 0) {
+      throw new Error('Content cannot be empty after processing');
+    }
+
+    return processed;
+  },
+
+  /**
+   * Split long messages into multiple parts (Discord 2000 char limit)
+   * @param {string} content - Content to split
+   * @param {number} maxLength - Maximum length per message (default: 1900 for safety)
+   * @returns {string[]} Array of message parts
+   */
+  splitLongMessage(content, maxLength = 1900) {
+    if (content.length <= maxLength) {
+      return [content];
+    }
+
+    const parts = [];
+    let remaining = content;
+
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLength) {
+        parts.push(remaining);
+        break;
+      }
+
+      // Find the best split point (prefer line breaks, then spaces)
+      let splitIndex = maxLength;
+
+      // Try to split at line break first
+      const lineBreakIndex = remaining.lastIndexOf('\n', maxLength);
+      if (lineBreakIndex > maxLength * 0.7) { // Only if it's reasonably close to maxLength
+        splitIndex = lineBreakIndex;
+      } else {
+        // Try to split at space
+        const spaceIndex = remaining.lastIndexOf(' ', maxLength);
+        if (spaceIndex > maxLength * 0.7) {
+          splitIndex = spaceIndex;
+        }
+      }
+
+      // Extract the part and add continuation marker if not the last part
+      const part = remaining.substring(0, splitIndex).trim();
+      parts.push(part);
+
+      // Remove the processed part
+      remaining = remaining.substring(splitIndex).trim();
+
+      // Prevent infinite loops
+      if (parts.length > 10) {
+        logger.warn('Message splitting exceeded 10 parts, truncating', { originalLength: content.length });
+        break;
+      }
+    }
+
+    // Add part indicators for multi-part messages
+    if (parts.length > 1) {
+      parts.forEach((part, index) => {
+        const indicator = `\n\n[Part ${index + 1}/${parts.length}]`;
+        if (part.length + indicator.length <= maxLength) {
+          parts[index] = part + indicator;
+        }
+      });
+    }
+
+    return parts;
   }
 };
 
@@ -102,7 +209,23 @@ export const sendDMTool = {
  */
 export async function executeSendDM(args, client, message, dmOrigins) {
   try {
-    const dmMessage = await sendDM(client, args.userId, args.content);
+    // Process and validate content
+    let processedContent = sendDMTool.processContent(args.content);
+
+    // Check if content is too long and needs splitting
+    const messages = sendDMTool.splitLongMessage(processedContent);
+
+    let firstMessage = null;
+    let messageCount = 0;
+
+    // Send all message parts
+    for (const contentPart of messages) {
+      const dmMessage = await sendDM(client, args.userId, contentPart);
+      if (!firstMessage) firstMessage = dmMessage;
+      messageCount++;
+    }
+
+    const dmMessage = firstMessage;
 
     if (dmMessage) {
       // Save DM metadata for context tracking
@@ -128,7 +251,8 @@ export async function executeSendDM(args, client, message, dmOrigins) {
         dmChannel: dmMessage.channel.id
       });
 
-      return `DM sent to user ${args.userId} successfully.`;
+      const messageText = messageCount === 1 ? 'DM sent' : `${messageCount} DMs sent`;
+      return `${messageText} to user ${args.userId} successfully.`;
     } else {
       return `Failed to send DM to user ${args.userId}. The user may not exist, not be in any mutual server with the bot, or have DMs disabled. Selfbots can only DM users in shared servers.`;
     }
