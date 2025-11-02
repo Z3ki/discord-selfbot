@@ -4,6 +4,11 @@ import { getDMMetadata, loadUserContext } from './utils/index.js';
 import { processMessageMedia } from './media.js';
 import { buildPromptContent, buildFollowUpContent } from './prompts.js';
 import { logger } from './utils/logger.js';
+import { LRUCache } from './utils/LRUCache.js';
+
+// Response caching
+const responseCache = new LRUCache(200, 100); // Cache up to 200 responses, 100MB limit
+const toolResultCache = new LRUCache(100, 50); // Cache tool results
 
 // Response quality monitoring removed for faster responses
 
@@ -212,18 +217,26 @@ export async function generateResponse(message, providerManager, channelMemories
   // Self-response loop prevention: Filter out bot messages from memory by default
   // Only include bot messages when directly replying to prevent AI confusion
 
-    // Optimize memory: limit to last 25 messages and clean old entries
-    if (memory.length > 25) {
-      // Keep only last 25 messages to prevent memory bloat
-      const excess = memory.length - 50;
+    // Optimize memory: limit to last 18 messages and clean old entries (24 hours)
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+    // Remove messages older than 24 hours
+    memory = memory.filter(msg => now - msg.timestamp < maxAge);
+
+    if (memory.length > 18) {
+      // Keep only last 18 messages to prevent memory bloat
+      const excess = memory.length - 18;
       memory.splice(0, excess);
-      channelMemories.set(message.channel?.id || message.channelId, memory);
       logger.debug('Trimmed channel memory', {
         channelId: message.channel?.id || message.channelId,
         removed: excess,
-        remaining: memory.length
+        remaining: memory.length,
+        ageFiltered: true
       });
     }
+
+    channelMemories.set(message.channel?.id || message.channelId, memory);
 
     // Optimized memory text building with single-pass efficiency
     function buildOptimizedMemoryText(targetMessages, maxLength = 128000) {
@@ -246,7 +259,7 @@ export async function generateResponse(message, providerManager, channelMemories
 
     // Filter and prepare target messages - filter out bot messages by default to prevent self-reference
     // Only include bot messages when directly replying to a bot message
-    let targetMessages = memory.slice(-50).filter(m => m.user !== 'SYSTEM');
+    let targetMessages = memory.slice(-18).filter(m => m.user !== 'SYSTEM');
 
     if (!message.isReplyToBot) {
       // Filter out bot messages to prevent AI confusion with its own responses
@@ -616,23 +629,31 @@ export async function generateResponse(message, providerManager, channelMemories
       });
     }
 
-    const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt, safeMode, shellAccessEnabled);
-    logger.debug('Built prompt', { promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal', hasMedia, multimodalCount: multimodalContent.length });
+     const prompt = buildPromptContent(globalPrompt[0], contextMemoryText, toolsText, currentUserInfo, messageInfo, presenceInfo, '', fullMessageContent, hasMedia, multimodalContent, fallbackText, audioTranscription, message.repliedMessageContent, serverPrompt, safeMode, shellAccessEnabled);
+     logger.debug('Built prompt', { promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal', hasMedia, multimodalCount: multimodalContent.length });
 
-    // Special debugging for number-related queries - log the actual prompt
-    if (message.content.toLowerCase().includes('number') || message.content.toLowerCase().includes('remember')) {
-      logger.info('PROMPT DEBUG - Full prompt being sent to AI', {
-        userMessage: message.content,
-        fullPrompt: typeof prompt === 'string' ? prompt : 'MULTIMODAL_PROMPT',
-        memoryTextIncluded: memoryText.includes('21'),
-        promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal'
-      });
-    }
+     // Check response cache for identical prompts
+     const cacheKey = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+     const cachedResponse = responseCache.get(cacheKey);
+     if (cachedResponse) {
+       logger.debug('Using cached response', { cacheKey: cacheKey.substring(0, 50) + '...' });
+       return cachedResponse;
+     }
 
-     let response;
-     let responseMetadata = null;
-     try {
-       response = await generateWithRetry(providerManager, prompt);
+     // Special debugging for number-related queries - log the actual prompt
+     if (message.content.toLowerCase().includes('number') || message.content.toLowerCase().includes('remember')) {
+       logger.info('PROMPT DEBUG - Full prompt being sent to AI', {
+         userMessage: message.content,
+         fullPrompt: typeof prompt === 'string' ? prompt : 'MULTIMODAL_PROMPT',
+         memoryTextIncluded: memoryText.includes('21'),
+         promptLength: typeof prompt === 'string' ? prompt.length : 'multimodal'
+       });
+     }
+
+      let response;
+      let responseMetadata = null;
+      try {
+        response = await generateWithRetry(providerManager, prompt);
 
        // Handle enhanced response format
        if (typeof response === 'object' && response.text) {
@@ -830,8 +851,12 @@ export async function generateResponse(message, providerManager, channelMemories
           return { response: cleanedFollowUp.substring(0, 1990), toolResults: allToolResults };
         }
 
-        return { response: cleanedFollowUp, toolResults: allToolResults };
-    } else {
+         // Cache the response with tool results
+         const responseToCache = { response: cleanedFollowUp, toolResults: allToolResults };
+         responseCache.set(cacheKey, responseToCache);
+
+         return responseToCache;
+     } else {
       // Clean any tool calls and attachment tags from the initial response (but preserve code blocks)
       let cleanedResponse = response.replace(/TOOL:[^\n]*/g, '').replace(/^\w+\s+.*=.*/gm, '').replace(/\[ATTACHMENT:[^\]]*\]/g, '').trim();
       logger.debug('Cleaned response', { original: response, cleaned: cleanedResponse, length: cleanedResponse.length });
@@ -855,6 +880,10 @@ export async function generateResponse(message, providerManager, channelMemories
         return { response: cleanedResponse.substring(0, 1990), toolResults: [] };
       }
 
-      return { response: cleanedResponse, toolResults: [] };
+       // Cache the response
+       const responseToCache = { response: cleanedResponse, toolResults: [] };
+       responseCache.set(cacheKey, responseToCache);
+
+        return responseToCache;
     }
-}
+  }

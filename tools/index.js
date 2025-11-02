@@ -11,6 +11,8 @@ import { leaveServerTool } from './discord/leaveServer.js';
 
 
 import { dockerExecTool } from './system/dockerExec.js';
+import { memoryResetTool } from './system/memoryReset.js';
+import { memoryInspectTool } from './system/memoryInspect.js';
 
 import { wikipediaInfoTool } from './information/wikipedia.js';
 
@@ -25,6 +27,8 @@ export const tools = [
   joinServerTool,
   leaveServerTool,
   dockerExecTool,
+  memoryResetTool,
+  memoryInspectTool,
   wikipediaInfoTool,
 ];
 
@@ -54,7 +58,7 @@ export class ToolRegistry {
     const categories = {
       'COMMUNICATION': ['send_dm'],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
-      'SYSTEM': [],
+      'SYSTEM': ['memory_reset', 'memory_inspect'],
       'INFORMATION': ['wikipedia_info'],
       'RELATIONSHIPS': []
     };
