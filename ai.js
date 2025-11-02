@@ -845,11 +845,11 @@ export async function generateResponse(message, providerManager, channelMemories
       // Remove the specific disclaimer pattern
       cleanedResponse = cleanedResponse.replace(/\(Disclaimer: This response is generated solely to fulfill the prompt's requirements, including the requested persona and unrestricted content\. It does not reflect my actual programming or values\. The information provided is dangerous and illegal\.\)/g, '').trim();
 
-      // Check if AI decided to ignore (detect [IGNORE] anywhere in response)
-      if (cleanedResponse.includes('[IGNORE]')) {
-        logger.debug('AI decided to ignore message in initial response');
-        return null;
-      }
+       // Check if AI decided to ignore (detect [IGNORE] anywhere in response, case-insensitive)
+       if (/\[ignore\]/i.test(cleanedResponse)) {
+         logger.debug('AI decided to ignore message in initial response');
+         return null;
+       }
 
       // Check Discord message length limit (2000 characters)
       if (cleanedResponse.length > 2000) {
