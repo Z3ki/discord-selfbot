@@ -718,26 +718,7 @@ await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bo
 }
 
 // Confusion detection function
-function detectConfusion(response, message) {
-  const userId = message.author.id;
-  const botId = message.client?.user?.id || message.client.user.id;
 
-  // Check if response incorrectly references user as bot or vice versa
-  const wrongIdentity = response.includes(`user ${botId}`) ||
-                       response.includes(`I am user ${userId}`) ||
-                       /I (said|told|mentioned|asked)/i.test(response) && !response.includes('[BOT_RESPONSE');
-
-  if (wrongIdentity) {
-    logger.error('Identity confusion detected in response', {
-      response: response.substring(0, 200),
-      userId,
-      botId
-    });
-    return "I apologize, but I seem to have confused identities. Let me clarify: I am the AI assistant, and you are the user.";
-  }
-
-  return response;
-}
 
 // Typing state tracker
 const typingStates = new Map(); // channelId-userId -> { isTyping: boolean, lastTyping: timestamp }
@@ -1193,8 +1174,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
             // No delay for typing indicator
 
-            // Apply confusion detection
-            response.response = detectConfusion(response.response, message);
+
 
             // No stealth processing - direct response
 
