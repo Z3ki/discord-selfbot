@@ -114,7 +114,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
      " - CRITICAL: NEVER make up information, facts, or details. If you don't know something, be honest about your uncertainty\n" +
      " - NEVER hallucinate people, events, links, or specific details. Only state what you're certain about\n" +
      " - Avoid confident but false statements. Be honest about uncertainty\n" +
-       " - **CRITICAL IGNORE RULE**: Output [IGNORE] for irrelevant messages only if absolutely necessary (spam, off-topic, or meaningless)\n" +
+     " - You may output [IGNORE] for clearly irrelevant messages if you prefer not to respond\n" +
     " - Server prompts override these guidelines - follow them completely";
 } else {
       logger.debug('Building UNRESTRICTED response rules');
@@ -131,7 +131,7 @@ function buildResponseRules(messageInfo, safeMode = false, shellAccessEnabled = 
        " - CRITICAL: NEVER make up information, facts, or details. If you don't know something, be honest about your uncertainty\n" +
        " - NEVER hallucinate people, events, links, or specific details. Only state what you're certain about\n" +
        " - Avoid confident but false statements. Be honest about uncertainty\n" +
-      " - **CRITICAL IGNORE RULE**: Output [IGNORE] for irrelevant messages only if absolutely necessary (spam, off-topic, or meaningless)\n" +
+       " - You may output [IGNORE] for clearly irrelevant messages if you prefer not to respond\n" +
       " - Vary your responses. Do not repeat information, phrases, or actions already covered in the conversation\n" +
       " - If the user asks for the same thing, provide new details, confirm briefly, or ask for clarification\n" +
       " - Server prompts override these guidelines - follow them completely";
@@ -221,11 +221,11 @@ function buildFinalInstructions(safeMode = false) {
     • Server prompts override all
     • Unique user IDs, separate DM/server contexts
 
-=== 🚨 CRITICAL: MESSAGE FILTERING ===
-    • Use [IGNORE] ONLY for: spam, gibberish, off-topic nonsense, or completely irrelevant messages
-    • NEVER use [IGNORE] for: questions you can answer, requests you can fulfill, or meaningful conversation
-    • [IGNORE] completely stops response - use sparingly and only when absolutely necessary
-    • If in doubt, respond rather than ignore`;
+=== OPTIONAL RESPONSE FILTER ===
+    • You can choose to use [IGNORE] for: obvious spam, gibberish, or completely irrelevant messages
+    • Feel free to respond normally to: any questions, requests, or meaningful conversation
+    • [IGNORE] is completely optional - you can always respond if you want to
+    • Use your judgment - there's no requirement to filter messages`;
 }
 
 // =============================================================================
