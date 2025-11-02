@@ -17,8 +17,8 @@ const responseCache = new LRUCache(200, 100); // Cache up to 200 responses, 100M
 function parseToolArgs(funcName, paramsStr) {
   const args = {};
 
-  // Special handling for set_prompt with quoted string
-  if (funcName === 'set_prompt' && paramsStr.startsWith('"') && paramsStr.endsWith('"')) {
+  // Special handling for set_prompt with quoted string (supports both single and double quotes)
+  if (funcName === 'set_prompt' && ((paramsStr.startsWith('"') && paramsStr.endsWith('"')) || (paramsStr.startsWith("'") && paramsStr.endsWith("'")))) {
     args.prompt = paramsStr.slice(1, -1);
     return args;
   }
@@ -70,6 +70,7 @@ function parseToolArgs(funcName, paramsStr) {
   // Handle last parameter
   if (key && current.trim()) {
     value = current.trim();
+    // Strip surrounding quotes (both single and double)
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
