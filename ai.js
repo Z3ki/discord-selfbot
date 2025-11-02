@@ -678,26 +678,7 @@ export async function generateResponse(message, providerManager, channelMemories
          }
        }
 
-       // Add response validation for identity confusion detection
-       const confusionPatterns = [
-         /I (said|told|mentioned|asked)/i,
-         /you (said|told|mentioned|asked) me/i,
-         /I am the user/i,
-         /you are the user/i,
-         /I made you/i,
-         /I own you/i
-       ];
 
-       const hasConfusion = confusionPatterns.some(pattern => pattern.test(response));
-       if (hasConfusion) {
-         logger.warn('Potential identity confusion detected in response', {
-           response: response.substring(0, 200),
-           userId: message.author.id,
-           botId: client.user.id
-         });
-         // Add correction prefix
-         response = "CORRECTION: I am the AI assistant. " + response;
-       }
      } catch (error) {
       const { handleError } = await import('./utils/errorHandler.js');
       const result = handleError(error, {
