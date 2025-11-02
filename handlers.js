@@ -1161,8 +1161,8 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 }
                 const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
                 dmMemory.push(userMessage);
-                if (dmMemory.length > 50) { // dmContexts has higher limit
-                  dmMemory.shift();
+                 if (dmMemory.length > 15) { // dmContexts limit
+                   dmMemory.shift();
                 }
                 logger.debug('Added DM message to dmContexts', {
                   dmChannelId: message.channel?.id || message.channelId,
@@ -1247,8 +1247,8 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
                 const dmMemory = dmContexts.get(message.channel?.id || message.channelId);
                 if (dmMemory) {
                   dmMemory.push(botMessage);
-                  if (dmMemory.length > 100) {
-                    dmMemory.shift();
+                   if (dmMemory.length > 15) {
+                     dmMemory.shift();
                   }
                   logger.debug('Added bot response to dmContexts', {
                     dmChannelId: message.channel?.id || message.channelId,
