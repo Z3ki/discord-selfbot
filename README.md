@@ -18,7 +18,7 @@ A sophisticated Discord selfbot powered by Groq AI model with NVIDIA NIM and Goo
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
-### 🔧 Comprehensive Tool System (19 Tools)
+### 🔧 Comprehensive Tool System (18 Tools)
 - **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
 - **System Tools**: Docker shell execution (optional)
@@ -184,17 +184,15 @@ Simply send messages with attachments:
 Tools can be invoked by the AI automatically or manually:
 
 ```
-TOOL: send_dm userId="123456789" content="Hello!" reason="Greeting"
 TOOL: docker_exec command="ping example.com" timeout="10"
 
 ```
 
 ## 🛠️ Tool System
 
-### Available Tools (18 Total)
+### Available Tools (17 Total)
 
 #### Communication Tools
-- **`send_dm`**: Send direct messages with context tracking
 - **`update_context`**: Update user context for personalized responses
 
 #### Discord Management Tools
@@ -297,7 +295,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 - Stealth features for API requests
 
 #### Tool Executor (`tools/ToolExecutor.js`)
-- 17 consolidated tools across 5 categories
+- 16 consolidated tools across 5 categories
 - Multi-round execution with shared message editing
 - Live progress updates for long-running operations
 - Dynamic tool availability based on permissions
@@ -448,7 +446,7 @@ maxwell-selfbot/
 │   ├── Bot.js               # Main bot orchestrator
 │   ├── DataManager.js       # Data persistence
 │   └── TranscriptionService.py # Audio transcription
-├── tools/                    # Tool system (15 tools)
+├── tools/                    # Tool system (14 tools)
 │   ├── communication/        # DM and context tools
 │   ├── discord/             # Discord interaction tools
 │   ├── information/          # Information lookup tools

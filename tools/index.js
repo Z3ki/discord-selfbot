@@ -1,5 +1,3 @@
-import { sendDMTool } from './communication/sendDM.js';
-
 import { changePresenceTool } from './discord/changePresence.js';
 
 import { reactionManagerTool } from './discord/reactionManager.js';
@@ -21,7 +19,6 @@ import { memoryInspectTool } from './system/memoryInspect.js';
 
 // Combine all tools
 export const tools = [
-  sendDMTool,
   changePresenceTool,
   reactionManagerTool,
   joinServerTool,
@@ -55,7 +52,7 @@ export class ToolRegistry {
   getToolsText(serverId, bot) {
     // Group tools by category
     const categories = {
-      'COMMUNICATION': ['send_dm'],
+      'COMMUNICATION': [],
       'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
       'SYSTEM': ['memory_reset', 'memory_inspect'],
       'RELATIONSHIPS': []

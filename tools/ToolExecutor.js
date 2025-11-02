@@ -4,8 +4,6 @@ import { processMessageMedia } from '../media.js';
 import { logger } from '../utils/logger.js';
 
 // Import tool execution functions
-import { executeSendDM } from './communication/sendDM.js';
-
 import { executeChangePresence } from './discord/changePresence.js';
 
 import { executeReactionManager } from './discord/reactionManager.js';
@@ -51,9 +49,6 @@ export class ToolExecutor {
 
       // Route to appropriate execution function based on tool name
       switch (funcName) {
-        case 'send_dm':
-          return await executeSendDM(args, client, message, dmOrigins);
-
         case 'change_presence':
           return await executeChangePresence(args, client);
         case 'reaction_manager':
