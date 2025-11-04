@@ -609,8 +609,8 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
    // but process stickers and images synchronously for immediate AI response
    if (asyncProcessing) {
      // Process stickers and images synchronously first
-     let stickerMultimodalContent = [];
-     let stickerFallbackText = '';
+     let syncMultimodalContent = [];
+     let syncFallbackText = '';
 
      // Process stickers synchronously
      if (message.stickers && message.stickers.size > 0) {
@@ -632,25 +632,25 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
              logger.debug(`Attempting to download sticker: ${stickerUrl}`);
              const imageData = await downloadImageAsBase64(stickerUrl);
              if (imageData) {
-               stickerMultimodalContent.push({
+               syncMultimodalContent.push({
                  inlineData: {
                    mimeType: imageData.mimeType,
                    data: imageData.base64
                  }
                });
-               stickerFallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+               syncFallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
                logger.debug(`Successfully processed sticker: ${sticker.name}`);
              }
            } else {
              const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-             stickerMultimodalContent.push({ text: fallback });
-             stickerFallbackText += fallback + ' ';
+             syncMultimodalContent.push({ text: fallback });
+             syncFallbackText += fallback + ' ';
            }
          } catch (error) {
            logger.error(`Failed to download sticker ${sticker.name}:`, error);
            const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-           stickerMultimodalContent.push({ text: fallback });
-           stickerFallbackText += fallback + ' ';
+           syncMultimodalContent.push({ text: fallback });
+           syncFallbackText += fallback + ' ';
          }
        }
      }
@@ -672,22 +672,22 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
              logger.debug(`Processing image attachment synchronously: ${attachment.url}`);
              const imageData = await downloadImageAsBase64(attachment.url);
              if (imageData) {
-               stickerMultimodalContent.push({
+               syncMultimodalContent.push({
                  inlineData: {
                    mimeType: imageData.mimeType,
                    data: imageData.base64
                  }
                });
-               stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
+               syncFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
                logger.debug(`Successfully processed image synchronously: ${attachment.url}`);
              } else {
                logger.warn(`Failed to download image synchronously: ${attachment.url}`);
-               stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
+               syncFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
              }
            }
          } catch (error) {
            logger.error(`Failed to process image attachment synchronously ${attachment.url}:`, error);
-           stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (processing failed) `;
+           syncFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (processing failed) `;
          }
        }
      }
@@ -710,9 +710,9 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
     }
     // Return sticker and image data immediately, process other media (videos, GIFs, audio) in background
     return {
-      hasMedia: message.attachments.size > 0 || (message.stickers && message.stickers.size > 0),
-      multimodalContent: stickerMultimodalContent,
-      fallbackText: stickerFallbackText || '**MEDIA PROCESSING**: Analyzing remaining attachments in background...',
+      hasMedia: (message.attachments && message.attachments.size > 0) || (message.stickers && message.stickers.size > 0),
+      multimodalContent: syncMultimodalContent,
+      fallbackText: syncFallbackText || '**MEDIA PROCESSING**: Analyzing remaining attachments in background...',
       audioTranscription: ''
     };
   }

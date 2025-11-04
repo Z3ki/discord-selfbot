@@ -537,7 +537,7 @@ export async function generateResponse(message, providerManager, channelMemories
 
     // Create a temporary message object with merged attachments
     const tempMessage = { ...message, attachments: allAttachments };
-    const { hasMedia, multimodalContent, fallbackText, audioTranscription } = await processMessageMedia(tempMessage, false, {
+    const { hasMedia, multimodalContent, fallbackText, audioTranscription } = await processMessageMedia(tempMessage, true, {
       providerManager,
       channelMemories,
       dmOrigins,
