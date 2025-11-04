@@ -286,7 +286,7 @@ export async function generateResponse(message, providerManager, channelMemories
   // Check if this is a DM reply without bot mention - if so, use empty memory
   const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
   const isReply = message.reference && message.reference.messageId;
-  const isMentioned = message.mentions.has(client.user.id);
+  const isMentioned = message.mentions?.has(client.user.id) || false;
 
   let memory;
   if (isDM && isReply && !isMentioned) {
@@ -456,7 +456,7 @@ export async function generateResponse(message, providerManager, channelMemories
       userRole = ' (OWNER/BOT ADMIN)';
     } else if (message.guild && message.guild.ownerId === message.author.id) {
       userRole = ' (SERVER OWNER)';
-    } else if (message.member && message.member.permissions.has('ADMINISTRATOR')) {
+    } else if (message.member && message.member.permissions?.has('ADMINISTRATOR')) {
       userRole = ' (SERVER ADMIN)';
     }
 

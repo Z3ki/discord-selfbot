@@ -760,7 +760,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
     // Stickers are now processed in the image processing function
 
-    const isMentioned = message.mentions.has(client.user.id);
+    const isMentioned = message.mentions?.has(client.user.id) || false;
     let isReplyToBot = false;
     let repliedMessageContent = null;
     if (message.reference && message.reference.messageId) {
@@ -884,7 +884,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
         // Skip all reply context - bot should not see what user is replying to
         // Process replies only if bot is mentioned/pinged, otherwise ignore reply context
-        if (!isReplyToBot && message.mentions.has(client.user.id)) {
+        if (!isReplyToBot && message.mentions?.has(client.user.id)) {
           logger.debug('Fetched replied message', { repliedAuthor: repliedMessage.author.username, repliedContentLength: repliedMessage.content.length, repliedAttachments: repliedMessage.attachments.size, repliedEmbeds: repliedMessage.embeds?.length || 0, isBot: repliedMessage.author.bot, hasRepliedEmbeds: !!(repliedMessage.embeds?.length > 0) });
 
           // Process replied message embeds
@@ -919,7 +919,7 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
             logger.debug('Adding replied attachments', { count: repliedMessage.attachments.size });
             // Add replied attachments to message attachments for multimodal processing
             repliedMessage.attachments.forEach((attachment, key) => {
-              if (!message.attachments.has(key)) { // Avoid duplicates if same
+              if (!message.attachments?.has(key)) { // Avoid duplicates if same
                 message.attachments.set(key, attachment);
               }
             });
