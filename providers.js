@@ -669,12 +669,57 @@ export class ProviderManager {
    * @param {number} maxRetries
    * @returns {Promise<string|object>} - Returns enhanced response object or string for backward compatibility
    */
+  contentHasImages(content) {
+    if (Array.isArray(content)) {
+      return content.some(part => part.inlineData || (part.parts && part.parts.some(p => p.inlineData)));
+    }
+    return false;
+  }
+
   async generateContent(content, maxRetries = 3) {
     let triedPrimary = false;
     let triedFallback = false;
 
-    // Try primary provider first
-    if (this.primaryProvider && this.primaryProvider.isProviderAvailable()) {
+    // Check if content contains images - prefer Google AI for multimodal content
+    const hasImages = this.contentHasImages(content);
+    const preferredProvider = hasImages && this.fallbackProvider?.name === 'google' ? this.fallbackProvider : this.primaryProvider;
+    const secondaryProvider = hasImages && this.fallbackProvider?.name === 'google' ? this.primaryProvider : this.fallbackProvider;
+
+    logger.debug('Content analysis for provider selection', {
+      hasImages,
+      preferredProvider: preferredProvider?.name,
+      secondaryProvider: secondaryProvider?.name
+    });
+
+    // Try preferred provider first (Google for images, primary otherwise)
+    if (preferredProvider && preferredProvider.isProviderAvailable()) {
+      const isPrimary = preferredProvider === this.primaryProvider;
+      triedPrimary = isPrimary;
+      triedFallback = !isPrimary;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          logger.debug('Attempting preferred provider', { provider: preferredProvider.name, attempt, maxRetries, hasImages });
+          const result = await preferredProvider.generateContent(content);
+          logger.debug('Preferred provider succeeded', { provider: preferredProvider.name });
+          return result;
+        } catch (error) {
+          logger.warn('Preferred provider failed', {
+            provider: preferredProvider.name,
+            attempt,
+            maxRetries,
+            hasImages,
+            error: error.message
+          });
+          if (attempt === maxRetries) break;
+        }
+      }
+    }
+
+    // Try secondary provider if preferred failed
+    if (secondaryProvider && secondaryProvider.isProviderAvailable()) {
+      const isPrimary = secondaryProvider === this.primaryProvider;
+      triedPrimary = triedPrimary || isPrimary;
+      triedFallback = triedFallback || !isPrimary;
       triedPrimary = true;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -732,9 +777,9 @@ export class ProviderManager {
       }
     }
 
-    // If both fail, try other available providers
+    // If both preferred and secondary fail, try other available providers
     for (const [name, provider] of this.providers) {
-      if ((provider === this.primaryProvider && triedPrimary) || (provider === this.fallbackProvider && triedFallback)) {
+      if ((provider === preferredProvider && triedPrimary) || (provider === secondaryProvider && triedFallback)) {
         continue; // Already tried these
       }
 
@@ -797,21 +842,23 @@ export class ProviderManager {
     let triedPrimary = false;
     let triedFallback = false;
 
-    // Try primary provider first
-    if (this.primaryProvider && this.primaryProvider.isProviderAvailable() && this.primaryProvider.generateContentStream) {
-      triedPrimary = true;
+    // Try secondary provider
+    if (secondaryProvider && secondaryProvider.isProviderAvailable()) {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          const stream = await this.primaryProvider.generateContentStream(content);
-          return stream;
+          logger.debug('Attempting secondary provider', { provider: secondaryProvider.name, attempt, maxRetries, hasImages });
+          const result = await secondaryProvider.generateContent(content);
+          logger.debug('Secondary provider succeeded', { provider: secondaryProvider.name });
+          return result;
         } catch (error) {
-          if (attempt < maxRetries) {
-            // Stealth: Use random timing instead of fixed exponential backoff
-            const delay = CONFIG.stealth.randomDelays ?
-              apiStealth.getRequestTiming() :
-              1000 * attempt;
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
+          logger.warn('Secondary provider failed', {
+            provider: secondaryProvider.name,
+            attempt,
+            maxRetries,
+            hasImages,
+            error: error.message
+          });
+          if (attempt === maxRetries) break;
         }
       }
     }
