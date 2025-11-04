@@ -3,7 +3,7 @@ very shitty code that is vibe coded.
 
 # Maxwell Discord Selfbot
 
-A sophisticated Discord selfbot powered by Groq AI model with NVIDIA NIM and Google Gemma 3-27B-IT fallbacks, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
+A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B-IT fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
 
 ## ⚠️ Disclaimer
 
@@ -12,9 +12,8 @@ A sophisticated Discord selfbot powered by Groq AI model with NVIDIA NIM and Goo
 ## 🌟 Key Features
 
 ### 🤖 Advanced AI System
-- **Primary AI**: Groq Llama 3.3-70B-Versatile model with high-speed inference (text-only)
-- **Secondary AI**: NVIDIA NIM with multimodal support and automatic failover
-- **Tertiary AI**: Google Gemma 3-27B-IT with multimodal support as final fallback
+- **Primary AI**: NVIDIA NIM with multimodal support
+- **Fallback AI**: Google Gemma 3-27B-IT with multimodal support
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
@@ -64,6 +63,8 @@ A sophisticated Discord selfbot powered by Groq AI model with NVIDIA NIM and Goo
 - **FFmpeg** for media processing
 - **Docker** (optional, for shell access)
 - **Discord user token** (⚠️ Never share this)
+- **Google AI API key** (required for AI functionality)
+- **NVIDIA NIM API key** (optional, for fallback AI provider)
 
 ### Quick Setup
 
@@ -116,11 +117,10 @@ Create a `.env` file with these required settings:
 # Discord Configuration
 DISCORD_USER_TOKEN=your_discord_user_token_here
 
-# AI Configuration (Primary: NVIDIA, Secondary: Google)
-NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
+# AI Configuration (Google AI is required)
 GOOGLE_API_KEY=your_google_ai_api_key_here
 
-# Admin Configuration
+# Admin Configuration (Optional but recommended)
 ADMIN_USER_ID=your_admin_user_id_here
 ```
 
@@ -130,17 +130,12 @@ ADMIN_USER_ID=your_admin_user_id_here
 # Discord User ID (auto-detected from token if not provided)
 DISCORD_USER_ID=your_discord_user_id_here
 
-# NVIDIA NIM Primary (Required)
+# NVIDIA NIM (Optional fallback provider)
 NVIDIA_NIM_API_KEY=your_nvidia_api_key_here
 NVIDIA_NIM_BASE_URL=https://integrate.api.nvidia.com/v1
 NVIDIA_NIM_MODEL=google/gemma-3-27b-it
 NVIDIA_NIM_MAX_TOKENS=32768
 NVIDIA_NIM_TEMPERATURE=0.7
-
-# Google AI Tertiary (Optional)
-GOOGLE_API_KEY=your_google_ai_api_key_here
-GOOGLE_AI_MODEL=models/gemma-3-27b-it
-GOOGLE_AI_TEMPERATURE=0.7
 
 # Logging
 LOG_LEVEL=info  # debug, info, warn, error
@@ -154,8 +149,13 @@ LOG_LEVEL=info  # debug, info, warn, error
 3. Go to Application → Local Storage → discord.com
 4. Copy the value of `token`
 
-**Google AI API Key:**
+**Google AI API Key (Required):**
 1. Visit [Google AI Studio](https://aistudio.google.com/)
+2. Create new API key
+3. Copy the key
+
+**NVIDIA NIM API Key (Optional):**
+1. Visit [NVIDIA NIM](https://integrate.api.nvidia.com/)
 2. Create new API key
 3. Copy the key
 
@@ -174,10 +174,10 @@ The bot responds to:
 ### Media Processing
 
 Simply send messages with attachments:
-- **Images**: Automatically analyzed by AI
-- **Videos**: Frame extraction + audio transcription
-- **Audio files**: Transcribed using Whisper
-- **GIFs**: Processed frame by frame
+- **Images & Stickers**: Automatically analyzed by AI (processed synchronously in async mode for immediate response)
+- **Videos**: Frame extraction + audio transcription (processed asynchronously with follow-up analysis)
+- **Audio files**: Transcribed using Whisper (processed asynchronously with follow-up analysis)
+- **GIFs**: Processed frame by frame (processed asynchronously with follow-up analysis)
 
 ### Tool Usage
 
@@ -190,30 +190,17 @@ TOOL: docker_exec command="ping example.com" timeout="10"
 
 ## 🛠️ Tool System
 
-### Available Tools (17 Total)
-
-#### Communication Tools
-- **`update_context`**: Update user context for personalized responses
+### Available Tools (6 Total)
 
 #### Discord Management Tools
 - **`reaction_manager`**: Add, remove, and get reactions
-- **`message_manager`**: Pin/unpin messages, thread management
-- **`invite_manager`**: Create/join invites, get server invites
+- **`join_server`**: Join Discord servers via invite
 - **`leave_server`**: Leave specified servers
 - **`change_presence`**: Change bot presence status
 
 #### System Tools
-- **`docker_exec`**: Execute shell commands in Docker (when enabled)
 - **`memory_reset`**: Reset/clear conversation memory for channels or DMs
 - **`memory_inspect`**: Inspect current conversation memory for debugging
-
-#### Information Tools
-- **`wikipedia_info`**: Get up-to-date information from Wikipedia for facts, biographies, and current events
-
-#### Relationship Tools
-- **`check_friend_requests`**: Check incoming friend requests (read-only)
-- **`handle_friend_request`**: Accept/decline friend requests (manual)
-- **`send_friend_request`**: Send friend requests to users
 
 ### Multi-Round Execution
 
@@ -282,7 +269,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 #### AI System (`providers.js`, `ai.js`)
 - Multi-provider AI with automatic failover
-- Groq Llama 3.3-70B-Versatile (primary) + NVIDIA NIM (secondary) + Google Gemma 3-27B-IT (tertiary)
+- NVIDIA NIM (primary) + Google Gemma 3-27B-IT (fallback)
 - Enhanced response metadata extraction
 - Stealth features for API requests
 
@@ -552,6 +539,17 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 ## 🐛 Bug Fixes & Improvements
 
 ### New Features
+
+#### Media Processing Optimization (2025-11-04)
+**Enhancement**: Improved media processing performance in async mode.
+
+**Changes**:
+- Images and stickers now processed synchronously for immediate AI response
+- Videos, GIFs, and audio processed asynchronously with follow-up messages
+- Better user experience with faster initial responses for visual content
+
+**Files Modified**:
+- `media.js` - Added async processing logic with sync image/sticker handling
 
 #### Memory Management & Performance Improvements (2025-11-02)
 **Addition**: Comprehensive memory optimization system to reduce API overload and prevent AI confusion.
