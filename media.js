@@ -605,54 +605,92 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
   let fallbackText = '';
   let audioTranscription = '';
 
-  // If async processing is enabled, start background processing for heavy media
-  // but process stickers synchronously for immediate AI response
-  if (asyncProcessing) {
-    // Process stickers synchronously first
-    let stickerMultimodalContent = [];
-    let stickerFallbackText = '';
-    
-    if (message.stickers && message.stickers.size > 0) {
-      const stickers = Array.from(message.stickers.values());
-      logger.debug(`Processing ${stickers.length} stickers synchronously`);
+   // If async processing is enabled, start background processing for heavy media
+   // but process stickers and images synchronously for immediate AI response
+   if (asyncProcessing) {
+     // Process stickers and images synchronously first
+     let stickerMultimodalContent = [];
+     let stickerFallbackText = '';
 
-      for (const sticker of stickers) {
-        try {
-          logger.debug(`Sticker data:`, { 
-            id: sticker.id, 
-            name: sticker.name, 
-            format: sticker.format, 
-            url: sticker.url,
-            hasUrl: !!sticker.url 
-          });
-          
-          const stickerUrl = sticker.url;
-          if (stickerUrl && sticker.format !== 'LOTTIE') {
-            logger.debug(`Attempting to download sticker: ${stickerUrl}`);
-            const imageData = await downloadImageAsBase64(stickerUrl);
-            if (imageData) {
-              stickerMultimodalContent.push({
-                inlineData: {
-                  mimeType: imageData.mimeType,
-                  data: imageData.base64
-                }
-              });
-              stickerFallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
-              logger.debug(`Successfully processed sticker: ${sticker.name}`);
-            }
-          } else {
-            const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-            stickerMultimodalContent.push({ text: fallback });
-            stickerFallbackText += fallback + ' ';
-          }
-        } catch (error) {
-          logger.error(`Failed to download sticker ${sticker.name}:`, error);
-          const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
-          stickerMultimodalContent.push({ text: fallback });
-          stickerFallbackText += fallback + ' ';
-        }
-      }
-    }
+     // Process stickers synchronously
+     if (message.stickers && message.stickers.size > 0) {
+       const stickers = Array.from(message.stickers.values());
+       logger.debug(`Processing ${stickers.length} stickers synchronously`);
+
+       for (const sticker of stickers) {
+         try {
+           logger.debug(`Sticker data:`, {
+             id: sticker.id,
+             name: sticker.name,
+             format: sticker.format,
+             url: sticker.url,
+             hasUrl: !!sticker.url
+           });
+
+           const stickerUrl = sticker.url;
+           if (stickerUrl && sticker.format !== 'LOTTIE') {
+             logger.debug(`Attempting to download sticker: ${stickerUrl}`);
+             const imageData = await downloadImageAsBase64(stickerUrl);
+             if (imageData) {
+               stickerMultimodalContent.push({
+                 inlineData: {
+                   mimeType: imageData.mimeType,
+                   data: imageData.base64
+                 }
+               });
+               stickerFallbackText += `**STICKER MEDIA**: "${sticker.name}" (${sticker.format} format) `;
+               logger.debug(`Successfully processed sticker: ${sticker.name}`);
+             }
+           } else {
+             const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+             stickerMultimodalContent.push({ text: fallback });
+             stickerFallbackText += fallback + ' ';
+           }
+         } catch (error) {
+           logger.error(`Failed to download sticker ${sticker.name}:`, error);
+           const fallback = `**STICKER MEDIA**: "${sticker.name}" (ID: ${sticker.id}, format: ${sticker.format})`;
+           stickerMultimodalContent.push({ text: fallback });
+           stickerFallbackText += fallback + ' ';
+         }
+       }
+     }
+
+     // Process images synchronously
+     if (message.attachments && message.attachments.size > 0) {
+       const attachmentsArray = Array.from(message.attachments.values());
+       logger.debug(`Processing ${attachmentsArray.length} attachments synchronously for images`);
+
+       for (const attachment of attachmentsArray) {
+         if (!attachment.contentType) {
+           logger.warn('Skipping attachment without contentType');
+           continue;
+         }
+
+         try {
+           if (attachment.contentType.startsWith('image/') && attachment.contentType !== 'image/gif') {
+             // Process static images synchronously
+             logger.debug(`Processing image attachment synchronously: ${attachment.url}`);
+             const imageData = await downloadImageAsBase64(attachment.url);
+             if (imageData) {
+               stickerMultimodalContent.push({
+                 inlineData: {
+                   mimeType: imageData.mimeType,
+                   data: imageData.base64
+                 }
+               });
+               stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} static image `;
+               logger.debug(`Successfully processed image synchronously: ${attachment.url}`);
+             } else {
+               logger.warn(`Failed to download image synchronously: ${attachment.url}`);
+               stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
+             }
+           }
+         } catch (error) {
+           logger.error(`Failed to process image attachment synchronously ${attachment.url}:`, error);
+           stickerFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (processing failed) `;
+         }
+       }
+     }
     
     // Extract channel ID before async processing to avoid reference loss
     const channelId = message.channel?.id || message.channelId;
@@ -670,11 +708,11 @@ export async function processMessageMedia(message, asyncProcessing = false, cont
         messageKeys: Object.keys(message)
       });
     }
-    // Return sticker data immediately, process other media in background
+    // Return sticker and image data immediately, process other media (videos, GIFs, audio) in background
     return {
       hasMedia: message.attachments.size > 0 || (message.stickers && message.stickers.size > 0),
       multimodalContent: stickerMultimodalContent,
-      fallbackText: stickerFallbackText || '**MEDIA PROCESSING**: Analyzing attachments in background...',
+      fallbackText: stickerFallbackText || '**MEDIA PROCESSING**: Analyzing remaining attachments in background...',
       audioTranscription: ''
     };
   }
