@@ -926,8 +926,7 @@ for (const attachment of attachmentsArray) {
  * @param {Message} message - Discord message object
  */
 async function processMediaAsync(message, context) {
-  try {
-    // Store message and channel IDs to avoid issues with async processing
+  // Store message and channel IDs to avoid issues with async processing
     const messageId = message?.id;
     const channelId = message.channel?.id || message.channelId; // Try both channel.id and channelId
     const client = context?.client;
@@ -1162,93 +1161,5 @@ async function processMediaAsync(message, context) {
       fallbackText += `**SYSTEM NOTE**: Media processing limited to 32 items to prevent API errors and context overload `;
     }
 
-    // Send follow-up message with processed media analysis
-    if (hasMedia && multimodalContent.length > 0) {
-      try {
-        // Import the AI processing function
-        const { generateResponse } = await import('./ai.js');
 
-        // Create a follow-up message with media analysis
-        const followUpMessage = {
-          id: message.id,
-          content: `**MEDIA ANALYSIS COMPLETE**: ${fallbackText.trim()}\n\nPlease analyze the attached media and provide insights.`,
-          author: message.author,
-          channel: {
-            id: channelId,
-            type: message.channel?.type || 'unknown'
-          },
-          attachments: new Map(), // Clear attachments since they're processed
-          stickers: new Map() // Clear stickers since they're processed
-        };
-
-        // Add audio transcription to the follow-up message if available
-        if (audioTranscription.trim()) {
-          followUpMessage.content += `\n\n**Audio Transcription**: ${audioTranscription}`;
-        }
-
-        // Generate AI response with processed media
-        const mediaAnalysis = await generateResponse(
-          followUpMessage,
-          context.providerManager,
-          context.channelMemories,
-          context.dmOrigins,
-          context.client,
-          context.globalPrompt,
-          context.lastPrompt,
-          context.lastResponse,
-          context.lastToolCalls,
-          context.lastToolResults,
-          context.apiResourceManager,
-          context.bot || null
-        );
-
-        if (mediaAnalysis) {
-          try {
-            const channel = client.channels.cache.get(channelId);
-            if (channel) {
-              await channel.send({ content: `**Media Analysis**: ${mediaAnalysis}`, reply: { messageReference: messageId } });
-              logger.info('Sent media analysis follow-up message', { channelId });
-            } else {
-              logger.warn('Cannot send media analysis - channel not found in cache', { channelId });
-            }
-          } catch (replyError) {
-            logger.error('Failed to send media analysis reply', { error: replyError.message });
-            // Try alternative method
-            try {
-              const channel = client.channels.cache.get(channelId);
-              if (channel) {
-                await channel.send(`**Media Analysis**: ${mediaAnalysis}`);
-              }
-            } catch (altError) {
-              logger.error('Failed to send media analysis via alternative method', { error: altError.message });
-            }
-          }
-        }
-      } catch (error) {
-        logger.error('Failed to send media analysis follow-up', { error: error.message });
-        try {
-          const channel = client.channels.cache.get(channelId);
-          if (channel) {
-            await channel.send({ content: `**Media Processing Error**: ${error.message}`, reply: { messageReference: messageId } });
-          } else {
-            logger.warn('Cannot send media processing error - channel not found in cache', { channelId });
-          }
-        } catch (replyError) {
-          logger.error('Failed to send error message', { error: replyError.message });
-          // Try alternative method
-          try {
-            const channel = client.channels.cache.get(channelId);
-            if (channel) {
-              await channel.send(`**Media Processing Error**: ${error.message}`);
-            }
-          } catch (altError) {
-            logger.error('Failed to send error message via alternative method', { error: altError.message });
-          }
-        }
-      }
-    }
-
-  } catch (error) {
-    logger.error('Async media processing failed', { error: error.message });
-  }
 }
