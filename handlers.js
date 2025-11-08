@@ -27,23 +27,23 @@ async function handleCommand(message, channelMemories, client, providerManager, 
       case 'help': {
         const helpText = `**Commands**
 
-\`;help\` - Show commands
-\`;admin <action> [userId]\` - Manage administrators (add/remove/toggle/list/clear)
-\`;debug\` - Debug info
-\`;functions\` - List available tools
-\`;restart\` - Restart
-\`;refresh <type>\` - Clear data (memories/context/dm/all)
-\`;info\` - Bot info
+\`,help\` - Show commands
+\`,admin <action> [userId]\` - Manage administrators (add/remove/toggle/list/clear)
+\`,debug\` - Debug info
+\`,functions\` - List available tools
+\`,restart\` - Restart
+\`,refresh <type>\` - Clear data (memories/context/dm/all)
+\`,info\` - Bot info
 
-\`;blacklist\` - Manage blacklisted servers
-\`;prompt <text>\` - Set server prompt
-  \`;prompt all <text>\` - Set global prompt
-  \`;prompt clear <text>\` - Clear memory + set server prompt
-  \`;prompt clear all <text>\` - Clear memory + set global prompt
-\`;nvidia <msg>\` - NVIDIA AI
-\`;health\` - Health (admin)
-\`;testqueue\` - Test queue
- \`;safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
+\`,blacklist\` - Manage blacklisted servers
+\`,prompt <text>\` - Set server prompt
+  \`,prompt all <text>\` - Set global prompt
+  \`,prompt clear <text>\` - Clear memory + set server prompt
+  \`,prompt clear all <text>\` - Clear memory + set global prompt
+\`,nvidia <msg>\` - NVIDIA AI
+\`,health\` - Health (admin)
+\`,testqueue\` - Test queue
+ \`,safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
         await message.reply(helpText);
         break;
       }
@@ -62,7 +62,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
           const adminHelp = `**Admin Management**
 
 **Usage:**
-\`;admin <action> [userId]\`
+\`,admin <action> [userId]\`
 
 **Actions:**
 • \`add <userId>\` - Add user as admin
@@ -72,9 +72,9 @@ async function handleCommand(message, channelMemories, client, providerManager, 
 • \`clear\` - Remove all admins
 
 **Examples:**
-\`;admin add 123456789012345678\`
-\`;admin toggle 123456789012345678\`
-\`;admin list\`
+\`,admin add 123456789012345678\`
+\`,admin toggle 123456789012345678\`
+\`,admin list\`
 
 **Note:** Use Discord Developer Mode to get user IDs`;
           await message.reply(adminHelp);
@@ -85,7 +85,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
           switch (action) {
             case 'add': {
               if (!userId) {
-                await message.reply('User ID required for add action\nUsage: `;admin add <userId>`');
+                await message.reply('User ID required for add action\nUsage: `,admin add <userId>`');
                 return;
               }
               const addResult = adminManager.toggleAdmin(userId);
@@ -101,7 +101,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
 
             case 'remove': {
               if (!userId) {
-                await message.reply('User ID required for remove action\nUsage: `;admin remove <userId>`');
+                await message.reply('User ID required for remove action\nUsage: `,admin remove <userId>`');
                 return;
               }
               const removeResult = adminManager.toggleAdmin(userId);
@@ -117,7 +117,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
 
             case 'toggle': {
               if (!userId) {
-                await message.reply('User ID required for toggle action\nUsage: `;admin toggle <userId>`');
+                await message.reply('User ID required for toggle action\nUsage: `,admin toggle <userId>`');
                 return;
               }
               const toggleResult = adminManager.toggleAdmin(userId);
@@ -152,7 +152,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
             }
 
             default:
-              await message.reply(`Unknown action: ${action}\n\nUse \`;admin\` to see available actions.`);
+              await message.reply(`Unknown action: ${action}\n\nUse \`,admin\` to see available actions.`);
               break;
           }
         } catch (error) {
@@ -330,7 +330,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
         const refreshType = args[0]?.toLowerCase();
 
         if (!refreshType) {
-          await message.reply('Usage: `;refresh <type>` where type is:\n- `memories` - Clear conversation memories\n- `context` - Clear user context data\n- `dm` - Clear DM metadata\n- `all` - Clear everything');
+          await message.reply('Usage: `,refresh <type>` where type is:\n- `memories` - Clear conversation memories\n- `context` - Clear user context data\n- `dm` - Clear DM metadata\n- `all` - Clear everything');
           break;
         }
 
@@ -390,7 +390,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
         } else if (clearedItems.length > 0) {
           await message.reply(`Cleared: ${clearedItems.join(', ')}.`);
         } else {
-          await message.reply('Invalid refresh type. Use `;refresh` to see available options.');
+          await message.reply('Invalid refresh type. Use `,refresh` to see available options.');
         }
         break;
       }
@@ -409,14 +409,14 @@ async function handleCommand(message, channelMemories, client, providerManager, 
             const newPromptArgs = isClearAll ? args.slice(2) : args.slice(1);
             const newPrompt = newPromptArgs.join(' ').trim();
 
-            if (!newPrompt) {
-              if (isClearAll) {
-                await message.reply('Usage: `;prompt clear all <new prompt text>` - Clears memory and sets new global prompt');
-              } else {
-                await message.reply('Usage: `;prompt clear <new prompt text>` - Clears memory and sets new server prompt');
+              if (!newPrompt) {
+                if (isClearAll) {
+                  await message.reply('Usage: `,prompt clear all <new prompt text>` - Clears memory and sets new global prompt');
+                } else {
+                  await message.reply('Usage: `,prompt clear <new prompt text>` - Clears memory and sets new server prompt');
+                }
+                return;
               }
-              return;
-            }
 
             try {
               // Clear memory
@@ -471,13 +471,13 @@ async function handleCommand(message, channelMemories, client, providerManager, 
             }
             response += `**Global Prompt:**\n\`\`\`\n${globalPromptText}\n\`\`\`\n\n**Usage:**\n`;
             if (!isDM) {
-              response += `\`;prompt <text>\` - Set a new server prompt\n`;
-              response += `\`;prompt all <text>\` - Set a new global prompt\n`;
-              response += `\`;prompt clear <text>\` - Clear memory and set new server prompt\n`;
-              response += `\`;prompt clear all <text>\` - Clear memory and set new global prompt\n\n`;
+              response += `\`,prompt <text>\` - Set a new server prompt\n`;
+              response += `\`,prompt all <text>\` - Set a new global prompt\n`;
+              response += `\`,prompt clear <text>\` - Clear memory and set new server prompt\n`;
+              response += `\`,prompt clear all <text>\` - Clear memory and set new global prompt\n\n`;
             } else {
-              response += `\`;prompt <text>\` - Set a new global prompt (DMs only support global prompts)\n`;
-              response += `\`;prompt clear <text>\` - Clear memory and set new global prompt\n\n`;
+              response += `\`,prompt <text>\` - Set a new global prompt (DMs only support global prompts)\n`;
+              response += `\`,prompt clear <text>\` - Clear memory and set new global prompt\n\n`;
             }
             response += `You can include newlines and formatting in your prompt.`;
 
@@ -497,7 +497,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
               }
 
               if (!promptText) {
-                await message.reply('Usage: `;prompt all <text>` - Set a new global prompt');
+                await message.reply('Usage: `,prompt all <text>` - Set a new global prompt');
                 return;
               }
 
@@ -522,7 +522,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
       case 'nvidia': {
         const nvidiaMessage = args.join(' ');
         if (!nvidiaMessage && message.attachments.size === 0 && !message.stickers?.size) {
-          await message.reply('Usage: `;nvidia <message>` - Send a message to NVIDIA NIM AI provider (supports text, images, and media)');
+          await message.reply('Usage: `,nvidia <message>` - Send a message to NVIDIA NIM AI provider (supports text, images, and media)');
           return;
         }
 
@@ -620,10 +620,10 @@ async function handleCommand(message, channelMemories, client, providerManager, 
          }
 
          if (subcommand === 'add') {
-           if (!serverId) {
-             await message.reply('Usage: `;blacklist add <server_id>`');
-             break;
-           }
+            if (!serverId) {
+              await message.reply('Usage: `,blacklist add <server_id>`');
+              break;
+            }
             if (bot.blacklist.has(serverId)) {
               await message.reply(`Server ${serverId} is already blacklisted.`);
             } else {
@@ -632,10 +632,10 @@ async function handleCommand(message, channelMemories, client, providerManager, 
               await message.reply(`Server ${serverId} added to blacklist.`);
             }
          } else if (subcommand === 'remove' || subcommand === 'rm') {
-           if (!serverId) {
-             await message.reply('Usage: `;blacklist remove <server_id>`');
-             break;
-           }
+            if (!serverId) {
+              await message.reply('Usage: `,blacklist remove <server_id>`');
+              break;
+            }
             if (bot.blacklist.has(serverId)) {
               bot.blacklist.delete(serverId);
               await bot.saveData();
@@ -644,7 +644,7 @@ async function handleCommand(message, channelMemories, client, providerManager, 
               await message.reply(`Server ${serverId} is not blacklisted.`);
             }
          } else {
-           await message.reply('Usage: `;blacklist` (show), `;blacklist add <server_id>`, `;blacklist remove <server_id>`');
+            await message.reply('Usage: `,blacklist` (show), `,blacklist add <server_id>`, `,blacklist remove <server_id>`');
          }
 break;
         }
@@ -678,7 +678,7 @@ await message.reply(`Safe mode ${modeText} for this server. In safe mode, the bo
         }
 
         default:
-          await message.reply(`Unknown command: ${command}. Use \`;help\` for available commands.`);
+          await message.reply(`Unknown command: ${command}. Use \`,help\` for available commands.`);
     }
   } catch (error) {
     logger.error('Error handling command', { command, error: error.message, userId: message.author.id });
@@ -802,8 +802,8 @@ export function setupHandlers(client, requestQueue, apiResourceManager, channelM
 
 
 
-    // Check for ; prefix commands
-    if (message.content.startsWith(';')) {
+    // Check for , prefix commands
+    if (message.content.startsWith(',')) {
       try {
         await handleCommand(message, channelMemories, client, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, generateResponse, dmOrigins, dmContexts, apiResourceManager, bot);
       } catch (commandError) {

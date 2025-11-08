@@ -214,47 +214,47 @@ All sequential tool calls edit the same Discord message for a clean experience.
 ## 🎮 Commands
 
 ### Basic Commands
-- `;help` - Show all available commands
-- `;debug` - Show debug information and system status
-- `;functions` - List all available tools
-- `;info` - Get bot information
-- `;health` - Show system health (admin only)
-- `;restart` - Restart the bot (admin only)
-- `;refresh <type>` - Clear data (memories/context/dm/all)
-- `;servers` - List all servers the bot is in
-- `;blacklist` - Manage blacklisted servers (admin only)
-- `;testqueue` - Test queue system
+- `,help` - Show all available commands
+- `,debug` - Show debug information and system status
+- `,functions` - List all available tools
+- `,info` - Get bot information
+- `,health` - Show system health (admin only)
+- `,restart` - Restart the bot (admin only)
+- `,refresh <type>` - Clear data (memories/context/dm/all)
+- `,servers` - List all servers the bot is in
+- `,blacklist` - Manage blacklisted servers (admin only)
+- `,testqueue` - Test queue system
 
 ### Admin Management
-- `;admin add <userId>` - Add user as administrator
-- `;admin remove <userId>` - Remove admin from user
-- `;admin toggle <userId>` - Toggle admin status
-- `;admin list` - Show all administrators
-- `;admin clear` - Remove all admins
+- `,admin add <userId>` - Add user as administrator
+- `,admin remove <userId>` - Remove admin from user
+- `,admin toggle <userId>` - Toggle admin status
+- `,admin list` - Show all administrators
+- `,admin clear` - Remove all admins
 
 ### AI & Prompt Management
-- `;prompt <text>` - Set server-specific prompt
-- `;prompt all <text>` - Set global prompt across all servers
-- `;prompt clear <text>` - Clear memory + set server prompt
-- `;prompt clear all <text>` - Clear memory + set global prompt
-- `;prompt` - View current server and global prompts
-- `;nvidia <msg>` - Send message to NVIDIA AI provider
+- `,prompt <text>` - Set server-specific prompt
+- `,prompt all <text>` - Set global prompt across all servers
+- `,prompt clear <text>` - Clear memory + set server prompt
+- `,prompt clear all <text>` - Clear memory + set global prompt
+- `,prompt` - View current server and global prompts
+- `,nvidia <msg>` - Send message to NVIDIA AI provider
 
-- `;safemode` - Toggle safe mode for family-friendly responses
+- `,safemode` - Toggle safe mode for family-friendly responses
 
 ### Command Examples
 
 **Set Custom Prompt:**
 ```
-;prompt You are a helpful assistant specializing in programming
-;prompt all You are a helpful assistant for all servers
+,prompt You are a helpful assistant specializing in programming
+,prompt all You are a helpful assistant for all servers
 ```
 
 **Admin Management:**
 ```
-;admin add 123456789012345678
-;admin list
-;admin remove 123456789012345678
+,admin add 123456789012345678
+,admin list
+,admin remove 123456789012345678
 ```
 
 ## 🏗️ Architecture
@@ -379,7 +379,7 @@ python3 -c "import torch; import faster_whisper; print('Dependencies OK')"
 ```
 
 #### Memory Issues
-- Use `;health` command to check system status
+- Use `,health` command to check system status
 - Monitor memory usage in logs
 - Restart bot if memory usage exceeds 1GB
 
@@ -401,8 +401,8 @@ tail -f logs/health.log
 
 #### In-Di scord Commands
 
-- `;health` - Check system health and metrics
-- `;debug` - Show debug information and status
+- `,health` - Check system health and metrics
+- `,debug` - Show debug information and status
 
 ### Performance Optimization
 
@@ -678,7 +678,7 @@ Contributions are welcome! Please ensure:
 For issues or questions:
 1. Check logs in the `logs/` directory
 2. Verify all environment variables are set correctly
-3. Use `;health` and `;debug` commands for diagnostics
+3. Use `,health` and `,debug` commands for diagnostics
 4. Review this README for configuration details
 
 ---
