@@ -28,13 +28,13 @@ export const CONFIG = {
       model: process.env.GOOGLE_AI_MODEL || 'models/gemma-3-27b-it',
       temperature: parseFloat(process.env.GOOGLE_AI_TEMPERATURE) || 0.7
     },
-     nvidia: {
-       apiKey: process.env.NVIDIA_NIM_API_KEY,
-       baseUrl: process.env.NVIDIA_NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
-       model: process.env.NVIDIA_NIM_MODEL || 'google/gemma-3-27b-it',
-        maxTokens: parseInt(process.env.NVIDIA_NIM_MAX_TOKENS) || 32768,
-       temperature: parseFloat(process.env.NVIDIA_NIM_TEMPERATURE) || 0.5
-     },
+      nvidia: {
+        apiKey: process.env.NVIDIA_NIM_API_KEY,
+        baseUrl: process.env.NVIDIA_NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
+        model: process.env.NVIDIA_NIM_MODEL || 'meta/llama-3.3-70b-instruct',
+         maxTokens: parseInt(process.env.NVIDIA_NIM_MAX_TOKENS) || 32768,
+        temperature: parseFloat(process.env.NVIDIA_NIM_TEMPERATURE) || 0.5
+      },
 
   },
   admin: {

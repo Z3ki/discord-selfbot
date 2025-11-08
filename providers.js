@@ -303,7 +303,7 @@ export class NvidiaNIMProvider extends AIProvider {
   constructor(config) {
     super('nvidia-nim', config);
     this.baseURL = config.baseURL || 'https://integrate.api.nvidia.com/v1';
-    this.model = config.model || 'google/gemma-3-27b-it';
+    this.model = config.model || 'meta/llama-3.3-70b-instruct';
   }
 
   async initialize() {
