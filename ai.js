@@ -1222,10 +1222,12 @@ export async function generateResponse(
 export async function elicitProactiveThought(
   recentHistory,
   selfContext,
-  providerManager
+  providerManager,
+  globalPrompt,
+  serverPrompt = null
 ) {
   logger.info('Building proactive prompt...');
-  const prompt = buildProactivePrompt(recentHistory, selfContext);
+  const prompt = buildProactivePrompt(recentHistory, selfContext, globalPrompt, serverPrompt);
 
   try {
     logger.info('Sending proactive prompt to AI...');
@@ -1245,11 +1247,20 @@ export async function elicitProactiveThought(
 
     const thought = JSON.parse(jsonMatch[0]);
     logger.info('Successfully parsed proactive thought from AI.', { thought });
-    return thought;
+
+    if (Array.isArray(thought)) {
+      return thought;
+    } else if (typeof thought === 'object' && thought !== null) {
+      if (thought.action === 'none') {
+        return []; // AI decided to take no action
+      }
+      return [thought]; // Wrap single action in an array
+    }
+    return []; // Fallback if thought is not an array or object
   } catch (error) {
     logger.error('Failed to elicit or parse proactive thought', {
       error: error.message,
     });
-    return { action: 'none' }; // Default to no action on error
+    return []; // Default to no action on error
   }
 }

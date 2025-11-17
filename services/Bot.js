@@ -549,26 +549,48 @@ export class Bot {
     logger.info('Starting proactive cognitive loop...');
     try {
       // 1. Observe: Gather context from the last 24 hours
-      const recentHistory = await this.dataManager.getRecentHistory(1, 'days');
+      const allRecentHistory = await this.dataManager.getRecentHistory(1, 'days');
       const selfContext = this.dataManager.getSelfContext();
+      const globalPrompt = this.globalPrompt[0];
 
-      if (recentHistory.length === 0) {
+      if (allRecentHistory.length === 0) {
         logger.info('No recent history to analyze. Skipping proactive thought.');
         return;
       }
 
-      // 2. Think: Ask the AI what to do
-      logger.info('Eliciting proactive thought from AI...');
-      const thought = await elicitProactiveThought(
-        recentHistory,
-        selfContext,
-        this.providerManager
-      );
+      const allProactiveThoughts = [];
+
+      // Iterate through each guild the bot is in
+      for (const [guildId, guild] of this.client.guilds.cache) {
+        const serverPrompt = this.serverPrompts.get(guildId) || null;
+
+        // Filter history relevant to this specific guild
+        const guildRecentHistory = allRecentHistory.filter(msg => {
+          // Check if the message is from a channel within this guild
+          const channel = this.client.channels.cache.get(msg.channelId);
+          return channel && channel.guildId === guildId;
+        });
+
+        if (guildRecentHistory.length === 0) {
+          logger.debug(`No recent history for guild ${guild.name} (${guildId}). Skipping proactive thought for this guild.`);
+          continue;
+        }
+
+        logger.info(`Eliciting proactive thought for guild ${guild.name} (${guildId})...`);
+        const thoughtsForGuild = await elicitProactiveThought(
+          guildRecentHistory,
+          selfContext,
+          this.providerManager,
+          globalPrompt,
+          serverPrompt
+        );
+        allProactiveThoughts.push(...thoughtsForGuild);
+      }
 
       // 3. Act: Execute the thought(s)
-      if (Array.isArray(thought) && thought.length > 0) {
-        logger.info(`AI decided to perform ${thought.length} action(s).`);
-        for (const actionObject of thought) {
+      if (allProactiveThoughts.length > 0) {
+        logger.info(`AI decided to perform ${allProactiveThoughts.length} action(s) across all guilds.`);
+        for (const actionObject of allProactiveThoughts) {
           if (actionObject.action === 'send_message' && actionObject.channelId && actionObject.content) {
             logger.info(`AI decided to send a message to channel ${actionObject.channelId}`);
             try {
@@ -587,7 +609,7 @@ export class Bot {
           }
         }
       } else {
-        logger.info('AI decided to take no action.');
+        logger.info('AI decided to take no action across all guilds.');
       }
     } catch (error) {
       logger.error('Error during proactive cognitive loop:', error);

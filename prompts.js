@@ -385,9 +385,11 @@ Respond ONLY with the JSON array describing your chosen action(s).
  * Builds the prompt for the proactive cognitive loop.
  * @param {Array} recentHistory - Array of recent messages or events.
  * @param {Object} selfContext - Information about the bot itself.
+ * @param {string} globalPrompt - The global system prompt.
+ * @param {string} serverPrompt - Server-specific prompt (optional).
  * @returns {string} The complete prompt for the AI.
  */
-export function buildProactivePrompt(recentHistory, selfContext) {
+export function buildProactivePrompt(recentHistory, selfContext, globalPrompt, serverPrompt = null) {
   // Format the history for the prompt
   const formattedHistory = recentHistory
     .map(
@@ -405,7 +407,19 @@ export function buildProactivePrompt(recentHistory, selfContext) {
     2
   )}`;
 
-  return `${proactiveSystemPrompt}\\n\\n${historySection}\\n\\n${contextSection}`;
+  let finalProactiveSystemPrompt = proactiveSystemPrompt;
+
+  // Add global prompt first
+  if (globalPrompt) {
+    finalProactiveSystemPrompt = `=== GLOBAL INSTRUCTIONS ===\n${globalPrompt}\n\n${finalProactiveSystemPrompt}`;
+  }
+
+  // Add server prompt if available
+  if (serverPrompt) {
+    finalProactiveSystemPrompt += `\n\n=== SERVER-SPECIFIC INSTRUCTIONS ===\n${serverPrompt}`;
+  }
+
+  return `${finalProactiveSystemPrompt}\\n\\n${historySection}\\n\\n${contextSection}`;
 }
 
 
