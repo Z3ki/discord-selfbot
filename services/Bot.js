@@ -546,6 +546,7 @@ export class Bot {
   }
 
   async proactiveCognitiveLoop() {
+    logger.debug('proactiveCognitiveLoop entered.');
     logger.info('Starting proactive cognitive loop...');
     try {
       // 1. Observe: Gather context from the last 24 hours
