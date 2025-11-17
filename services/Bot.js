@@ -4,7 +4,7 @@ import { RequestQueue, GlobalDMQueue } from '../queues.js';
 import { APIResourceManager } from '../apiResourceManager.js';
 
 import { setupHandlers } from '../handlers.js';
-import { generateResponse } from '../ai.js';
+import { generateResponse, elicitProactiveThought } from '../ai.js';
 import { logger } from '../utils/logger.js';
 import { CONFIG } from '../config/config.js';
 import { DataManager } from './DataManager.js';
@@ -59,6 +59,8 @@ export class Bot {
 
     // Blacklist for servers
     this.blacklist = new Set();
+
+    this.ready = false;
   }
 
   async initialize(providerManager) {
@@ -251,6 +253,7 @@ export class Bot {
       logger.info('Bot is ready and connected (stealth mode)');
       this.reconnectAttempts = 0;
       this.lastHeartbeat = Date.now();
+      this.ready = true;
 
       // Set online status
       try {
@@ -262,6 +265,10 @@ export class Bot {
         logger.warn('Failed to set online status', { error: err.message });
       }
     });
+  }
+
+  isReady() {
+    return this.ready;
   }
 
   setupEventHandlers() {
@@ -535,6 +542,44 @@ export class Bot {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
+    }
+  }
+
+  async proactiveCognitiveLoop() {
+    logger.info('Starting proactive cognitive loop...');
+    try {
+      // 1. Observe: Gather context from the last 24 hours
+      const recentHistory = await this.dataManager.getRecentHistory(1, 'days');
+      const selfContext = this.dataManager.getSelfContext();
+
+      if (recentHistory.length === 0) {
+        logger.info('No recent history to analyze. Skipping proactive thought.');
+        return;
+      }
+
+      // 2. Think: Ask the AI what to do
+      logger.info('Eliciting proactive thought from AI...');
+      const thought = await elicitProactiveThought(
+        recentHistory,
+        selfContext,
+        this.providerManager
+      );
+
+      // 3. Act: Execute the thought
+      if (thought && thought.action === 'send_message' && thought.channelId && thought.content) {
+        logger.info(`AI decided to send a message to channel ${thought.channelId}`);
+        const targetChannel = await this.client.channels.fetch(thought.channelId);
+        if (targetChannel && targetChannel.isText()) {
+          await targetChannel.send(thought.content);
+          logger.info('Successfully sent proactive message.');
+        } else {
+          logger.warn(`Could not find or send to channel ${thought.channelId}. It might not be a text channel.`);
+        }
+      } else {
+        logger.info('AI decided to take no action.');
+      }
+    } catch (error) {
+      logger.error('Error during proactive cognitive loop:', error);
     }
   }
 

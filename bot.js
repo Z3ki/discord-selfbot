@@ -1,3 +1,4 @@
+import cron from 'node-cron';
 import 'dotenv/config';
 import {
   ProviderManager,
@@ -57,6 +58,18 @@ validateConfig();
   setupProcessHandlers(bot);
 
   await bot.start();
+
+  // Schedule the proactive cognitive loop to run daily at 12:00 PM
+  cron.schedule('0 12 * * *', () => {
+    logger.info('Executing daily proactive cognitive loop...');
+    if (bot.isReady()) {
+      bot.proactiveCognitiveLoop();
+    } else {
+      logger.warn('Bot not ready, skipping proactive cognitive loop.');
+    }
+  });
+
+  logger.info('Scheduled daily proactive cognitive loop.');
 })();
 
 function setupProcessHandlers(bot) {

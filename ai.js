@@ -2,7 +2,11 @@ import { toolRegistry } from './tools/index.js';
 import { ToolExecutor } from './tools/ToolExecutor.js';
 import { getDMMetadata, loadUserContext } from './utils/index.js';
 import { processMessageMedia } from './media.js';
-import { buildPromptContent, buildFollowUpContent } from './prompts.js';
+import {
+  buildPromptContent,
+  buildFollowUpContent,
+  buildProactivePrompt,
+} from './prompts.js';
 import { logger } from './utils/logger.js';
 import { LRUCache } from './utils/LRUCache.js';
 
@@ -1212,5 +1216,35 @@ export async function generateResponse(
     responseCache.set(cacheKey, responseToCache);
 
     return responseToCache;
+  }
+}
+
+export async function elicitProactiveThought(
+  recentHistory,
+  selfContext,
+  providerManager
+) {
+  logger.info('Building proactive prompt...');
+  const prompt = buildProactivePrompt(recentHistory, selfContext);
+
+  try {
+    logger.info('Sending proactive prompt to AI...');
+    const response = await generateWithRetry(providerManager, prompt);
+
+    // Clean the response to get only the JSON part
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      logger.warn('Proactive thought response was not valid JSON.', { response });
+      return { action: 'none' };
+    }
+
+    const thought = JSON.parse(jsonMatch[0]);
+    logger.info('Successfully parsed proactive thought from AI.', { thought });
+    return thought;
+  } catch (error) {
+    logger.error('Failed to elicit or parse proactive thought', {
+      error: error.message,
+    });
+    return { action: 'none' }; // Default to no action on error
   }
 }

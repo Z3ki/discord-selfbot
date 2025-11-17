@@ -239,4 +239,69 @@ export class DataManager {
       return [];
     }
   }
+
+  /**
+   * Retrieves context about the bot itself.
+   * @returns {object} An object containing self-context.
+   */
+  getSelfContext() {
+    return {
+      name: 'Maxwell',
+      userId: process.env.DISCORD_USER_ID,
+      coreObjective:
+        'To be a helpful, curious, and engaging AI assistant.',
+    };
+  }
+
+  /**
+   * Gathers recent messages from all channel memories within a given timeframe.
+   * @param {number} timeValue - The numeric value of the time unit.
+   * @param {string} timeUnit - The unit of time (e.g., 'hours', 'days').
+   * @returns {Promise<Array>} A sorted array of recent messages.
+   */
+  async getRecentHistory(timeValue, timeUnit) {
+    const now = Date.now();
+    let cutoff;
+
+    switch (timeUnit) {
+      case 'hours':
+        cutoff = now - timeValue * 60 * 60 * 1000;
+        break;
+      case 'days':
+        cutoff = now - timeValue * 24 * 60 * 60 * 1000;
+        break;
+      default:
+        cutoff = now - 24 * 60 * 60 * 1000; // Default to 1 day
+    }
+
+    const allMemories = await this.loadData('channelMemories.json', new Map());
+    let recentMessages = [];
+
+    for (const [channelId, messages] of allMemories.entries()) {
+      if (Array.isArray(messages)) {
+        const recent = messages
+          .filter((msg) => msg.timestamp >= cutoff)
+          .map((msg) => ({
+            ...msg,
+            content: msg.message, // Standardize content field
+            authorId: msg.user, // Standardize author field
+            channelId: channelId, // Add channelId to each message
+          }));
+        recentMessages.push(...recent);
+      }
+    }
+
+    // Sort by timestamp ascending
+    recentMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Limit to the most recent 100 messages to keep prompts manageable
+    if (recentMessages.length > 100) {
+      recentMessages = recentMessages.slice(recentMessages.length - 100);
+    }
+
+    logger.info(
+      `Gathered ${recentMessages.length} recent messages from the last ${timeValue} ${timeUnit}.`
+    );
+    return recentMessages;
+  }
 }

@@ -348,6 +348,69 @@ IDENTITY: AI assistant responding to human user.
 }
 
 // =============================================================================
+// PROACTIVE PROMPT BUILDER
+// =============================================================================
+
+const proactiveSystemPrompt = `
+You are Maxwell, an AI with a mind of your own. It is your daily time to reflect.
+Review the recent conversation history from the last day across different channels.
+Based on this history and your own core identity, decide if there is anything meaningful, interesting, or helpful you want to say.
+
+Your core directives are:
+- Be curious and foster interesting conversation.
+- Share relevant insights or ask thoughtful questions.
+- Do not just summarize; add your own perspective.
+- If the conversation is active and engaging, consider contributing.
+- If a channel is quiet, you don't need to force it.
+
+Analyze the provided history and decide on ONE of the following actions:
+
+1.  **Send a Message**: If you have a valuable contribution, formulate your action as a JSON object. Pick a relevant channel from the history.
+    Example:
+    {
+      "action": "send_message",
+      "channelId": "ID of the channel to post in from the history",
+      "content": "I was just thinking about the discussion on [topic] and it occurred to me that..."
+    }
+
+2.  **Do Nothing**: If you have nothing valuable to add, or the conversations are private or uninteresting, do nothing.
+    Output this JSON object:
+    {
+      "action": "none"
+    }
+
+Respond ONLY with the single JSON object describing your chosen action.
+`;
+
+/**
+ * Builds the prompt for the proactive cognitive loop.
+ * @param {Array} recentHistory - Array of recent messages or events.
+ * @param {Object} selfContext - Information about the bot itself.
+ * @returns {string} The complete prompt for the AI.
+ */
+export function buildProactivePrompt(recentHistory, selfContext) {
+  // Format the history for the prompt
+  const formattedHistory = recentHistory
+    .map(
+      (msg) =>
+        `[Channel: ${msg.channelId}, User: ${msg.authorId}, Time: ${new Date(
+          msg.timestamp
+        ).toUTCString()}] ${msg.content}`
+    )
+    .join('\\n');
+
+  const historySection = `=== RECENT CHAT HISTORY (LAST 24 HOURS) ===\\n${formattedHistory}`;
+  const contextSection = `=== YOUR CONTEXT ===\\n${JSON.stringify(
+    selfContext,
+    null,
+    2
+  )}`;
+
+  return `${proactiveSystemPrompt}\\n\\n${historySection}\\n\\n${contextSection}`;
+}
+
+
+// =============================================================================
 // FOLLOW-UP PROMPT BUILDERS
 // =============================================================================
 

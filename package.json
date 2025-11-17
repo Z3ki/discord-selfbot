@@ -19,7 +19,8 @@
     "dotenv": "^17.2.3",
     "duck-duck-scrape": "^2.2.5",
     "ffmpeg-static": "^5.2.0",
-    "fluent-ffmpeg": "^2.1.2"
+    "fluent-ffmpeg": "^2.1.2",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
