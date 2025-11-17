@@ -2,34 +2,45 @@ import { logger } from '../../utils/logger.js';
 
 export const changePresenceTool = {
   name: 'change_presence',
-  description: 'Change bot\'s Discord presence status and activity. Example: change_presence(presenceStatus="online", activityName="Playing games", activityType="Playing")',
+  description:
+    'Change bot\'s Discord presence status and activity. Example: change_presence(presenceStatus="online", activityName="Playing games", activityType="Playing")',
   parameters: {
     type: 'object',
     properties: {
-      presenceStatus: { type: 'string', description: 'Presence status: online, idle, dnd, or invisible' },
-      activityName: { type: 'string', description: 'Activity text to display (e.g., "Playing games")' },
-      activityType: { type: 'string', description: 'Activity type: Playing, Watching, Listening, Streaming, Competing' }
+      presenceStatus: {
+        type: 'string',
+        description: 'Presence status: online, idle, dnd, or invisible',
+      },
+      activityName: {
+        type: 'string',
+        description: 'Activity text to display (e.g., "Playing games")',
+      },
+      activityType: {
+        type: 'string',
+        description:
+          'Activity type: Playing, Watching, Listening, Streaming, Competing',
+      },
     },
-    required: []
+    required: [],
   },
 
   async execute(args, context) {
     try {
       const { client, message } = context;
-      
-// Check if client and client.user are available
-    if (!client) {
-      return 'Error: Discord client not available';
-    }
 
-    if (!client.user) {
-      return 'Error: Bot user not available - client may not be fully initialized. Please wait a moment and try again.';
-    }
+      // Check if client and client.user are available
+      if (!client) {
+        return 'Error: Discord client not available';
+      }
 
-    // Check if client is ready (use readyAt for discord.js-selfbot-v13)
-    if (!client.readyAt) {
-      return 'Error: Discord client not fully ready - please wait a moment and try again.';
-    }
+      if (!client.user) {
+        return 'Error: Bot user not available - client may not be fully initialized. Please wait a moment and try again.';
+      }
+
+      // Check if client is ready (use readyAt for discord.js-selfbot-v13)
+      if (!client.readyAt) {
+        return 'Error: Discord client not fully ready - please wait a moment and try again.';
+      }
 
       // Set presence status
       if (args.presenceStatus) {
@@ -48,14 +59,14 @@ export const changePresenceTool = {
       // Set activity
       if (args.activityName) {
         const activityTypeMap = {
-          'Playing': 0,
-          'Watching': 3,
-          'Listening': 2,
-          'Streaming': 1,
-          'Competing': 5
+          Playing: 0,
+          Watching: 3,
+          Listening: 2,
+          Streaming: 1,
+          Competing: 5,
         };
 
-        const activityType = args.activityType 
+        const activityType = args.activityType
           ? activityTypeMap[args.activityType] || 0
           : 0;
 
@@ -67,15 +78,19 @@ export const changePresenceTool = {
         }
       }
 
-      const status = args.presenceStatus || (client.user && client.user.presence ? client.user.presence.status : 'unknown');
+      const status =
+        args.presenceStatus ||
+        (client.user && client.user.presence
+          ? client.user.presence.status
+          : 'unknown');
       const activity = args.activityName || 'None';
       const activityType = args.activityType || 'Playing';
 
-      logger.info('Bot presence updated', { 
-        status, 
-        activity, 
+      logger.info('Bot presence updated', {
+        status,
+        activity,
         activityType,
-        userId: message?.author?.id || 'unknown'
+        userId: message?.author?.id || 'unknown',
       });
 
       return `Presence updated: ${status}, ${activityType} ${activity}`;
@@ -83,21 +98,20 @@ export const changePresenceTool = {
       logger.error('Error changing presence:', error);
       return `Error changing presence: ${error.message}`;
     }
-   }
+  },
 };
 
 export async function executeChangePresence(args, client) {
   try {
-    
-    logger.debug('executeChangePresence called', { 
-      args: JSON.stringify(args), 
+    logger.debug('executeChangePresence called', {
+      args: JSON.stringify(args),
       clientType: typeof client,
       clientExists: !!client,
       clientReady: client?.readyAt,
-      clientUser: !!client?.user
+      clientUser: !!client?.user,
     });
 
-// Check if client and client.user are available
+    // Check if client and client.user are available
     if (!client) {
       logger.error('Client is null/undefined in executeChangePresence');
       return 'Error: Discord client not available';
@@ -129,11 +143,11 @@ export async function executeChangePresence(args, client) {
     // Set activity
     if (args.activityName) {
       const activityTypeMap = {
-        'Playing': 0,
-        'Watching': 3,
-        'Listening': 2,
-        'Streaming': 1,
-        'Competing': 5
+        Playing: 0,
+        Watching: 3,
+        Listening: 2,
+        Streaming: 1,
+        Competing: 5,
       };
 
       const activityType = args.activityType
@@ -148,14 +162,18 @@ export async function executeChangePresence(args, client) {
       }
     }
 
-    const status = args.presenceStatus || (client.user && client.user.presence ? client.user.presence.status : 'unknown');
+    const status =
+      args.presenceStatus ||
+      (client.user && client.user.presence
+        ? client.user.presence.status
+        : 'unknown');
     const activity = args.activityName || 'None';
     const activityType = args.activityType || 'Playing';
 
     logger.info('Bot presence updated', {
       status,
       activity,
-      activityType
+      activityType,
     });
 
     return `Presence updated: ${status}, ${activityType} ${activity}`;

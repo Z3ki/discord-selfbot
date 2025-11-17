@@ -6,7 +6,8 @@ const RATE_LIMIT_LOG = 'rate_limits.log';
 
 // Queue system to prevent API flooding with enhancements
 export class RequestQueue {
-  constructor(rate = 1000, maxRetries = 5, backoffBase = 1000) { // 1000ms delay, 5 retries, 1s base backoff
+  constructor(rate = 1000, maxRetries = 5, backoffBase = 1000) {
+    // 1000ms delay, 5 retries, 1s base backoff
     this.queues = new Map(); // channelId -> array of {task, userId, message, positionMessageId}
     this.processing = new Map(); // channelId -> boolean
     this.rate = rate;
@@ -80,7 +81,9 @@ export class RequestQueue {
     const userHistory = this.spamHistory.get(userId) || [];
 
     // Clean old entries
-    const recentHistory = userHistory.filter(entry => now - entry.timestamp < this.spamWindow);
+    const recentHistory = userHistory.filter(
+      (entry) => now - entry.timestamp < this.spamWindow
+    );
     this.spamHistory.set(userId, recentHistory);
 
     // Check total messages in window
@@ -89,7 +92,9 @@ export class RequestQueue {
     }
 
     // Check identical messages
-    const identicalCount = recentHistory.filter(entry => entry.content === content).length;
+    const identicalCount = recentHistory.filter(
+      (entry) => entry.content === content
+    ).length;
     if (identicalCount >= this.maxIdenticalMessages) {
       return true;
     }
@@ -105,14 +110,22 @@ export class RequestQueue {
     // Check user limit
     if (userId && this.isUserRateLimited(userId)) {
       await this.logRateLimit(userId, channelId, 'User rate limit exceeded');
-      throw new Error('User rate limit exceeded. Please wait before making more requests.');
+      throw new Error(
+        'User rate limit exceeded. Please wait before making more requests.'
+      );
     }
 
     // Check for spam
     const content = message?.content || '';
     if (userId && content && this.isSpam(userId, content)) {
-      await this.logRateLimit(userId, channelId, 'Spam detected - identical/rapid messages');
-      throw new Error('Spam detected. Please avoid sending identical messages rapidly.');
+      await this.logRateLimit(
+        userId,
+        channelId,
+        'Spam detected - identical/rapid messages'
+      );
+      throw new Error(
+        'Spam detected. Please avoid sending identical messages rapidly.'
+      );
     }
 
     // Initialize queue for channel if not exists
@@ -130,7 +143,9 @@ export class RequestQueue {
     // Send queue position message if message provided and not first in line
     if (message && position > 1) {
       try {
-        const positionMessage = await message.reply(this.formatPositionMessage(position - 1));
+        const positionMessage = await message.reply(
+          this.formatPositionMessage(position - 1)
+        );
         positionMessageId = positionMessage.id;
       } catch (error) {
         console.error('Failed to send queue position message:', error);
@@ -181,18 +196,21 @@ export class RequestQueue {
       while (attempts <= this.maxRetries) {
         try {
           if (userId) this.recordUserRequest(userId);
-          
+
           // Stealth: Add small random delay before task execution
           if (this.stealthMode) {
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 200));
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 200)
+            );
           }
-          
+
           await task();
 
           // Delete the position message since task is complete
           if (positionMessageId && message) {
             try {
-              const positionMessage = await message.channel.messages.fetch(positionMessageId);
+              const positionMessage =
+                await message.channel.messages.fetch(positionMessageId);
               await positionMessage.delete();
             } catch (error) {
               // Message might already be deleted, ignore
@@ -205,17 +223,23 @@ export class RequestQueue {
         } catch (error) {
           attempts++;
           if (attempts > this.maxRetries) {
-            await this.logRateLimit(userId || 'unknown', channelId, `Max retries exceeded: ${error.message}`);
+            await this.logRateLimit(
+              userId || 'unknown',
+              channelId,
+              `Max retries exceeded: ${error.message}`
+            );
             throw error;
           }
 
-           // Exponential backoff with stealth variation
-           delay = this.backoffBase * Math.pow(2, attempts - 1);
-           if (this.stealthMode) {
-             delay += Math.random() * 1000; // Add up to 1s random delay
-           }
-           logger.warn(`Request failed, retrying in ${delay}ms (attempt ${attempts}/${this.maxRetries})`);
-           await new Promise(resolve => setTimeout(resolve, delay));
+          // Exponential backoff with stealth variation
+          delay = this.backoffBase * Math.pow(2, attempts - 1);
+          if (this.stealthMode) {
+            delay += Math.random() * 1000; // Add up to 1s random delay
+          }
+          logger.warn(
+            `Request failed, retrying in ${delay}ms (attempt ${attempts}/${this.maxRetries})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
 
@@ -231,7 +255,7 @@ export class RequestQueue {
         const variation = isNight ? Math.random() * 2000 : Math.random() * 1000;
         nextDelay = Math.max(500, this.rate + variation);
       }
-      await new Promise(resolve => setTimeout(resolve, nextDelay));
+      await new Promise((resolve) => setTimeout(resolve, nextDelay));
     }
 
     this.processing.set(channelId, false);
@@ -269,9 +293,12 @@ export class RequestQueue {
       const item = queue[i];
       if (item.positionMessageId && item.message) {
         const newPosition = i + processingOffset;
-        if (newPosition > 0) { // Only update if still in queue
+        if (newPosition > 0) {
+          // Only update if still in queue
           try {
-            const positionMessage = await item.message.channel.messages.fetch(item.positionMessageId);
+            const positionMessage = await item.message.channel.messages.fetch(
+              item.positionMessageId
+            );
             await positionMessage.edit(this.formatPositionMessage(newPosition));
           } catch (error) {
             // Message might be deleted, ignore
@@ -309,7 +336,10 @@ export class RequestQueue {
       // Delete position message if it exists
       if (item.positionMessageId && item.message) {
         try {
-          item.message.channel.messages.fetch(item.positionMessageId).then(msg => msg.delete()).catch(() => {});
+          item.message.channel.messages
+            .fetch(item.positionMessageId)
+            .then((msg) => msg.delete())
+            .catch(() => {});
         } catch (error) {
           // Ignore errors
         }
@@ -318,7 +348,9 @@ export class RequestQueue {
       removed++;
     }
 
-    logger.info(`Cleared ${removed} spam messages from queue in channel ${channelId}`);
+    logger.info(
+      `Cleared ${removed} spam messages from queue in channel ${channelId}`
+    );
     return removed;
   }
 
@@ -328,7 +360,11 @@ export class RequestQueue {
       this.subagentQueues.set(agentId, {
         queue: [],
         processing: false,
-        priorities: new Map([['HIGH', []], ['NORMAL', []], ['LOW', []]])
+        priorities: new Map([
+          ['HIGH', []],
+          ['NORMAL', []],
+          ['LOW', []],
+        ]),
       });
     }
 
@@ -369,7 +405,7 @@ export class RequestQueue {
         if (!task) break;
 
         await task();
-        await new Promise(resolve => setTimeout(resolve, this.rate));
+        await new Promise((resolve) => setTimeout(resolve, this.rate));
       }
     } finally {
       agentQueue.processing = false;
@@ -403,7 +439,7 @@ export class GlobalDMQueue {
           console.error('Error sending DM:', error);
         }
       }
-      await new Promise(resolve => setTimeout(resolve, this.rate));
+      await new Promise((resolve) => setTimeout(resolve, this.rate));
     }
     this.processing = false;
   }

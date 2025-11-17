@@ -4,16 +4,20 @@ import path from 'path';
 import { logger } from './logger.js';
 
 export class MediaCache {
-  constructor(cacheDir = './cache/media', maxSize = 100 * 1024 * 1024, maxAge = 24 * 60 * 60 * 1000) {
+  constructor(
+    cacheDir = './cache/media',
+    maxSize = 100 * 1024 * 1024,
+    maxAge = 24 * 60 * 60 * 1000
+  ) {
     this.cacheDir = cacheDir;
     this.maxSize = maxSize; // 100MB default
     this.maxAge = maxAge; // 24 hours default
     this.indexFile = path.join(cacheDir, 'index.json');
     this.cacheIndex = new Map();
-    
+
     this.ensureCacheDir();
     this.loadIndex();
-    
+
     // Start cleanup interval
     setInterval(() => this.cleanup(), 60 * 60 * 1000); // Clean every hour
   }
@@ -30,7 +34,9 @@ export class MediaCache {
       if (fs.existsSync(this.indexFile)) {
         const data = JSON.parse(fs.readFileSync(this.indexFile, 'utf8'));
         this.cacheIndex = new Map(Object.entries(data));
-        logger.debug('Loaded media cache index', { entries: this.cacheIndex.size });
+        logger.debug('Loaded media cache index', {
+          entries: this.cacheIndex.size,
+        });
       }
     } catch (error) {
       logger.warn('Failed to load media cache index', { error: error.message });
@@ -43,19 +49,21 @@ export class MediaCache {
       const data = Object.fromEntries(this.cacheIndex);
       fs.writeFileSync(this.indexFile, JSON.stringify(data, null, 2));
     } catch (error) {
-      logger.error('Failed to save media cache index', { error: error.message });
+      logger.error('Failed to save media cache index', {
+        error: error.message,
+      });
     }
   }
 
   generateKey(url, options = {}) {
     const hash = crypto.createHash('sha256');
     hash.update(url);
-    
+
     // Include options in hash for different processing of same URL
     if (options.frameCount) hash.update(`frames:${options.frameCount}`);
     if (options.quality) hash.update(`quality:${options.quality}`);
     if (options.format) hash.update(`format:${options.format}`);
-    
+
     return hash.digest('hex');
   }
 
@@ -92,7 +100,10 @@ export class MediaCache {
       logger.debug('Media cache hit', { key, size: data.length });
       return data;
     } catch (error) {
-      logger.warn('Failed to read cached media file', { key, error: error.message });
+      logger.warn('Failed to read cached media file', {
+        key,
+        error: error.message,
+      });
       this.delete(key);
       return null;
     }
@@ -101,21 +112,21 @@ export class MediaCache {
   async set(key, data) {
     try {
       const filePath = this.getFilePath(key);
-      
+
       // Check cache size limit
       await this.ensureSize(data.length);
-      
+
       // Write file
       fs.writeFileSync(filePath, data);
-      
+
       // Update index
       this.cacheIndex.set(key, {
         timestamp: Date.now(),
         lastAccessed: Date.now(),
         size: data.length,
-        filePath
+        filePath,
       });
-      
+
       this.saveIndex();
       logger.debug('Media cached', { key, size: data.length });
       return true;
@@ -138,7 +149,10 @@ export class MediaCache {
         logger.debug('Media cache entry deleted', { key });
       }
     } catch (error) {
-      logger.warn('Failed to delete cache entry', { key, error: error.message });
+      logger.warn('Failed to delete cache entry', {
+        key,
+        error: error.message,
+      });
     }
   }
 
@@ -157,21 +171,23 @@ export class MediaCache {
     for (const entry of entries) {
       this.delete(entry.key);
       freedSpace += entry.size;
-      
+
       if (currentSize + newItemSize - freedSpace <= this.maxSize) {
         break;
       }
     }
 
-    logger.info('Media cache cleanup completed', { 
-      freedSpace, 
-      entriesDeleted: entries.length 
+    logger.info('Media cache cleanup completed', {
+      freedSpace,
+      entriesDeleted: entries.length,
     });
   }
 
   getCurrentSize() {
-    return Array.from(this.cacheIndex.values())
-      .reduce((total, entry) => total + (entry.size || 0), 0);
+    return Array.from(this.cacheIndex.values()).reduce(
+      (total, entry) => total + (entry.size || 0),
+      0
+    );
   }
 
   cleanup() {
@@ -193,10 +209,10 @@ export class MediaCache {
 
     if (deletedCount > 0) {
       this.saveIndex();
-      logger.info('Media cache cleanup completed', { 
-        deletedCount, 
+      logger.info('Media cache cleanup completed', {
+        deletedCount,
         freedSpace,
-        totalEntries: this.cacheIndex.size 
+        totalEntries: this.cacheIndex.size,
       });
     }
   }
@@ -210,11 +226,11 @@ export class MediaCache {
           fs.unlinkSync(filePath);
         }
       }
-      
+
       // Clear index
       this.cacheIndex.clear();
       this.saveIndex();
-      
+
       logger.info('Media cache cleared');
     } catch (error) {
       logger.error('Failed to clear media cache', { error: error.message });
@@ -224,15 +240,25 @@ export class MediaCache {
   getStats() {
     const totalSize = this.getCurrentSize();
     const entryCount = this.cacheIndex.size;
-    
+
     return {
       entryCount,
       totalSize,
-      totalSizeMB: Math.round(totalSize / 1024 / 1024 * 100) / 100,
-      maxSizeMB: Math.round(this.maxSize / 1024 / 1024 * 100) / 100,
+      totalSizeMB: Math.round((totalSize / 1024 / 1024) * 100) / 100,
+      maxSizeMB: Math.round((this.maxSize / 1024 / 1024) * 100) / 100,
       usagePercent: Math.round((totalSize / this.maxSize) * 100),
-      oldestEntry: entryCount > 0 ? Math.min(...Array.from(this.cacheIndex.values()).map(e => e.timestamp)) : null,
-      newestEntry: entryCount > 0 ? Math.max(...Array.from(this.cacheIndex.values()).map(e => e.timestamp)) : null
+      oldestEntry:
+        entryCount > 0
+          ? Math.min(
+              ...Array.from(this.cacheIndex.values()).map((e) => e.timestamp)
+            )
+          : null,
+      newestEntry:
+        entryCount > 0
+          ? Math.max(
+              ...Array.from(this.cacheIndex.values()).map((e) => e.timestamp)
+            )
+          : null,
     };
   }
 }

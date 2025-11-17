@@ -4,10 +4,13 @@ export const joinServerTool = {
   parameters: {
     type: 'object',
     properties: {
-      inviteLink: { type: 'string', description: 'The invite link or code to join the server' }
+      inviteLink: {
+        type: 'string',
+        description: 'The invite link or code to join the server',
+      },
     },
-    required: ['inviteLink']
-  }
+    required: ['inviteLink'],
+  },
 };
 
 export async function executeJoinServer(args, client) {
@@ -25,12 +28,15 @@ export async function executeJoinServer(args, client) {
     return `Successfully joined server with invite: ${inviteInput}`;
   } catch (inviteError) {
     // Handle CAPTCHA requirement
-    if (inviteError.message && (
-      inviteError.message.includes('CAPTCHA') ||
-      inviteError.message.includes('captcha') ||
-      inviteError.message.includes('verification')
-    )) {
-      const fullInviteLink = inviteInput.startsWith('http') ? inviteInput : `https://discord.gg/${inviteInput}`;
+    if (
+      inviteError.message &&
+      (inviteError.message.includes('CAPTCHA') ||
+        inviteError.message.includes('captcha') ||
+        inviteError.message.includes('verification'))
+    ) {
+      const fullInviteLink = inviteInput.startsWith('http')
+        ? inviteInput
+        : `https://discord.gg/${inviteInput}`;
 
       return `**CAPTCHA Required** for server invite: ${inviteInput}
 

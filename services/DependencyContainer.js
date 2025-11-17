@@ -31,16 +31,17 @@ export class DependencyContainer {
 
     if (dep.singleton) {
       if (!this.singletons.has(name)) {
-        const instance = typeof dep.dependency === 'function' 
-          ? dep.dependency(this) 
-          : dep.dependency;
+        const instance =
+          typeof dep.dependency === 'function'
+            ? dep.dependency(this)
+            : dep.dependency;
         this.singletons.set(name, instance);
       }
       return this.singletons.get(name);
     }
 
-    return typeof dep.dependency === 'function' 
-      ? dep.dependency(this) 
+    return typeof dep.dependency === 'function'
+      ? dep.dependency(this)
       : dep.dependency;
   }
 

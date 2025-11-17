@@ -16,7 +16,7 @@ export function handleError(error, context = {}) {
     stack: error.stack,
     code: error.code,
     context,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   if (error.isUserError) {
@@ -24,7 +24,10 @@ export function handleError(error, context = {}) {
     return { success: false, message: error.message };
   } else {
     logger.error('System error occurred', errorInfo);
-    return { success: false, message: 'An internal error occurred. Please try again.' };
+    return {
+      success: false,
+      message: 'An internal error occurred. Please try again.',
+    };
   }
 }
 
@@ -38,6 +41,11 @@ export function withErrorHandling(fn, context = {}) {
   };
 }
 
-export function createBotError(message, code, isUserError = false, context = {}) {
+export function createBotError(
+  message,
+  code,
+  isUserError = false,
+  context = {}
+) {
   return new BotError(message, code, isUserError, context);
 }

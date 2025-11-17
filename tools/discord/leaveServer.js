@@ -4,10 +4,13 @@ export const leaveServerTool = {
   parameters: {
     type: 'object',
     properties: {
-      serverId: { type: 'string', description: 'The ID of the server to leave' }
+      serverId: {
+        type: 'string',
+        description: 'The ID of the server to leave',
+      },
     },
-    required: ['serverId']
-  }
+    required: ['serverId'],
+  },
 };
 
 export async function executeLeaveServer(args, client) {

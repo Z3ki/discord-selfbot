@@ -15,51 +15,62 @@ The Admin Manager provides a secure way to manage bot administrators through Dis
 ### Discord Bot Commands
 
 #### Method 1: Direct Commands (Recommended)
+
 Use `,admin` command with the following actions:
 
 #### Initial Setup (First Admin)
+
 ```
 ,admin add <your_user_id>
 ```
+
 - Only works when no admins exist
 - Sets yourself as the first administrator
 
 #### Add Admin
+
 ```
 ,admin add <user_id>
 ```
+
 - Adds user as admin
 - Error if already admin
 
 #### Remove Admin
+
 ```
 ,admin remove <user_id>
 ```
+
 - Removes admin status
 - Error if not admin
 
 #### Toggle Admin Status
+
 ```
 ,admin toggle <user_id>
 ```
+
 - Adds user if not admin
 - Removes user if already admin
 
 #### List Admins
+
 ```
 ,admin list
 ```
+
 - Shows all current administrators
 - Displays total count
 
 #### Clear All Admins
+
 ```
 ,admin clear
 ```
+
 - **Dangerous**: Removes all admins
 - Only existing admins can use
-
-
 
 ### CLI Tool
 
@@ -93,6 +104,7 @@ node admin_cli.js clear
 ## Examples
 
 ### Initial Setup (First Admin)
+
 ```
 User: ,admin add 123456789012345678
 Bot: **First Admin Setup Complete!**
@@ -104,6 +116,7 @@ You can now use all admin commands including managing other admins.
 ```
 
 ### Adding an Admin
+
 ```
 User: ,admin add 987654321098765432
 Bot: **Admin Added**
@@ -113,6 +126,7 @@ Bot: **Admin Added**
 ```
 
 ### Removing an Admin
+
 ```
 User: ,admin remove 987654321098765432
 Bot: **Admin Removed**
@@ -122,6 +136,7 @@ Bot: **Admin Removed**
 ```
 
 ### Toggling Admin Status
+
 ```
 User: ,admin toggle 987654321098765432
 Bot: **Admin Status Toggled**
@@ -133,6 +148,7 @@ Bot: **Admin Status Toggled**
 ```
 
 ### Listing Admins
+
 ```
 User: ,admin list
 Bot: **Bot Administrators**
@@ -144,6 +160,7 @@ Bot: **Bot Administrators**
 ```
 
 ### Non-Admin Access Denied
+
 ```
 User: ,admin list
 Bot: Access denied. Only existing administrators can manage admin access.
@@ -172,6 +189,7 @@ Common errors and their meanings:
 ## Logging
 
 All admin operations are logged with:
+
 - Timestamp
 - User ID (if available)
 - Action performed

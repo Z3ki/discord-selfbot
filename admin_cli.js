@@ -37,7 +37,7 @@ if (command === 'list') {
   // Treat as user ID to toggle
   const userId = command;
   const result = adminManager.toggleAdmin(userId);
-  
+
   if (result.success) {
     const emoji = result.action === 'added' ? '➕' : '➖';
     console.log(`${emoji} ${result.message}`);

@@ -14,10 +14,12 @@ async function resolveUserId(identifier, client, message) {
   // Otherwise, search for username/display name in the guild
   if (message.guild) {
     try {
-      const member = message.guild.members.cache.find(m =>
-        m.user.username.toLowerCase() === identifier.toLowerCase() ||
-        (m.displayName && m.displayName.toLowerCase() === identifier.toLowerCase()) ||
-        m.user.tag.toLowerCase() === identifier.toLowerCase()
+      const member = message.guild.members.cache.find(
+        (m) =>
+          m.user.username.toLowerCase() === identifier.toLowerCase() ||
+          (m.displayName &&
+            m.displayName.toLowerCase() === identifier.toLowerCase()) ||
+          m.user.tag.toLowerCase() === identifier.toLowerCase()
       );
       if (member) {
         return member.id;
@@ -42,27 +44,37 @@ export const reactionManagerTool = {
   parameters: {
     type: 'object',
     properties: {
-      action: { 
-        type: 'string', 
+      action: {
+        type: 'string',
         enum: ['add', 'remove', 'get'],
-        description: 'Action to perform: add, remove, or get reactions'
+        description: 'Action to perform: add, remove, or get reactions',
       },
       channelId: { type: 'string' },
       messageId: { type: 'string' },
-      emoji: { type: 'string', description: 'Emoji to add/remove (required for add/remove)' },
-      userId: { 
-        type: 'string', 
-        description: 'User identifier: ID, username, display name, or mention (optional for remove, defaults to bot)' 
-      }
+      emoji: {
+        type: 'string',
+        description: 'Emoji to add/remove (required for add/remove)',
+      },
+      userId: {
+        type: 'string',
+        description:
+          'User identifier: ID, username, display name, or mention (optional for remove, defaults to bot)',
+      },
     },
-    required: ['action', 'channelId', 'messageId']
-  }
+    required: ['action', 'channelId', 'messageId'],
+  },
 };
 
 export async function executeReactionManager(args, client, message) {
   try {
-    const { validateChannelId, validateUserId } = await import('../../utils/index.js');
-    const channel = validateChannelId(client, args.channelId, 'reaction management');
+    const { validateChannelId, validateUserId } = await import(
+      '../../utils/index.js'
+    );
+    const channel = validateChannelId(
+      client,
+      args.channelId,
+      'reaction management'
+    );
     const messageObj = await channel.messages.fetch(args.messageId);
 
     switch (args.action) {
@@ -77,21 +89,23 @@ export async function executeReactionManager(args, client, message) {
         if (!args.emoji) {
           return 'Error: emoji is required for remove action';
         }
-        
+
         // Validate userId if provided
         if (args.userId) {
           validateUserId(client, args.userId, 'reaction removal');
         }
-        
+
         // Check if client.user is available
         if (!client.user && !args.userId) {
           return 'Error: Bot user not available - client may not be fully initialized';
         }
-        
-        const user = args.userId ? 
-          await client.users.fetch(await resolveUserId(args.userId, client, message)) : 
-          client.user;
-        
+
+        const user = args.userId
+          ? await client.users.fetch(
+              await resolveUserId(args.userId, client, message)
+            )
+          : client.user;
+
         await messageObj.reactions.resolve(args.emoji).users.remove(user);
         return 'Reaction removed successfully';
 
@@ -101,7 +115,7 @@ export async function executeReactionManager(args, client, message) {
           reactions.push({
             emoji: emoji,
             count: reaction.count,
-            users: reaction.users.cache.map(u => u.tag)
+            users: reaction.users.cache.map((u) => u.tag),
           });
         });
         return JSON.stringify(reactions, null, 2);

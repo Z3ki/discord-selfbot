@@ -6,12 +6,9 @@ import { joinServerTool } from './discord/joinServer.js';
 
 import { leaveServerTool } from './discord/leaveServer.js';
 
-
-
 import { memoryResetTool } from './system/memoryReset.js';
 import { memoryInspectTool } from './system/memoryInspect.js';
-
-
+import { dockerExecTool } from './system/dockerExec.js';
 
 // Combine all tools
 export const tools = [
@@ -21,6 +18,7 @@ export const tools = [
   leaveServerTool,
   memoryResetTool,
   memoryInspectTool,
+  dockerExecTool,
 ];
 
 // Tool registry for execution
@@ -31,7 +29,7 @@ export class ToolRegistry {
   }
 
   registerTools() {
-    tools.forEach(tool => {
+    tools.forEach((tool) => {
       this.tools.set(tool.name, tool);
     });
   }
@@ -44,26 +42,33 @@ export class ToolRegistry {
     return tools;
   }
 
-   getToolsText() {
+  getToolsText() {
     // Group tools by category
     const categories = {
-      'COMMUNICATION': [],
-      'DISCORD MANAGEMENT': ['change_presence', 'reaction_manager', 'join_server', 'leave_server'],
-      'SYSTEM': ['memory_reset', 'memory_inspect'],
-      'RELATIONSHIPS': []
+      COMMUNICATION: [],
+      'DISCORD MANAGEMENT': [
+        'change_presence',
+        'reaction_manager',
+        'join_server',
+        'leave_server',
+      ],
+      SYSTEM: ['memory_reset', 'memory_inspect'],
+      RELATIONSHIPS: [],
     };
-
-
 
     const sections = [];
 
     for (const [category, toolNames] of Object.entries(categories)) {
-      const categoryTools = tools.filter(tool => toolNames.includes(tool.name));
+      const categoryTools = tools.filter((tool) =>
+        toolNames.includes(tool.name)
+      );
       if (categoryTools.length > 0) {
-        const toolTexts = categoryTools.map(tool => {
+        const toolTexts = categoryTools.map((tool) => {
           const params = Object.entries(tool.parameters.properties || {})
             .map(([key, prop]) => {
-              const required = tool.parameters.required?.includes(key) ? ' (required)' : ' (optional)';
+              const required = tool.parameters.required?.includes(key)
+                ? ' (required)'
+                : ' (optional)';
               return `  ${key}: ${prop.type}${required}`;
             })
             .join('\n');

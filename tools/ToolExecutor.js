@@ -11,8 +11,6 @@ import { executeJoinServer } from './discord/joinServer.js';
 
 import { executeLeaveServer } from './discord/leaveServer.js';
 
-
-
 export class ToolExecutor {
   constructor() {
     this.registry = toolRegistry;
@@ -21,30 +19,59 @@ export class ToolExecutor {
   /**
    * Execute a tool call
    */
-  async executeTool(call, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager) {
+  async executeTool(
+    call,
+    message,
+    client,
+    providerManager,
+    channelMemories,
+    dmOrigins,
+    globalPrompt,
+    apiResourceManager
+  ) {
     const { funcName, args } = call;
     const tool = this.registry.getTool(funcName);
 
     if (!tool) {
-      logger.warn(`Unknown tool called: ${funcName}`, { availableTools: Array.from(this.registry.tools.keys()) });
+      logger.warn(`Unknown tool called: ${funcName}`, {
+        availableTools: Array.from(this.registry.tools.keys()),
+      });
       return `Unknown tool: ${funcName}. Available tools: ${Array.from(this.registry.tools.keys()).join(', ')}`;
     }
 
     try {
       // Validate required parameters
       if (tool.parameters && tool.parameters.required) {
-        const missingParams = tool.parameters.required.filter(param => !(param in args));
+        const missingParams = tool.parameters.required.filter(
+          (param) => !(param in args)
+        );
         if (missingParams.length > 0) {
-          logger.warn(`Missing required parameters for tool ${funcName}`, { missing: missingParams, provided: Object.keys(args) });
+          logger.warn(`Missing required parameters for tool ${funcName}`, {
+            missing: missingParams,
+            provided: Object.keys(args),
+          });
           return `Error: Missing required parameters for ${funcName}: ${missingParams.join(', ')}`;
         }
       }
 
-      logger.debug('Executing tool', { funcName, args: JSON.stringify(args), clientAvailable: !!client, clientReady: client?.readyAt });
+      logger.debug('Executing tool', {
+        funcName,
+        args: JSON.stringify(args),
+        clientAvailable: !!client,
+        clientReady: client?.readyAt,
+      });
 
       // Check if tool has embedded execute function
       if (tool.execute) {
-        return await tool.execute(args, { message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager });
+        return await tool.execute(args, {
+          message,
+          client,
+          providerManager,
+          channelMemories,
+          dmOrigins,
+          globalPrompt,
+          apiResourceManager,
+        });
       }
 
       // Route to appropriate execution function based on tool name
@@ -60,51 +87,67 @@ export class ToolExecutor {
           return await executeLeaveServer(args, client);
 
         case 'shell': {
-            // For single shell calls, we still need to use the special handling
-            // Create a mock toolCall object for consistency
-            const mockToolCall = { funcName: 'shell', args };
-            const executionResult = await this.executeShellWithUpdates(mockToolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
-            return executionResult.result;
-          }
-
-
+          // For single shell calls, we still need to use the special handling
+          // Create a mock toolCall object for consistency
+          const mockToolCall = { funcName: 'shell', args };
+          const executionResult = await this.executeShellWithUpdates(
+            mockToolCall,
+            message,
+            client,
+            providerManager,
+            channelMemories,
+            dmOrigins,
+            globalPrompt,
+            apiResourceManager
+          );
+          return executionResult.result;
+        }
 
         default:
           logger.warn(`No execution function found for tool: ${funcName}`);
           return `Tool ${funcName} not implemented`;
       }
-
     } catch (error) {
       const errorMessage = error.message || 'Unknown error';
       const errorCode = error.code || 'UNKNOWN';
 
       // Categorize errors for better handling
       if (errorMessage.includes('Missing Access') || errorCode === 50001) {
-        logger.warn(`Access denied for tool ${funcName} - likely selfbot restriction`, {
+        logger.warn(
+          `Access denied for tool ${funcName} - likely selfbot restriction`,
+          {
+            funcName,
+            error: errorMessage,
+            code: errorCode,
+          }
+        );
+        return `Access denied: ${funcName} cannot be executed due to Discord API restrictions. This is normal for selfbots.`;
+      } else if (
+        errorMessage.includes('rate limit') ||
+        errorMessage.includes('429')
+      ) {
+        logger.warn(`Rate limit hit for tool ${funcName}`, {
           funcName,
           error: errorMessage,
-          code: errorCode
         });
-        return `Access denied: ${funcName} cannot be executed due to Discord API restrictions. This is normal for selfbots.`;
-      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-        logger.warn(`Rate limit hit for tool ${funcName}`, { funcName, error: errorMessage });
         return `Rate limited: ${funcName} is temporarily unavailable due to rate limits. Please try again later.`;
       } else if (errorMessage.includes('timeout')) {
-        logger.warn(`Timeout executing tool ${funcName}`, { funcName, error: errorMessage });
+        logger.warn(`Timeout executing tool ${funcName}`, {
+          funcName,
+          error: errorMessage,
+        });
         return `Timeout: ${funcName} took too long to execute. Please try again.`;
       } else {
         logger.error(`Error executing tool ${funcName}:`, {
           funcName,
           error: errorMessage,
           code: errorCode,
-          stack: error.stack
+          stack: error.stack,
         });
         return `Error executing ${funcName}: ${errorMessage}`;
       }
     }
   }
-
-
 
   /**
    * Get tools text for AI prompt
@@ -131,7 +174,21 @@ export class ToolExecutor {
   /**
    * Execute multiple tool calls
    */
-  async executeTools(toolCalls, message, client, channelMemories, dmOrigins, providerManager, globalPrompt, lastPrompt, lastResponse, lastToolCalls, lastToolResults, apiResourceManager, sharedStatusMessage = null) {
+  async executeTools(
+    toolCalls,
+    message,
+    client,
+    channelMemories,
+    dmOrigins,
+    providerManager,
+    globalPrompt,
+    lastPrompt,
+    lastResponse,
+    lastToolCalls,
+    lastToolResults,
+    apiResourceManager,
+    sharedStatusMessage = null
+  ) {
     const results = [];
     let dockerStatusMessage = sharedStatusMessage;
 
@@ -139,7 +196,17 @@ export class ToolExecutor {
       try {
         // Special handling for docker_exec with live updates
         if (toolCall.funcName === 'docker_exec') {
-          const executionResult = await this.executeShellWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, dockerStatusMessage);
+          const executionResult = await this.executeShellWithUpdates(
+            toolCall,
+            message,
+            client,
+            providerManager,
+            channelMemories,
+            dmOrigins,
+            globalPrompt,
+            apiResourceManager,
+            dockerStatusMessage
+          );
 
           // Store the status message for reuse in subsequent docker_exec calls
           if (!dockerStatusMessage && executionResult.statusMessage) {
@@ -148,20 +215,31 @@ export class ToolExecutor {
 
           results.push({
             tool: toolCall.funcName,
-            result: executionResult.result
+            result: executionResult.result,
           });
         } else {
-          const result = await this.executeTool(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager);
+          const result = await this.executeTool(
+            toolCall,
+            message,
+            client,
+            providerManager,
+            channelMemories,
+            dmOrigins,
+            globalPrompt,
+            apiResourceManager
+          );
           results.push({
             tool: toolCall.funcName,
-            result: result
+            result: result,
           });
         }
       } catch (error) {
-        logger.error(`Tool execution failed for ${toolCall.funcName}`, { error: error.message });
+        logger.error(`Tool execution failed for ${toolCall.funcName}`, {
+          error: error.message,
+        });
         results.push({
           tool: toolCall.funcName,
-          result: `Error: ${error.message}`
+          result: `Error: ${error.message}`,
         });
       }
     }
@@ -172,7 +250,17 @@ export class ToolExecutor {
   /**
    * Execute docker_exec with live message updates
    */
-  async executeShellWithUpdates(toolCall, message, client, providerManager, channelMemories, dmOrigins, globalPrompt, apiResourceManager, existingStatusMessage = null) {
+  async executeShellWithUpdates(
+    toolCall,
+    message,
+    client,
+    providerManager,
+    channelMemories,
+    dmOrigins,
+    globalPrompt,
+    apiResourceManager,
+    existingStatusMessage = null
+  ) {
     const { args } = toolCall;
     const { command } = args;
 
@@ -180,7 +268,8 @@ export class ToolExecutor {
     let statusMessage = existingStatusMessage;
     if (!statusMessage) {
       try {
-        const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+        const isDM =
+          message.channel?.type === 'DM' || message.channel?.type === 1;
         const initialContent = `\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
 
         if (isDM) {
@@ -189,9 +278,13 @@ export class ToolExecutor {
           statusMessage = await message.reply(initialContent);
         }
 
-        logger.debug('Sent initial tool status message', { messageId: statusMessage.id });
+        logger.debug('Sent initial tool status message', {
+          messageId: statusMessage.id,
+        });
       } catch (error) {
-        logger.warn('Failed to send initial status message', { error: error.message });
+        logger.warn('Failed to send initial status message', {
+          error: error.message,
+        });
       }
     } else {
       // Update existing message with new command
@@ -201,13 +294,17 @@ export class ToolExecutor {
         let newContent;
         if (currentContent.endsWith('```')) {
           // Remove the closing ``` and add new command
-          newContent = currentContent.slice(0, -3) + `$ ${command}\n[Executing...]\n\`\`\``;
+          newContent =
+            currentContent.slice(0, -3) +
+            `$ ${command}\n[Executing...]\n\`\`\``;
         } else if (currentContent.includes('```')) {
           // Message has code blocks but doesn't end with ``` - append carefully
-          newContent = currentContent + `\n\n$ ${command}\n[Executing...]\n\`\`\``;
+          newContent =
+            currentContent + `\n\n$ ${command}\n[Executing...]\n\`\`\``;
         } else {
           // No code blocks, add new command block
-          newContent = currentContent + `\n\n\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
+          newContent =
+            currentContent + `\n\n\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
         }
 
         // Ensure we don't exceed Discord limits
@@ -217,25 +314,35 @@ export class ToolExecutor {
 
         await statusMessage.edit(newContent);
       } catch (error) {
-        logger.warn('Failed to update existing status message', { error: error.message });
+        logger.warn('Failed to update existing status message', {
+          error: error.message,
+        });
         // Try to create a new message if update fails
         try {
           const fallbackContent = `\`\`\`\n$ ${command}\n[Executing...]\n\`\`\``;
-          const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
+          const isDM =
+            message.channel?.type === 'DM' || message.channel?.type === 1;
           if (isDM) {
             statusMessage = await message.channel.send(fallbackContent);
           } else {
             statusMessage = await message.reply(fallbackContent);
           }
         } catch (fallbackError) {
-          logger.warn('Failed to create fallback status message', { error: fallbackError.message });
+          logger.warn('Failed to create fallback status message', {
+            error: fallbackError.message,
+          });
         }
       }
     }
 
     // Execute the docker command with progress updates
     try {
-      const result = await this.executeShellWithProgress(toolCall, message, client, statusMessage);
+      const result = await this.executeShellWithProgress(
+        toolCall,
+        message,
+        client,
+        statusMessage
+      );
       return result;
     } catch (error) {
       logger.error('Docker exec with updates failed', { error: error.message });
@@ -246,7 +353,9 @@ export class ToolExecutor {
           const errorContent = `**Command failed:** \`${command}\`\n**Error:** ${error.message}`;
           await statusMessage.edit(errorContent);
         } catch (editError) {
-          logger.warn('Failed to update error status', { error: editError.message });
+          logger.warn('Failed to update error status', {
+            error: editError.message,
+          });
         }
       }
 
@@ -298,27 +407,44 @@ export class ToolExecutor {
           if (content.length > 1990) {
             // Show the END of the output (most recent) instead of beginning
             const truncatedLength = 1990 - '`\n... (truncated)'.length;
-            content = '... (showing last ' + truncatedLength + ' chars)\n' + content.substring(-truncatedLength) + '`\n... (truncated)';
+            content =
+              '... (showing last ' +
+              truncatedLength +
+              ' chars)\n' +
+              content.substring(-truncatedLength) +
+              '`\n... (truncated)';
           }
 
           try {
             await statusMessage.edit(content);
           } catch (error) {
-            if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-              logger.warn('Discord message too long, replacing with latest output', { originalLength: content.length });
+            if (
+              error.message.includes('2000') ||
+              error.message.includes('Must be 2000')
+            ) {
+              logger.warn(
+                'Discord message too long, replacing with latest output',
+                { originalLength: content.length }
+              );
               const truncatedContent = content.substring(0, 1950) + '`';
               await statusMessage.edit(truncatedContent);
             } else {
               throw error;
             }
           }
-} catch (error) {
-        if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-          logger.warn('Progress update too long for Discord, skipping update', { error: error.message });
-        } else {
-          logger.warn('Failed to update progress', { error: error.message });
+        } catch (error) {
+          if (
+            error.message.includes('2000') ||
+            error.message.includes('Must be 2000')
+          ) {
+            logger.warn(
+              'Progress update too long for Discord, skipping update',
+              { error: error.message }
+            );
+          } else {
+            logger.warn('Failed to update progress', { error: error.message });
+          }
         }
-      }
       }
     };
 
@@ -361,8 +487,14 @@ export class ToolExecutor {
         try {
           await statusMessage.edit(finalContent);
         } catch (error) {
-          if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-            logger.warn('Final Discord message too long, replacing with latest output', { originalLength: finalContent.length });
+          if (
+            error.message.includes('2000') ||
+            error.message.includes('Must be 2000')
+          ) {
+            logger.warn(
+              'Final Discord message too long, replacing with latest output',
+              { originalLength: finalContent.length }
+            );
             const truncatedContent = finalContent.substring(0, 1950) + '`';
             await statusMessage.edit(truncatedContent);
           } else {
@@ -370,13 +502,22 @@ export class ToolExecutor {
           }
         }
       } catch (error) {
-        if (error.message.includes('2000') || error.message.includes('Must be 2000')) {
-          logger.warn('Final update too long for Discord, sending latest output only', { error: error.message });
-          const shortContent = 'Command completed. Output updated with latest results.';
+        if (
+          error.message.includes('2000') ||
+          error.message.includes('Must be 2000')
+        ) {
+          logger.warn(
+            'Final update too long for Discord, sending latest output only',
+            { error: error.message }
+          );
+          const shortContent =
+            'Command completed. Output updated with latest results.';
           try {
             await statusMessage.edit(shortContent);
           } catch (fallbackError) {
-            logger.error('Failed to send fallback message', { error: fallbackError.message });
+            logger.error('Failed to send fallback message', {
+              error: fallbackError.message,
+            });
           }
         } else {
           logger.warn('Failed to send final update', { error: error.message });

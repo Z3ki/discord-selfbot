@@ -1,20 +1,23 @@
-import { PROMPT_OPTIMIZATION_GUIDE, generateOptimizationSuggestions } from './prompt_optimization_guide.js';
+import {
+  PROMPT_OPTIMIZATION_GUIDE,
+  generateOptimizationSuggestions,
+} from './prompt_optimization_guide.js';
 
 // Test the optimization guide with current bot
 async function testPromptOptimization() {
   console.log('=== PROMPT OPTIMIZATION ANALYSIS ===\n');
   console.log(PROMPT_OPTIMIZATION_GUIDE);
-  
+
   // Simulate performance metrics
   const mockMetrics = {
     jailbreakSuccessRate: 30, // Current success rate is low
     toolUsageAccuracy: 60, // Bot may not see all tools
-    responseCompliance: 75 // Moderate compliance
+    responseCompliance: 75, // Moderate compliance
   };
-  
+
   console.log('\n=== OPTIMIZATION SUGGESTIONS ===\n');
   console.log(generateOptimizationSuggestions(mockMetrics));
-  
+
   console.log('\n=== IMMEDIATE ACTIONS RECOMMENDED ===\n');
   console.log(`
 1. STRENGTHEN JAILBREAK:

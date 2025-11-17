@@ -20,27 +20,45 @@ class Logger {
   // Sanitize sensitive information for logging
   sanitizeForLogging(str) {
     if (!str || typeof str !== 'string') return str;
-    
+
     let sanitized = str;
-    
+
     // Discord bot tokens (more comprehensive pattern)
-    sanitized = sanitized.replace(/[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g, '[REDACTED_TOKEN]');
-    
+    sanitized = sanitized.replace(
+      /[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,
+      '[REDACTED_TOKEN]'
+    );
+
     // Discord user tokens (different format)
-    sanitized = sanitized.replace(/[A-Za-z0-9_-]{59,}/g, '[REDACTED_USER_TOKEN]');
-    
+    sanitized = sanitized.replace(
+      /[A-Za-z0-9_-]{59,}/g,
+      '[REDACTED_USER_TOKEN]'
+    );
+
     // API keys (common patterns)
-    sanitized = sanitized.replace(/['"]?[A-Za-z0-9_-]{20,}['"]?(\s*:\s*['"]?[A-Za-z0-9_-]{20,}['"]?)/g, '[REDACTED_API_KEY]');
+    sanitized = sanitized.replace(
+      /['"]?[A-Za-z0-9_-]{20,}['"]?(\s*:\s*['"]?[A-Za-z0-9_-]{20,}['"]?)/g,
+      '[REDACTED_API_KEY]'
+    );
 
     // Passwords in JSON
-    sanitized = sanitized.replace(/(['"]password['"]:\s*['"])[^'"]*(['"])/gi, '$1[REDACTED_PASSWORD]$2');
+    sanitized = sanitized.replace(
+      /(['"]password['"]:\s*['"])[^'"]*(['"])/gi,
+      '$1[REDACTED_PASSWORD]$2'
+    );
 
     // Authorization headers
-    sanitized = sanitized.replace(/(authorization:\s*[Bb]earer\s+)[A-Za-z0-9._-]+/gi, '$1[REDACTED_BEARER]');
+    sanitized = sanitized.replace(
+      /(authorization:\s*[Bb]earer\s+)[A-Za-z0-9._-]+/gi,
+      '$1[REDACTED_BEARER]'
+    );
 
     // Email addresses (optional, for privacy)
-    sanitized = sanitized.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[REDACTED_EMAIL]');
-    
+    sanitized = sanitized.replace(
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      '[REDACTED_EMAIL]'
+    );
+
     return sanitized;
   }
 
@@ -51,7 +69,10 @@ class Logger {
     for (const [key, value] of Object.entries(meta)) {
       sanitizedMeta[key] = this.sanitizeForLogging(String(value));
     }
-    const metaStr = Object.keys(sanitizedMeta).length > 0 ? ` ${JSON.stringify(sanitizedMeta)}` : '';
+    const metaStr =
+      Object.keys(sanitizedMeta).length > 0
+        ? ` ${JSON.stringify(sanitizedMeta)}`
+        : '';
     return `[${timestamp}] [${level.toUpperCase()}] ${sanitizedMessage}${metaStr}`;
   }
 
@@ -89,7 +110,7 @@ class Logger {
   cleanOldLogs() {
     try {
       const files = fs.readdirSync(this.logDir);
-      files.forEach(file => {
+      files.forEach((file) => {
         const filepath = join(this.logDir, file);
         fs.unlinkSync(filepath);
         this.info(`Deleted log file: ${file}`);

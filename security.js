@@ -6,34 +6,110 @@ import { logger } from './utils/logger.js';
 
 // Dangerous file extensions
 const DANGEROUS_EXTENSIONS = new Set([
-  '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.js', '.jar',
-  '.app', '.deb', '.rpm', '.dmg', '.pkg', '.msi', '.ps1', '.sh'
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.com',
+  '.pif',
+  '.scr',
+  '.vbs',
+  '.js',
+  '.jar',
+  '.app',
+  '.deb',
+  '.rpm',
+  '.dmg',
+  '.pkg',
+  '.msi',
+  '.ps1',
+  '.sh',
 ]);
 
 // Allowed MIME types for media processing
 const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
-  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo',
-  'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp3',
-  'audio/m4a', 'audio/aac', 'audio/flac', 'audio/opus'
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'audio/webm',
+  'audio/mp3',
+  'audio/m4a',
+  'audio/aac',
+  'audio/flac',
+  'audio/opus',
 ]);
 
 // Allowlist of safe commands and patterns
 const ALLOWED_COMMANDS = [
   // Basic system info
-  'ls', 'pwd', 'whoami', 'date', 'uptime', 'uname', 'id', 'groups',
+  'ls',
+  'pwd',
+  'whoami',
+  'date',
+  'uptime',
+  'uname',
+  'id',
+  'groups',
   // File operations (read-only)
-  'cat', 'head', 'tail', 'less', 'more', 'wc', 'grep', 'find', 'locate',
+  'cat',
+  'head',
+  'tail',
+  'less',
+  'more',
+  'wc',
+  'grep',
+  'find',
+  'locate',
   // System monitoring
-  'ps', 'top', 'htop', 'df', 'du', 'free', 'lscpu', 'lsblk', 'lsusb',
+  'ps',
+  'top',
+  'htop',
+  'df',
+  'du',
+  'free',
+  'lscpu',
+  'lsblk',
+  'lsusb',
   // Network tools (read-only)
-  'ping', 'traceroute', 'nslookup', 'dig', 'netstat', 'ss', 'ip',
+  'ping',
+  'traceroute',
+  'nslookup',
+  'dig',
+  'netstat',
+  'ss',
+  'ip',
   // Development tools
-  'node', 'npm', 'python', 'python3', 'git', 'gcc', 'make', 'cmake',
+  'node',
+  'npm',
+  'python',
+  'python3',
+  'git',
+  'gcc',
+  'make',
+  'cmake',
   // Text processing
-  'echo', 'printf', 'sort', 'uniq', 'cut', 'awk', 'sed', 'tr',
+  'echo',
+  'printf',
+  'sort',
+  'uniq',
+  'cut',
+  'awk',
+  'sed',
+  'tr',
   // Archive tools
-  'tar', 'zip', 'unzip', 'gzip', 'gunzip'
+  'tar',
+  'zip',
+  'unzip',
+  'gzip',
+  'gunzip',
 ];
 
 const ALLOWED_PATTERNS = [
@@ -45,7 +121,7 @@ const ALLOWED_PATTERNS = [
   // Numbers
   /^\d+$/,
   // Common combinations
-  /^-[a-zA-Z]\s+[a-zA-Z0-9/._-]+$/
+  /^-[a-zA-Z]\s+[a-zA-Z0-9/._-]+$/,
 ];
 
 /**
@@ -59,18 +135,18 @@ export function validateShellCommand(command) {
   }
 
   const trimmedCommand = command.trim();
-  
+
   // Check for encoded dangerous commands
   try {
     const decoded = Buffer.from(command, 'base64').toString();
     if (decoded !== command) {
-      logger.warn(`Encoded command blocked: ${command}`, { 
+      logger.warn(`Encoded command blocked: ${command}`, {
         decoded: decoded,
-        userId: 'unknown' 
+        userId: 'unknown',
       });
-      return { 
-        safe: false, 
-        reason: 'Encoded commands are not allowed' 
+      return {
+        safe: false,
+        reason: 'Encoded commands are not allowed',
       };
     }
   } catch (error) {
@@ -79,23 +155,23 @@ export function validateShellCommand(command) {
 
   // Check for command substitution
   if (/`[^`]*`|\$\([^)]*\)/.test(trimmedCommand)) {
-    logger.warn(`Command substitution blocked: ${command}`, { 
-      userId: 'unknown' 
+    logger.warn(`Command substitution blocked: ${command}`, {
+      userId: 'unknown',
     });
-    return { 
-      safe: false, 
-      reason: 'Command substitution is not allowed' 
+    return {
+      safe: false,
+      reason: 'Command substitution is not allowed',
     };
   }
 
   // Check for pipes and redirects (restrictive)
   if (/[|&><]/.test(trimmedCommand)) {
-    logger.warn(`Command with pipes/redirects blocked: ${command}`, { 
-      userId: 'unknown' 
+    logger.warn(`Command with pipes/redirects blocked: ${command}`, {
+      userId: 'unknown',
     });
-    return { 
-      safe: false, 
-      reason: 'Pipes and redirects are not allowed' 
+    return {
+      safe: false,
+      reason: 'Pipes and redirects are not allowed',
     };
   }
 
@@ -105,13 +181,13 @@ export function validateShellCommand(command) {
 
   // Check if base command is in allowlist
   if (!ALLOWED_COMMANDS.includes(baseCommand)) {
-    logger.warn(`Command not in allowlist: ${baseCommand}`, { 
+    logger.warn(`Command not in allowlist: ${baseCommand}`, {
       command: trimmedCommand,
-      userId: 'unknown' 
+      userId: 'unknown',
     });
-    return { 
-      safe: false, 
-      reason: `Command '${baseCommand}' is not allowed` 
+    return {
+      safe: false,
+      reason: `Command '${baseCommand}' is not allowed`,
     };
   }
 
@@ -129,25 +205,29 @@ export function validateShellCommand(command) {
     }
 
     // Allow common safe arguments
-    if (arg.startsWith('-') || /^\d+$/.test(arg) || /^[a-zA-Z0-9/._-]+$/.test(arg)) {
+    if (
+      arg.startsWith('-') ||
+      /^\d+$/.test(arg) ||
+      /^[a-zA-Z0-9/._-]+$/.test(arg)
+    ) {
       isValidArg = true;
     }
 
     if (!isValidArg) {
-      logger.warn(`Invalid argument blocked: ${arg}`, { 
+      logger.warn(`Invalid argument blocked: ${arg}`, {
         command: trimmedCommand,
         argument: arg,
-        userId: 'unknown' 
+        userId: 'unknown',
       });
-      return { 
-        safe: false, 
-        reason: `Argument '${arg}' is not allowed` 
+      return {
+        safe: false,
+        reason: `Argument '${arg}' is not allowed`,
       };
     }
   }
 
-  logger.debug(`Command allowed: ${trimmedCommand}`, { 
-    userId: 'unknown' 
+  logger.debug(`Command allowed: ${trimmedCommand}`, {
+    userId: 'unknown',
   });
 
   return { safe: true, reason: 'Command is allowed' };
@@ -173,26 +253,26 @@ export function sanitizeInput(input) {
 // Magic numbers for file type validation
 const MAGIC_NUMBERS = {
   // Images
-  'image/jpeg': [0xFF, 0xD8, 0xFF],
-  'image/png': [0x89, 0x50, 0x4E, 0x47],
+  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/png': [0x89, 0x50, 0x4e, 0x47],
   'image/gif': [0x47, 0x49, 0x46],
   'image/webp': [0x52, 0x49, 0x46, 0x46],
-  'image/bmp': [0x42, 0x4D],
-  
+  'image/bmp': [0x42, 0x4d],
+
   // Videos
   'video/mp4': [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
-  'video/webm': [0x1A, 0x45, 0xDF, 0xA3],
+  'video/webm': [0x1a, 0x45, 0xdf, 0xa3],
   'video/quicktime': [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70],
   'video/x-msvideo': [0x52, 0x49, 0x46, 0x46],
-  
+
   // Audio
   'audio/mpeg': [0x49, 0x44, 0x33],
   'audio/wav': [0x52, 0x49, 0x46, 0x46],
-  'audio/ogg': [0x4F, 0x67, 0x67, 0x53],
-  
+  'audio/ogg': [0x4f, 0x67, 0x67, 0x53],
+
   // Documents
   'application/pdf': [0x25, 0x50, 0x44, 0x46],
-  'text/plain': [] // No specific magic number for text files
+  'text/plain': [], // No specific magic number for text files
 };
 
 /**
@@ -226,13 +306,16 @@ export function validateFileWithMagicNumbers(fileBuffer, expectedMimeType) {
   for (let i = 0; i < magicNumbers.length; i++) {
     if (fileBuffer[i] !== magicNumbers[i]) {
       logger.warn(`Magic number mismatch for ${expectedMimeType}`, {
-        expected: magicNumbers.map(b => `0x${b.toString(16).toUpperCase()}`).join(' '),
+        expected: magicNumbers
+          .map((b) => `0x${b.toString(16).toUpperCase()}`)
+          .join(' '),
         actual: Array.from(fileBuffer.slice(0, magicNumbers.length))
-          .map(b => `0x${b.toString(16).toUpperCase()}`).join(' ')
+          .map((b) => `0x${b.toString(16).toUpperCase()}`)
+          .join(' '),
       });
-      return { 
-        valid: false, 
-        reason: `Magic number mismatch for ${expectedMimeType}` 
+      return {
+        valid: false,
+        reason: `Magic number mismatch for ${expectedMimeType}`,
       };
     }
   }
@@ -253,34 +336,37 @@ export function validateFileType(filename, mimeType, fileBuffer = null) {
   }
 
   const extension = filename.toLowerCase().split('.').pop();
-  
+
   // Check for dangerous extensions
   if (DANGEROUS_EXTENSIONS.has(`.${extension}`)) {
-    logger.warn(`Dangerous file type blocked: ${filename}`, { 
+    logger.warn(`Dangerous file type blocked: ${filename}`, {
       extension,
-      mimeType 
+      mimeType,
     });
-    return { 
-      valid: false, 
-      reason: `Dangerous file extension: .${extension}` 
+    return {
+      valid: false,
+      reason: `Dangerous file extension: .${extension}`,
     };
   }
 
   // Check MIME type if provided
   if (mimeType && !ALLOWED_MIME_TYPES.has(mimeType)) {
-    logger.warn(`Unsupported MIME type: ${mimeType}`, { 
+    logger.warn(`Unsupported MIME type: ${mimeType}`, {
       filename,
-      mimeType 
+      mimeType,
     });
-    return { 
-      valid: false, 
-      reason: `Unsupported MIME type: ${mimeType}` 
+    return {
+      valid: false,
+      reason: `Unsupported MIME type: ${mimeType}`,
     };
   }
 
   // Additional validation with magic numbers if buffer is provided
   if (fileBuffer && mimeType) {
-    const magicNumberResult = validateFileWithMagicNumbers(fileBuffer, mimeType);
+    const magicNumberResult = validateFileWithMagicNumbers(
+      fileBuffer,
+      mimeType
+    );
     if (!magicNumberResult.valid) {
       return magicNumberResult;
     }
@@ -346,7 +432,12 @@ export function validateUrl(url) {
  * @param {number} windowMs - Time window in milliseconds
  * @returns {Object} Rate limit result
  */
-export function checkRateLimit(rateLimitMap, userId, maxRequests = 10, windowMs = 60000) {
+export function checkRateLimit(
+  rateLimitMap,
+  userId,
+  maxRequests = 10,
+  windowMs = 60000
+) {
   if (!rateLimitMap || !userId) {
     return { allowed: false, reason: 'Invalid rate limit parameters' };
   }
@@ -355,17 +446,17 @@ export function checkRateLimit(rateLimitMap, userId, maxRequests = 10, windowMs 
   const userRequests = rateLimitMap.get(userId) || [];
 
   // Remove old requests outside the time window
-  const validRequests = userRequests.filter(time => now - time < windowMs);
+  const validRequests = userRequests.filter((time) => now - time < windowMs);
 
   if (validRequests.length >= maxRequests) {
     const oldestRequest = Math.min(...validRequests);
     const resetTime = oldestRequest + windowMs;
     const timeToReset = Math.ceil((resetTime - now) / 1000);
 
-    return { 
-      allowed: false, 
+    return {
+      allowed: false,
       reason: `Rate limit exceeded. Try again in ${timeToReset} seconds.`,
-      resetTime
+      resetTime,
     };
   }
 
@@ -373,10 +464,10 @@ export function checkRateLimit(rateLimitMap, userId, maxRequests = 10, windowMs 
   validRequests.push(now);
   rateLimitMap.set(userId, validRequests);
 
-  return { 
-    allowed: true, 
+  return {
+    allowed: true,
     reason: 'Request allowed',
-    remaining: maxRequests - validRequests.length
+    remaining: maxRequests - validRequests.length,
   };
 }
 
@@ -387,5 +478,5 @@ export default {
   validateDiscordId,
   sanitizeDiscordContent,
   validateUrl,
-  checkRateLimit
+  checkRateLimit,
 };

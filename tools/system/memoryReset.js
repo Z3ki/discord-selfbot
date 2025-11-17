@@ -7,18 +7,25 @@ export const memoryResetTool = {
       scope: {
         type: 'string',
         enum: ['channel', 'dm', 'all'],
-        description: 'Scope of memory reset: channel (current), dm (current DM), all (all memories)',
-        default: 'channel'
+        description:
+          'Scope of memory reset: channel (current), dm (current DM), all (all memories)',
+        default: 'channel',
       },
       confirm: {
         type: 'boolean',
         description: 'Must be true to confirm reset',
-        default: false
-      }
+        default: false,
+      },
     },
-    required: ['confirm']
+    required: ['confirm'],
   },
-  execute: async function({ scope = 'channel', confirm = false }, message, client, channelMemories, dmOrigins) {
+  execute: async function (
+    { scope = 'channel', confirm = false },
+    message,
+    client,
+    channelMemories,
+    dmOrigins
+  ) {
     if (!confirm) {
       return 'Memory reset cancelled - I need confirmation to proceed. Please use confirm=true.';
     }
@@ -55,5 +62,5 @@ export const memoryResetTool = {
 
     const scopeText = scope === 'dm' ? 'DM' : 'channel';
     return `I have cleared my conversation memory for this ${scopeText}.`;
-  }
+  },
 };

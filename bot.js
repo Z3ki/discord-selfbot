@@ -1,5 +1,9 @@
 import 'dotenv/config';
-import { ProviderManager, GoogleAIProvider, NvidiaNIMProvider } from './providers.js';
+import {
+  ProviderManager,
+  GoogleAIProvider,
+  NvidiaNIMProvider,
+} from './providers.js';
 import { CONFIG, validateConfig } from './config/config.js';
 import { Bot } from './services/Bot.js';
 import { transcriptionService } from './services/TranscriptionService.js';
@@ -18,7 +22,7 @@ validateConfig();
   // Register Google AI provider
   const googleProvider = new GoogleAIProvider({
     apiKey: CONFIG.ai.google.apiKey,
-    model: CONFIG.ai.google.model
+    model: CONFIG.ai.google.model,
   });
   providerManager.registerProvider(googleProvider);
 
@@ -28,11 +32,9 @@ validateConfig();
     baseURL: CONFIG.ai.nvidia.baseUrl,
     model: CONFIG.ai.nvidia.model,
     maxTokens: CONFIG.ai.nvidia.maxTokens,
-    temperature: CONFIG.ai.nvidia.temperature
+    temperature: CONFIG.ai.nvidia.temperature,
   });
   providerManager.registerProvider(nvidiaProvider);
-
-
 
   // Set primary and fallback providers
   providerManager.setPrimaryProvider('nvidia-nim');
@@ -50,10 +52,10 @@ validateConfig();
   // Initialize and start bot
   const bot = new Bot();
   await bot.initialize(providerManager);
-  
+
   // Setup process-level stability handlers
   setupProcessHandlers(bot);
-  
+
   await bot.start();
 })();
 
@@ -80,31 +82,36 @@ function setupProcessHandlers(bot) {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', (error) => {
-    logger.error('Uncaught Exception', { 
-      error: error.message, 
-      stack: error.stack 
+    logger.error('Uncaught Exception', {
+      error: error.message,
+      stack: error.stack,
     });
-    
+
     // Try to save data before exiting
-    bot.saveData().then(() => {
-      process.exit(1);
-    }).catch(() => {
-      process.exit(1);
-    });
+    bot
+      .saveData()
+      .then(() => {
+        process.exit(1);
+      })
+      .catch(() => {
+        process.exit(1);
+      });
   });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled Rejection', { 
+    logger.error('Unhandled Rejection', {
       reason: reason?.message || reason,
-      promise: promise.toString()
+      promise: promise.toString(),
     });
   });
 
   // Handle memory warnings
   process.on('warning', (warning) => {
     if (warning.name === 'MaxListenersExceededWarning') {
-      logger.warn('Max listeners exceeded warning', { warning: warning.message });
+      logger.warn('Max listeners exceeded warning', {
+        warning: warning.message,
+      });
     } else {
       logger.warn('Process warning', { warning: warning.message });
     }
@@ -117,17 +124,22 @@ function setupProcessHandlers(bot) {
       rss: Math.round(memUsage.rss / 1024 / 1024),
       heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
       heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      external: Math.round(memUsage.external / 1024 / 1024)
+      external: Math.round(memUsage.external / 1024 / 1024),
     };
-    
+
     // Log warning if memory usage is high
-    if (memUsageMB.heapUsed > 500) { // 500MB threshold
+    if (memUsageMB.heapUsed > 500) {
+      // 500MB threshold
       logger.warn('High memory usage detected', memUsageMB);
     }
-    
+
     // Force garbage collection if memory is very high
-    if (memUsageMB.heapUsed > 1000) { // 1GB threshold
-      logger.warn('Forcing garbage collection due to high memory usage', memUsageMB);
+    if (memUsageMB.heapUsed > 1000) {
+      // 1GB threshold
+      logger.warn(
+        'Forcing garbage collection due to high memory usage',
+        memUsageMB
+      );
       if (global.gc) {
         global.gc();
       }

@@ -25,17 +25,22 @@ export class TranscriptionService {
     return new Promise((resolve, reject) => {
       try {
         // Start the Python service
-        this.pythonProcess = spawn('/root/whisper_venv/bin/python3', [
-          path.join(__dirname, '../transcription_service.py')
-        ], {
-          cwd: process.cwd(),
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, PYTHONUNBUFFERED: '1' }
-        });
+        this.pythonProcess = spawn(
+          '/root/whisper_venv/bin/python3',
+          [path.join(__dirname, '../transcription_service.py')],
+          {
+            cwd: process.cwd(),
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: { ...process.env, PYTHONUNBUFFERED: '1' },
+          }
+        );
 
         // Handle stdout (responses from Python)
         this.pythonProcess.stdout.on('data', (data) => {
-          const lines = data.toString().split('\n').filter(line => line.trim());
+          const lines = data
+            .toString()
+            .split('\n')
+            .filter((line) => line.trim());
           for (const line of lines) {
             try {
               const response = JSON.parse(line);
@@ -61,7 +66,9 @@ export class TranscriptionService {
 
         // Handle process exit
         this.pythonProcess.on('exit', (code, signal) => {
-          logger.error(`Transcription service exited with code ${code}, signal ${signal}`);
+          logger.error(
+            `Transcription service exited with code ${code}, signal ${signal}`
+          );
           this.isReady = false;
           this.pythonProcess = null;
 
@@ -76,7 +83,6 @@ export class TranscriptionService {
         const timeout = setTimeout(() => {
           reject(new Error('Transcription service startup timeout'));
         }, 60000); // 60 second timeout
-
       } catch (error) {
         reject(error);
       }
@@ -116,7 +122,7 @@ export class TranscriptionService {
       const requestId = ++this.requestId;
       const request = {
         action: 'transcribe',
-        audio_path: audioPath
+        audio_path: audioPath,
       };
 
       this.pendingRequests.set(requestId, { resolve, reject, request });
@@ -172,7 +178,9 @@ export class TranscriptionService {
     // Since we don't have request IDs in the response, we'll resolve the oldest pending request
     // This assumes responses come back in order
     if (this.pendingRequests.size > 0) {
-      const [requestId, { resolve, reject }] = this.pendingRequests.entries().next().value;
+      const [requestId, { resolve, reject }] = this.pendingRequests
+        .entries()
+        .next().value;
       this.pendingRequests.delete(requestId);
 
       if (response.success) {

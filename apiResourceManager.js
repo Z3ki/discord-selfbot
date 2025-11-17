@@ -2,18 +2,28 @@ export class APIResourceManager {
   constructor(maxRequestsPerMinute = 60, maxRequestsPerHour = 1000) {
     this.usage = new Map(); // agentId -> { minute: count, hour: count, lastReset: timestamp }
     this.quotas = new Map(); // agentId -> { perMinute: number, perHour: number }
-    this.globalLimits = { perMinute: maxRequestsPerMinute, perHour: maxRequestsPerHour };
+    this.globalLimits = {
+      perMinute: maxRequestsPerMinute,
+      perHour: maxRequestsPerHour,
+    };
     this.resetInterval = setInterval(() => this.resetCounters(), 60000); // Reset every minute
   }
 
   canMakeRequest(agentId = 'main') {
     const now = Date.now();
-    const agentUsage = this.usage.get(agentId) || { minute: 0, hour: 0, lastReset: now };
+    const agentUsage = this.usage.get(agentId) || {
+      minute: 0,
+      hour: 0,
+      lastReset: now,
+    };
 
     // Check agent-specific quotas
     const agentQuota = this.quotas.get(agentId) || this.globalLimits;
 
-    if (agentUsage.minute >= agentQuota.perMinute || agentUsage.hour >= agentQuota.perHour) {
+    if (
+      agentUsage.minute >= agentQuota.perMinute ||
+      agentUsage.hour >= agentQuota.perHour
+    ) {
       return false;
     }
 
@@ -21,7 +31,11 @@ export class APIResourceManager {
   }
 
   recordRequest(agentId = 'main') {
-    const agentUsage = this.usage.get(agentId) || { minute: 0, hour: 0, lastReset: Date.now() };
+    const agentUsage = this.usage.get(agentId) || {
+      minute: 0,
+      hour: 0,
+      lastReset: Date.now(),
+    };
     agentUsage.minute++;
     agentUsage.hour++;
     this.usage.set(agentId, agentUsage);
@@ -43,7 +57,9 @@ export class APIResourceManager {
 
   getUsageStats(agentId = null) {
     if (agentId) {
-      return this.usage.get(agentId) || { minute: 0, hour: 0, lastReset: Date.now() };
+      return (
+        this.usage.get(agentId) || { minute: 0, hour: 0, lastReset: Date.now() }
+      );
     }
 
     const stats = {};

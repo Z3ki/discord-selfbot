@@ -20,7 +20,7 @@ export function getHealthMetrics(client) {
   const memoryMB = {
     rss: Math.round(memory.rss / 1024 / 1024),
     heapUsed: Math.round(memory.heapUsed / 1024 / 1024),
-    heapTotal: Math.round(memory.heapTotal / 1024 / 1024)
+    heapTotal: Math.round(memory.heapTotal / 1024 / 1024),
   };
 
   // Last error (simplified - in real impl, track errors)
@@ -34,7 +34,7 @@ export function getHealthMetrics(client) {
     memoryUsage: 'N/A',
     totalResponses: 'N/A',
     cacheHitRate: 'N/A',
-    averageResponseTime: 'N/A'
+    averageResponseTime: 'N/A',
   };
 
   return {
@@ -42,7 +42,7 @@ export function getHealthMetrics(client) {
     memory: memoryMB,
     lastError,
     apiLatency,
-    performance: performanceStats
+    performance: performanceStats,
   };
 }
 
@@ -64,6 +64,8 @@ export async function logHealthMetrics(metrics) {
  * @returns {boolean}
  */
 export function hasHealthPermission(message) {
-  const adminIds = process.env.ADMIN_USER_ID ? process.env.ADMIN_USER_ID.split(',').map(id => id.trim()) : [];
+  const adminIds = process.env.ADMIN_USER_ID
+    ? process.env.ADMIN_USER_ID.split(',').map((id) => id.trim())
+    : [];
   return adminIds.length > 0 && adminIds.includes(message.author.id);
 }

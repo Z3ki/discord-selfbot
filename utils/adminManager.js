@@ -12,9 +12,10 @@ class AdminManager {
   constructor() {
     this.admins = new Set();
     this.loadAdmins();
-    
+
     // Always make the environment admin permanent
-    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    const permanentAdminId =
+      process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
     if (permanentAdminId) {
       this.admins.add(permanentAdminId);
       this.saveAdmins();
@@ -29,32 +30,35 @@ class AdminManager {
       if (existsSync(ADMIN_FILE)) {
         const data = readFileSync(ADMIN_FILE, 'utf8');
         const adminList = JSON.parse(data);
-        
+
         // Filter and validate admin IDs
-        const validAdmins = adminList.filter(adminId => {
+        const validAdmins = adminList.filter((adminId) => {
           if (typeof adminId !== 'string') return false;
-          
+
           // Handle comma-separated IDs (legacy format)
           if (adminId.includes(',')) {
-            const ids = adminId.split(',').filter(id => id.trim());
-            ids.forEach(id => {
+            const ids = adminId.split(',').filter((id) => id.trim());
+            ids.forEach((id) => {
               if (validateDiscordId(id.trim())) {
                 this.admins.add(id.trim());
               }
             });
             return false; // Don't add the original comma-separated string
           }
-          
+
           return validateDiscordId(adminId);
         });
-        
+
         // Add valid individual admin IDs
-        validAdmins.forEach(adminId => this.admins.add(adminId));
-        
+        validAdmins.forEach((adminId) => this.admins.add(adminId));
+
         logger.info(`Loaded ${this.admins.size} admin(s) from file`);
-        
+
         // Save cleaned admin list if we filtered anything
-        if (this.admins.size !== adminList.length || adminList.some(id => typeof id !== 'string' || id.includes(','))) {
+        if (
+          this.admins.size !== adminList.length ||
+          adminList.some((id) => typeof id !== 'string' || id.includes(','))
+        ) {
           this.saveAdmins();
           logger.info('Cleaned and saved admin list');
         }
@@ -102,45 +106,46 @@ class AdminManager {
       return {
         success: false,
         error: 'Invalid Discord user ID format',
-        action: null
+        action: null,
       };
     }
 
     // Prevent removing the permanent admin
-    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    const permanentAdminId =
+      process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
     if (userId === permanentAdminId) {
       return {
         success: false,
         error: 'Cannot remove permanent administrator',
-        action: null
+        action: null,
       };
     }
 
     const wasAdmin = this.admins.has(userId);
-    
+
     if (wasAdmin) {
       // Remove admin
       this.admins.delete(userId);
       this.saveAdmins();
       logger.info(`Removed admin: ${userId}`);
-      
+
       return {
         success: true,
         action: 'removed',
         userId: userId,
-        message: `Admin ${userId} has been removed`
+        message: `Admin ${userId} has been removed`,
       };
     } else {
       // Add admin
       this.admins.add(userId);
       this.saveAdmins();
       logger.info(`Added admin: ${userId}`);
-      
+
       return {
         success: true,
         action: 'added',
         userId: userId,
-        message: `Admin ${userId} has been added`
+        message: `Admin ${userId} has been added`,
       };
     }
   }
@@ -168,19 +173,20 @@ class AdminManager {
   clearAdmins() {
     const count = this.admins.size;
     this.admins.clear();
-    
+
     // Always restore the permanent admin
-    const permanentAdminId = process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
+    const permanentAdminId =
+      process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
     if (permanentAdminId) {
       this.admins.add(permanentAdminId);
     }
     this.saveAdmins();
     logger.warn(`Cleared all ${count} admin(s), restored permanent admin`);
-    
+
     return {
       success: true,
       message: `Cleared ${count} admin(s), permanent admin cannot be removed`,
-      count: count
+      count: count,
     };
   }
 }

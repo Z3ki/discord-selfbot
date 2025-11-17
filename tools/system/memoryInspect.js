@@ -7,19 +7,27 @@ export const memoryInspectTool = {
       scope: {
         type: 'string',
         enum: ['channel', 'dm', 'summary'],
-        description: 'Scope of inspection: channel (current), dm (current DM), summary (stats only)',
-        default: 'channel'
+        description:
+          'Scope of inspection: channel (current), dm (current DM), summary (stats only)',
+        default: 'channel',
       },
       limit: {
         type: 'number',
-        description: 'Maximum number of messages to show (for channel/dm scope)',
+        description:
+          'Maximum number of messages to show (for channel/dm scope)',
         default: 5,
         minimum: 1,
-        maximum: 20
-      }
-    }
+        maximum: 20,
+      },
+    },
   },
-  execute: async function({ scope = 'channel', limit = 5 }, message, client, channelMemories, dmOrigins) {
+  execute: async function (
+    { scope = 'channel', limit = 5 },
+    message,
+    client,
+    channelMemories,
+    dmOrigins
+  ) {
     const channelId = message.channel?.id || message.channelId;
     const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
 
@@ -65,14 +73,20 @@ export const memoryInspectTool = {
     }
 
     const recentMessages = memories.slice(-limit);
-    const summary = recentMessages.map((msg, index) => {
-      const time = new Date(msg.timestamp).toLocaleTimeString();
-      const user = msg.user.length > 30 ? msg.user.substring(0, 30) + '...' : msg.user;
-      const content = msg.message.length > 100 ? msg.message.substring(0, 100) + '...' : msg.message;
-      return `${index + 1}. [${time}] ${user}: ${content}`;
-    }).join('\n');
+    const summary = recentMessages
+      .map((msg, index) => {
+        const time = new Date(msg.timestamp).toLocaleTimeString();
+        const user =
+          msg.user.length > 30 ? msg.user.substring(0, 30) + '...' : msg.user;
+        const content =
+          msg.message.length > 100
+            ? msg.message.substring(0, 100) + '...'
+            : msg.message;
+        return `${index + 1}. [${time}] ${user}: ${content}`;
+      })
+      .join('\n');
 
     const scopeText = scope === 'dm' ? 'DM' : 'channel';
     return `Recent ${scope} memory (${recentMessages.length}/${memories.length} messages):\n${summary}`;
-  }
+  },
 };

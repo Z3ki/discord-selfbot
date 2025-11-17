@@ -33,7 +33,7 @@ export class Bot {
     this.reconnectDelay = 5000; // 5 seconds
     this.heartbeatInterval = null;
     this.lastHeartbeat = Date.now();
-    
+
     // Data persistence timing
     this.lastSaveTime = Date.now();
     this.lastMemoryCleanupTime = Date.now();
@@ -53,7 +53,7 @@ export class Bot {
 
     // Shell access settings per server (default: off)
     this.shellAccessServers = new Map();
-    
+
     // Shell access for DMs (default: off)
     this.shellAccessDMs = false;
 
@@ -85,8 +85,8 @@ export class Bot {
       // Stealth: No presence or invisible status to avoid detection
       presence: {
         status: 'online',
-        activities: []
-      }
+        activities: [],
+      },
     });
 
     // Register dependencies in container
@@ -99,7 +99,6 @@ export class Bot {
     // Initialize queues and managers with stealth settings
     this.globalDMQueue = new GlobalDMQueue(this.client);
     this.requestQueue.stealthMode = CONFIG.stealth.enabled;
-
 
     // Load data
     await this.loadData();
@@ -119,11 +118,11 @@ export class Bot {
     logger.info('Bot initialized successfully');
   }
 
-
-
   async loadData() {
     // Load data into existing LRU caches
-    const channelMemoriesData = await this.dataManager.loadData('channelMemories.json');
+    const channelMemoriesData = await this.dataManager.loadData(
+      'channelMemories.json'
+    );
     const dmContextsData = await this.dataManager.loadData('dmContexts.json');
     const dmOriginsData = await this.dataManager.loadData('dmOrigins.json');
 
@@ -152,7 +151,8 @@ export class Bot {
     this.globalPrompt[0] = await this.dataManager.loadGlobalPrompt();
 
     // Load server prompts
-    const serverPromptsData = await this.dataManager.loadData('serverPrompts.json');
+    const serverPromptsData =
+      await this.dataManager.loadData('serverPrompts.json');
     for (const [key, value] of serverPromptsData) {
       if (key !== 'maxSize' && key !== 'cache') {
         this.serverPrompts.set(key, value);
@@ -168,12 +168,14 @@ export class Bot {
     }
 
     // Load safe mode servers
-    const safeModeData = await this.dataManager.loadData('safeModeServers.json');
+    const safeModeData = await this.dataManager.loadData(
+      'safeModeServers.json'
+    );
     logger.debug('SAFE MODE LOAD DEBUG', {
       safeModeData: safeModeData,
       type: typeof safeModeData,
       isMap: safeModeData instanceof Map,
-      size: safeModeData instanceof Map ? safeModeData.size : 'N/A'
+      size: safeModeData instanceof Map ? safeModeData.size : 'N/A',
     });
 
     // DataManager.loadData() already returns a Map, so use it directly
@@ -181,7 +183,7 @@ export class Bot {
       this.safeModeServers = safeModeData;
       logger.info('SAFE MODE LOAD SUCCESS', {
         size: this.safeModeServers.size,
-        keys: Array.from(this.safeModeServers.keys())
+        keys: Array.from(this.safeModeServers.keys()),
       });
     } else {
       this.safeModeServers = new Map();
@@ -195,7 +197,7 @@ export class Bot {
       channelMemories: this.channelMemories.size(),
       dmContexts: this.dmContexts.size(),
       dmOrigins: this.dmOrigins.size(),
-      blacklistedServers: this.blacklist.size
+      blacklistedServers: this.blacklist.size,
     });
   }
 
@@ -210,7 +212,10 @@ export class Bot {
 
     // Handle connection errors
     this.client.on('error', (error) => {
-      logger.error('Discord client error', { error: error.message, stack: error.stack });
+      logger.error('Discord client error', {
+        error: error.message,
+        stack: error.stack,
+      });
       if (!this.isShuttingDown && error.code === 'ECONNRESET') {
         this.handleReconnect();
       }
@@ -218,11 +223,11 @@ export class Bot {
 
     // Handle rate limits
     this.client.on('rateLimit', (rateLimitInfo) => {
-      logger.warn('Rate limit hit', { 
-        timeout: rateLimitInfo.timeout, 
+      logger.warn('Rate limit hit', {
+        timeout: rateLimitInfo.timeout,
         limit: rateLimitInfo.limit,
         method: rateLimitInfo.method,
-        path: rateLimitInfo.path 
+        path: rateLimitInfo.path,
       });
     });
 
@@ -246,12 +251,12 @@ export class Bot {
       logger.info('Bot is ready and connected (stealth mode)');
       this.reconnectAttempts = 0;
       this.lastHeartbeat = Date.now();
-      
+
       // Set online status
       try {
         await this.client.user.setPresence({
           status: 'online',
-          activities: []
+          activities: [],
         });
       } catch (err) {
         logger.warn('Failed to set online status', { error: err.message });
@@ -260,11 +265,11 @@ export class Bot {
   }
 
   setupEventHandlers() {
-    logger.debug('About to call setupHandlers', { 
+    logger.debug('About to call setupHandlers', {
       bot: !!this,
       botType: typeof this,
       hasServerPrompts: this?.serverPrompts?.size > 0,
-      serverPromptsSize: this?.serverPrompts?.size || 0
+      serverPromptsSize: this?.serverPrompts?.size || 0,
     });
     setupHandlers(
       this.client,
@@ -280,27 +285,26 @@ export class Bot {
       this.lastResponse,
       this.lastToolCalls,
       this.lastToolResults,
-      (message) => generateResponse(
-        message,
-        this.providerManager,
-        this.channelMemories,
-        this.dmOrigins,
+      (message) =>
+        generateResponse(
+          message,
+          this.providerManager,
+          this.channelMemories,
+          this.dmOrigins,
 
-        this.client,
-        this.globalPrompt,
-        this.lastPrompt,
-        this.lastResponse,
-        this.lastToolCalls,
-        this.lastToolResults,
-        this.apiResourceManager,
-        this
-      ),
+          this.client,
+          this.globalPrompt,
+          this.lastPrompt,
+          this.lastResponse,
+          this.lastToolCalls,
+          this.lastToolResults,
+          this.apiResourceManager,
+          this
+        ),
       this.providerManager,
       this // Pass bot instance
     );
   }
-
-
 
   async registerCommands() {
     // Selfbots don't support slash commands, so always skip registration
@@ -309,24 +313,34 @@ export class Bot {
 
   async saveData() {
     try {
-      await this.dataManager.saveData('channelMemories.json', this.channelMemories);
+      await this.dataManager.saveData(
+        'channelMemories.json',
+        this.channelMemories
+      );
       await this.dataManager.saveData('dmContexts.json', this.dmContexts);
       await this.dataManager.saveData('dmOrigins.json', this.dmOrigins);
 
       // Also save dmMetadata and userContext periodically
-      const { loadUserContext, saveUserContext } = await import('../utils/index.js');
+      const { loadUserContext, saveUserContext } = await import(
+        '../utils/index.js'
+      );
       // dmMetadata is saved immediately, but to ensure it's saved, we can reload and save
       // For userContext, save it
       const userContext = await loadUserContext();
       await saveUserContext(userContext);
 
       await this.dataManager.saveGlobalPrompt(this.globalPrompt[0]);
-      await this.dataManager.saveData('blacklist.json', Array.from(this.blacklist));
-      
+      await this.dataManager.saveData(
+        'blacklist.json',
+        Array.from(this.blacklist)
+      );
+
       // Save server prompts and safe mode settings
       await this.dataManager.saveData('serverPrompts.json', this.serverPrompts);
       if (this.safeModeServers) {
-        const safeModeObject = Object.fromEntries(this.safeModeServers.entries());
+        const safeModeObject = Object.fromEntries(
+          this.safeModeServers.entries()
+        );
         await this.dataManager.saveData('safeModeServers.json', safeModeObject);
       }
 
@@ -342,13 +356,18 @@ export class Bot {
       await this.client.login(CONFIG.discord.token);
       logger.info('Bot started successfully');
     } catch (error) {
-      logger.error('Failed to start bot', { error: error.message, code: error.code });
-      
+      logger.error('Failed to start bot', {
+        error: error.message,
+        code: error.code,
+      });
+
       if (error.code === 'TOKEN_INVALID') {
-        logger.error('Discord token is invalid. Please check your DISCORD_USER_TOKEN in .env');
+        logger.error(
+          'Discord token is invalid. Please check your DISCORD_USER_TOKEN in .env'
+        );
         throw error;
       }
-      
+
       // Try to reconnect for other errors
       if (!this.isShuttingDown) {
         await this.handleReconnect();
@@ -367,23 +386,28 @@ export class Bot {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
-    
-    logger.warn(`Attempting to reconnect in ${delay / 1000} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
+
+    logger.warn(
+      `Attempting to reconnect in ${delay / 1000} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
     try {
       if (this.client.ws && this.client.ws.readyState === 1) {
         logger.info('Connection already established');
         this.reconnectAttempts = 0;
         return;
       }
-      
+
       await this.client.login(CONFIG.discord.token);
       logger.info('Reconnection successful');
       this.reconnectAttempts = 0;
     } catch (error) {
-      logger.error('Reconnection failed', { error: error.message, attempt: this.reconnectAttempts });
+      logger.error('Reconnection failed', {
+        error: error.message,
+        attempt: this.reconnectAttempts,
+      });
       if (!this.isShuttingDown) {
         setTimeout(() => this.handleReconnect(), 1000);
       }
@@ -394,50 +418,62 @@ export class Bot {
     this.heartbeatInterval = setInterval(async () => {
       const now = Date.now();
       const timeSinceLastHeartbeat = now - this.lastHeartbeat;
-      
+
       // Check if connection is stale (no heartbeat for 5 minutes)
-      if (timeSinceLastHeartbeat > 5 * 60 * 1000 && this.client.ws?.readyState === 1) {
+      if (
+        timeSinceLastHeartbeat > 5 * 60 * 1000 &&
+        this.client.ws?.readyState === 1
+      ) {
         logger.warn('Connection appears stale, attempting reconnection...');
         this.client.destroy();
         this.handleReconnect();
         return;
       }
-      
-// Memory cleanup and monitoring (every 5 minutes)
-        const timeSinceLastCleanup = now - this.lastMemoryCleanupTime;
-        if (timeSinceLastCleanup >= 5 * 60 * 1000) { // Every 5 minutes
-          await this.performMemoryCleanup();
-          this.lastMemoryCleanupTime = now;
-        }
 
-        // Periodic data saving (every 10 minutes)
-        const timeSinceLastSave = now - this.lastSaveTime;
-        if (timeSinceLastSave >= 10 * 60 * 1000) { // Every 10 minutes
-          try {
-            await this.saveData();
-            this.lastSaveTime = now;
-            logger.info('Periodic data save completed');
-          } catch (error) {
-            logger.error('Failed to save data periodically', { error: error.message });
-          }
+      // Memory cleanup and monitoring (every 5 minutes)
+      const timeSinceLastCleanup = now - this.lastMemoryCleanupTime;
+      if (timeSinceLastCleanup >= 5 * 60 * 1000) {
+        // Every 5 minutes
+        await this.performMemoryCleanup();
+        this.lastMemoryCleanupTime = now;
+      }
+
+      // Periodic data saving (every 10 minutes)
+      const timeSinceLastSave = now - this.lastSaveTime;
+      if (timeSinceLastSave >= 10 * 60 * 1000) {
+        // Every 10 minutes
+        try {
+          await this.saveData();
+          this.lastSaveTime = now;
+          logger.info('Periodic data save completed');
+        } catch (error) {
+          logger.error('Failed to save data periodically', {
+            error: error.message,
+          });
         }
-      
+      }
+
       // Keep presence invisible for stealth - no status updates
       // Only update if we need to appear online briefly
-      if (this.client.ws?.readyState === 1 && !this.isShuttingDown && Math.random() < 0.01) { // 1% chance
+      if (
+        this.client.ws?.readyState === 1 &&
+        !this.isShuttingDown &&
+        Math.random() < 0.01
+      ) {
+        // 1% chance
         try {
           await this.client.user.setPresence({
             status: 'idle', // Less suspicious than online
-            activities: [] // No activities
+            activities: [], // No activities
           });
-          
+
           // Return to invisible after 30 seconds
           setTimeout(async () => {
             if (!this.isShuttingDown) {
               try {
                 await this.client.user.setPresence({
                   status: 'invisible',
-                  activities: []
+                  activities: [],
                 });
               } catch (err) {
                 // Ignore errors
@@ -451,16 +487,16 @@ export class Bot {
     }, 60000); // Check every minute
   }
 
-async performMemoryCleanup() {
+  async performMemoryCleanup() {
     try {
       // LRU caches automatically handle cleanup, but we can force garbage collection
       const channelMemoryUsage = this.channelMemories.getMemoryUsage();
       const dmContextUsage = this.dmContexts.getMemoryUsage();
       const dmOriginsUsage = this.dmOrigins.getMemoryUsage();
-      
+
       // Get memory usage
       const memoryUsage = process.memoryUsage();
-      
+
       // Log memory status
       logger.debug('Memory status', {
         channelMemoryUsage,
@@ -470,19 +506,20 @@ async performMemoryCleanup() {
         totalDMContexts: this.dmContexts.size(),
         totalDMOrigins: this.dmOrigins.size(),
         heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
-        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB'
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
       });
-      
+
       // Alert if memory usage is high
       const heapUsedMB = memoryUsage.heapUsed / 1024 / 1024;
-      if (heapUsedMB > 200) { // Alert if using more than 200MB
+      if (heapUsedMB > 200) {
+        // Alert if using more than 200MB
         logger.warn('High memory usage detected', {
           heapUsed: Math.round(heapUsedMB) + 'MB',
           totalChannels: this.channelMemories.size(),
           totalDMContexts: this.dmContexts.size(),
-          totalDMOrigins: this.dmOrigins.size()
+          totalDMOrigins: this.dmOrigins.size(),
         });
-        
+
         // Force garbage collection if available
         if (global.gc) {
           global.gc();
@@ -504,40 +541,47 @@ async performMemoryCleanup() {
   async shutdown() {
     this.isShuttingDown = true;
     logger.info('Shutting down bot...');
-    
+
     // Stop heartbeat monitoring
     this.stopHeartbeat();
-    
+
     // Save data with retry logic
     let saveAttempts = 0;
     const maxSaveAttempts = 3;
-    
+
     while (saveAttempts < maxSaveAttempts) {
       try {
         await this.saveData();
         break;
       } catch (error) {
         saveAttempts++;
-        logger.error(`Failed to save data (attempt ${saveAttempts}/${maxSaveAttempts})`, { error: error.message });
-        
+        logger.error(
+          `Failed to save data (attempt ${saveAttempts}/${maxSaveAttempts})`,
+          { error: error.message }
+        );
+
         if (saveAttempts >= maxSaveAttempts) {
-          logger.error('Failed to save data after maximum attempts. Some data may be lost.');
+          logger.error(
+            'Failed to save data after maximum attempts. Some data may be lost.'
+          );
         } else {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
-    
+
     // Gracefully destroy client
     if (this.client && this.client.ws) {
       try {
         this.client.destroy();
         logger.info('Discord client destroyed gracefully');
       } catch (error) {
-        logger.error('Error destroying Discord client', { error: error.message });
+        logger.error('Error destroying Discord client', {
+          error: error.message,
+        });
       }
     }
-    
+
     logger.info('Bot shutdown complete');
   }
 }

@@ -1,11 +1,13 @@
 # Maxwell Selfbot - API Capabilities Analysis
 
 ## Overview
+
 This document outlines the additional data and capabilities available from the AI APIs that we're not currently utilizing in the Maxwell selfbot.
 
 ## Google AI (Gemma 3-27B-IT) Additional Capabilities
 
 ### Currently Extracted
+
 - Response text
 - Token usage (promptTokenCount, candidatesTokenCount, totalTokenCount)
 - Safety ratings
@@ -13,6 +15,7 @@ This document outlines the additional data and capabilities available from the A
 - Response candidates count
 
 ### Available But Not Used
+
 - **Token Breakdown by Modality** (`promptTokensDetails`):
   - Separate token counts for TEXT, IMAGE, VIDEO, AUDIO inputs
   - Helps understand multimodal usage patterns
@@ -37,6 +40,7 @@ This document outlines the additional data and capabilities available from the A
 ## NVIDIA NIM Additional Capabilities
 
 ### Currently Extracted
+
 - Response text
 - Token usage (prompt_tokens, completion_tokens, total_tokens)
 - Finish reason
@@ -44,6 +48,7 @@ This document outlines the additional data and capabilities available from the A
 - Model information
 
 ### Available But Not Used
+
 - **Log Probabilities** (`prompt_logprobs`, `choices[0].logprobs`):
   - Probability scores for each token in prompt and response
   - Useful for uncertainty estimation and confidence scoring
@@ -90,21 +95,25 @@ This document outlines the additional data and capabilities available from the A
 ## Potential Enhancements
 
 ### Quality Improvements
+
 1. **Confidence Scoring**: Use log probabilities to show response confidence
 2. **Factual Grounding**: Display source citations for factual responses
 3. **Uncertainty Handling**: Provide alternative responses when confidence is low
 
 ### User Experience
+
 1. **Reasoning Transparency**: Show model's thinking process for complex queries
 2. **Source Attribution**: Cite sources for factual information
 3. **Response Validation**: Use safety ratings to validate response appropriateness
 
 ### Performance Optimizations
+
 1. **Smart Caching**: Use KV transfer parameters for repeated queries
 2. **Modality-Aware Processing**: Optimize based on input type (text vs image vs video)
 3. **Dynamic Retries**: Adjust retry logic based on finish reasons
 
 ### Advanced Features
+
 1. **Native Tool Calling**: Replace custom [TOOL] syntax with API-native tool calls
 2. **Audio Responses**: Generate audio responses for accessibility
 3. **Multi-Candidate Selection**: Choose best response from multiple candidates
@@ -113,16 +122,19 @@ This document outlines the additional data and capabilities available from the A
 ## Implementation Priority
 
 ### High Priority
+
 - Log probabilities for confidence scoring
 - Native tool calling integration
 - Grounding information for factual responses
 
 ### Medium Priority
+
 - Reasoning content transparency
 - Token breakdown by modality
 - Service tier awareness
 
 ### Low Priority
+
 - Audio content generation
 - System fingerprint tracking
 - Advanced caching parameters
@@ -144,13 +156,14 @@ This document outlines the additional data and capabilities available from the A
 ## Testing
 
 Run the comprehensive test to see current capabilities:
+
 ```bash
 cd /path/to/discord-selfbot
 node test-comprehensive.js
 ```
 
 This will show both the currently extracted metadata and available raw response data.</content>
-</xai:function_call">Now let me run the final test to show the current capabilities: 
+</xai:function_call">Now let me run the final test to show the current capabilities:
 
 <xai:function_call name="bash">
 <parameter name="command">cd /path/to/discord-selfbot && node test-comprehensive.js 2>&1 | grep -A 20 "Discovering available API capabilities"

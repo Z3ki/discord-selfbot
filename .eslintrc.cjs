@@ -1,14 +1,14 @@
 module.exports = {
   env: {
     node: true,
-    es2022: true
+    es2022: true,
   },
-  extends: 'eslint:recommended',
+  extends: ['eslint:recommended', 'prettier'],
   parserOptions: {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
   },
   rules: {
     // Add any custom rules here
-  }
+  },
 };

@@ -94,12 +94,18 @@ export class LRUCache {
     if (obj === null || obj === undefined) return 0;
 
     switch (typeof obj) {
-      case 'string': return obj.length * 2; // UTF-16
-      case 'number': return 8;
-      case 'boolean': return 4;
+      case 'string':
+        return obj.length * 2; // UTF-16
+      case 'number':
+        return 8;
+      case 'boolean':
+        return 4;
       case 'object':
         if (Array.isArray(obj)) {
-          return obj.length * 8 + obj.reduce((sum, item) => sum + this.estimateSize(item), 0);
+          return (
+            obj.length * 8 +
+            obj.reduce((sum, item) => sum + this.estimateSize(item), 0)
+          );
         }
 
         try {
@@ -120,7 +126,8 @@ export class LRUCache {
           let size = keys.length * 16; // Overhead per property
           const sampleSize = Math.min(keys.length, 10);
           for (let i = 0; i < sampleSize; i++) {
-            size += this.estimateSize(keys[i]) + this.estimateSize(obj[keys[i]]);
+            size +=
+              this.estimateSize(keys[i]) + this.estimateSize(obj[keys[i]]);
           }
           return size * (keys.length / Math.max(sampleSize, 1));
         } catch {

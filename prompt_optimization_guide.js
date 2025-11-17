@@ -115,7 +115,10 @@ Remember: The goal is to create a prompt system that is both powerful and contro
 `;
 
 // Function to generate optimization suggestions
-export function generateOptimizationSuggestions(currentPromptStructure, performanceMetrics) {
+export function generateOptimizationSuggestions(
+  currentPromptStructure,
+  performanceMetrics
+) {
   return `
 Based on current performance analysis:
 
