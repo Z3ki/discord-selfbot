@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { adminManager } from './utils/adminManager.js';
+import { logger } from './utils/logger.js'; // Import logger
 
 const args = process.argv.slice(2);
 
@@ -39,7 +40,8 @@ if (command === 'list') {
   const fs = await import('fs');
   const path = await import('path');
   const triggerPath = path.resolve(process.cwd(), 'temp/think.trigger');
-  fs.closeSync(fs.openSync(triggerPath, 'w'));
+  fs.writeFileSync(triggerPath, Date.now().toString()); // Use writeFileSync for simplicity
+  logger.debug('Writing trigger file to:', { triggerPath }); // Add debug log
   console.log('🧠 Sent trigger for proactive cognitive loop.');
 } else {
   // Treat as user ID to toggle

@@ -77,6 +77,8 @@ validateConfig();
   const tempDir = path.resolve(process.cwd(), 'temp');
   const triggerFile = path.join(tempDir, 'think.trigger');
 
+  logger.debug('Watching for manual trigger at:', { tempDir, triggerFile });
+
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
@@ -84,13 +86,22 @@ validateConfig();
   fs.watch(tempDir, (eventType, filename) => {
     if (filename === 'think.trigger' && eventType === 'rename') {
       logger.info('Manual trigger detected for proactive cognitive loop.');
+      logger.debug('Bot ready status:', { isReady: bot.isReady() });
       
       // Check if file exists before trying to process
       if (fs.existsSync(triggerFile)) {
         if (bot.isReady()) {
           bot.proactiveCognitiveLoop();
         } else {
-          logger.warn('Bot not ready, skipping proactive cognitive loop.');
+          logger.warn('Bot not ready, delaying proactive cognitive loop trigger.');
+          // Retry after a short delay
+          setTimeout(async () => {
+            if (bot.isReady()) {
+              await bot.proactiveCognitiveLoop();
+            } else {
+              logger.error('Bot still not ready after delay, failed to trigger proactive cognitive loop.');
+            }
+          }, 5000);
         }
 
         // Clean up the trigger file
