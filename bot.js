@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import cron from 'node-cron';
 import 'dotenv/config';
 import {
@@ -70,6 +72,39 @@ validateConfig();
   });
 
   logger.info('Scheduled daily proactive cognitive loop.');
+
+  // Setup manual trigger for proactive loop
+  const tempDir = path.resolve(process.cwd(), 'temp');
+  const triggerFile = path.join(tempDir, 'think.trigger');
+
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  fs.watch(tempDir, (eventType, filename) => {
+    if (filename === 'think.trigger' && eventType === 'rename') {
+      logger.info('Manual trigger detected for proactive cognitive loop.');
+      
+      // Check if file exists before trying to process
+      if (fs.existsSync(triggerFile)) {
+        if (bot.isReady()) {
+          bot.proactiveCognitiveLoop();
+        } else {
+          logger.warn('Bot not ready, skipping proactive cognitive loop.');
+        }
+
+        // Clean up the trigger file
+        try {
+          fs.unlinkSync(triggerFile);
+          logger.info('Cleaned up trigger file.');
+        } catch (error) {
+          logger.error('Failed to clean up trigger file:', error);
+        }
+      }
+    }
+  });
+
+  logger.info('Manual trigger watcher is active.');
 })();
 
 function setupProcessHandlers(bot) {

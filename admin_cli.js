@@ -11,10 +11,12 @@ if (args.length === 0) {
   console.log('  node admin_cli.js <userId>     - Toggle admin status');
   console.log('  node admin_cli.js list         - List all admins');
   console.log('  node admin_cli.js clear        - Clear all admins');
+  console.log('  node admin_cli.js think        - Trigger the proactive cognitive loop');
   console.log('');
   console.log('Examples:');
   console.log('  node admin_cli.js 123456789012345678');
   console.log('  node admin_cli.js list');
+  console.log('  node admin_cli.js think');
   process.exit(0);
 }
 
@@ -33,6 +35,12 @@ if (command === 'list') {
 } else if (command === 'clear') {
   const result = adminManager.clearAdmins();
   console.log(`🚨 Cleared ${result.count} admin(s)`);
+} else if (command === 'think') {
+  const fs = await import('fs');
+  const path = await import('path');
+  const triggerPath = path.resolve(process.cwd(), 'temp/think.trigger');
+  fs.closeSync(fs.openSync(triggerPath, 'w'));
+  console.log('🧠 Sent trigger for proactive cognitive loop.');
 } else {
   // Treat as user ID to toggle
   const userId = command;
