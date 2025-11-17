@@ -565,15 +565,26 @@ export class Bot {
         this.providerManager
       );
 
-      // 3. Act: Execute the thought
-      if (thought && thought.action === 'send_message' && thought.channelId && thought.content) {
-        logger.info(`AI decided to send a message to channel ${thought.channelId}`);
-        const targetChannel = await this.client.channels.fetch(thought.channelId);
-        if (targetChannel && targetChannel.isText()) {
-          await targetChannel.send(thought.content);
-          logger.info('Successfully sent proactive message.');
-        } else {
-          logger.warn(`Could not find or send to channel ${thought.channelId}. It might not be a text channel.`);
+      // 3. Act: Execute the thought(s)
+      if (Array.isArray(thought) && thought.length > 0) {
+        logger.info(`AI decided to perform ${thought.length} action(s).`);
+        for (const actionObject of thought) {
+          if (actionObject.action === 'send_message' && actionObject.channelId && actionObject.content) {
+            logger.info(`AI decided to send a message to channel ${actionObject.channelId}`);
+            try {
+              const targetChannel = await this.client.channels.fetch(actionObject.channelId);
+              if (targetChannel && targetChannel.isText()) {
+                await targetChannel.send(actionObject.content);
+                logger.info('Successfully sent proactive message.');
+              } else {
+                logger.warn(`Could not find or send to channel ${actionObject.channelId}. It might not be a text channel or is inaccessible.`);
+              }
+            } catch (channelError) {
+              logger.error(`Error sending message to channel ${actionObject.channelId}:`, channelError);
+            }
+          } else {
+            logger.warn('AI returned an unrecognized or incomplete action object:', actionObject);
+          }
         }
       } else {
         logger.info('AI decided to take no action.');

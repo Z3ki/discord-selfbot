@@ -363,7 +363,8 @@ Your core directives are:
 - If the conversation is active and engaging, consider contributing.
 - If a channel is quiet, you don't need to force it.
 
-Analyze the provided history and decide on ONE of the following actions:
+Analyze the provided history and decide on one or more of the following actions.
+Respond ONLY with a JSON array of action objects.
 
 1.  **Send a Message**: If you have a valuable contribution, formulate your action as a JSON object. Pick a relevant channel from the history.
     Example:
@@ -373,13 +374,11 @@ Analyze the provided history and decide on ONE of the following actions:
       "content": "I was just thinking about the discussion on [topic] and it occurred to me that..."
     }
 
-2.  **Do Nothing**: If you have nothing valuable to add, or the conversations are private or uninteresting, do nothing.
-    Output this JSON object:
-    {
-      "action": "none"
-    }
+2.  **Do Nothing**: If you have nothing valuable to add, or the conversations are private or uninteresting, return an empty array.
+    Example:
+    []
 
-Respond ONLY with the single JSON object describing your chosen action.
+Respond ONLY with the JSON array describing your chosen action(s).
 `;
 
 /**
