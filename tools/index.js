@@ -6,7 +6,6 @@ import { joinServerTool } from './discord/joinServer.js';
 
 import { leaveServerTool } from './discord/leaveServer.js';
 
-import { memoryResetTool } from './system/memoryReset.js';
 import { memoryInspectTool } from './system/memoryInspect.js';
 import { dockerExecTool } from './system/dockerExec.js';
 
@@ -16,7 +15,6 @@ export const tools = [
   reactionManagerTool,
   joinServerTool,
   leaveServerTool,
-  memoryResetTool,
   memoryInspectTool,
   dockerExecTool,
 ];
@@ -52,7 +50,7 @@ export class ToolRegistry {
         'join_server',
         'leave_server',
       ],
-      SYSTEM: ['memory_reset', 'memory_inspect'],
+      SYSTEM: ['memory_inspect'],
       RELATIONSHIPS: [],
     };
 
