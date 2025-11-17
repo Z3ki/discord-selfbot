@@ -67,7 +67,10 @@ class Logger {
     const sanitizedMessage = this.sanitizeForLogging(message);
     const sanitizedMeta = {};
     for (const [key, value] of Object.entries(meta)) {
-      sanitizedMeta[key] = this.sanitizeForLogging(String(value));
+      sanitizedMeta[key] =
+        typeof value === 'object' && value !== null
+          ? JSON.stringify(value)
+          : this.sanitizeForLogging(String(value));
     }
     const metaStr =
       Object.keys(sanitizedMeta).length > 0
