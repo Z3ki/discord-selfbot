@@ -1231,10 +1231,15 @@ export async function elicitProactiveThought(
     logger.info('Sending proactive prompt to AI...');
     const response = await generateWithRetry(providerManager, prompt);
 
+    let responseText = response;
+    if (typeof response === 'object' && response.text) {
+      responseText = response.text;
+    }
+
     // Clean the response to get only the JSON part
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      logger.warn('Proactive thought response was not valid JSON.', { response });
+      logger.warn('Proactive thought response was not valid JSON.', { response: responseText });
       return { action: 'none' };
     }
 
