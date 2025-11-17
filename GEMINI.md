@@ -59,3 +59,4 @@ The project has a modular architecture with a clear separation of concerns:
 - **Configuration:** All configuration is managed through environment variables.
 - **Data Persistence:** The bot's data is stored locally in JSON files in the `data-selfbot/` directory.
 - **Tool System:** New tools can be added by creating a new file in the `tools/` directory and registering it in `tools/index.js`.
+- **Commit & Push Workflow:** After making changes, always run a lint check (`npm run lint`). If it passes, commit the changes with a descriptive message and push to the repository.
