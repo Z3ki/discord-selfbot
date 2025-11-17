@@ -73,49 +73,44 @@ validateConfig();
 
   logger.info('Scheduled daily proactive cognitive loop.');
 
-  // Setup manual trigger for proactive loop
+  // Setup manual trigger for proactive loop using polling
   const tempDir = path.resolve(process.cwd(), 'temp');
   const triggerFile = path.join(tempDir, 'think.trigger');
-
-  logger.debug('Watching for manual trigger at:', { tempDir, triggerFile });
 
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
 
-  fs.watch(tempDir, (eventType, filename) => {
-    if (filename === 'think.trigger' && eventType === 'rename') {
-      logger.info('Manual trigger detected for proactive cognitive loop.');
+  setInterval(async () => {
+    if (fs.existsSync(triggerFile)) {
+      logger.info('Manual trigger detected for proactive cognitive loop via polling.');
       logger.debug('Bot ready status:', { isReady: bot.isReady() });
-      
-      // Check if file exists before trying to process
-      if (fs.existsSync(triggerFile)) {
-        if (bot.isReady()) {
-          bot.proactiveCognitiveLoop();
-        } else {
-          logger.warn('Bot not ready, delaying proactive cognitive loop trigger.');
-          // Retry after a short delay
-          setTimeout(async () => {
-            if (bot.isReady()) {
-              await bot.proactiveCognitiveLoop();
-            } else {
-              logger.error('Bot still not ready after delay, failed to trigger proactive cognitive loop.');
-            }
-          }, 5000);
-        }
 
-        // Clean up the trigger file
-        try {
-          fs.unlinkSync(triggerFile);
-          logger.info('Cleaned up trigger file.');
-        } catch (error) {
-          logger.error('Failed to clean up trigger file:', error);
-        }
+      if (bot.isReady()) {
+        await bot.proactiveCognitiveLoop();
+      } else {
+        logger.warn('Bot not ready, delaying proactive cognitive loop trigger via polling.');
+        // Retry after a short delay
+        setTimeout(async () => {
+          if (bot.isReady()) {
+            await bot.proactiveCognitiveLoop();
+          } else {
+            logger.error('Bot still not ready after delay, failed to trigger proactive cognitive loop via polling.');
+          }
+        }, 5000);
+      }
+
+      // Clean up the trigger file
+      try {
+        fs.unlinkSync(triggerFile);
+        logger.info('Cleaned up trigger file.');
+      } catch (error) {
+        logger.error('Failed to clean up trigger file:', error);
       }
     }
-  });
+  }, 5000); // Check every 5 seconds
 
-  logger.info('Manual trigger watcher is active.');
+  logger.info('Manual trigger polling is active.');
 })();
 
 function setupProcessHandlers(bot) {
