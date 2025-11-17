@@ -172,7 +172,9 @@ export function extractToolCalls(text) {
   const validToolNames = new Set(
     toolRegistry.getAllTools().map((tool) => tool.name)
   );
-  logger.debug('extractToolCalls - validToolNames', { validToolNames: Array.from(validToolNames) });
+  logger.debug('extractToolCalls - validToolNames', {
+    validToolNames: Array.from(validToolNames),
+  });
   logger.debug('extractToolCalls - text input', { text: text });
 
   // Get valid tool names pattern

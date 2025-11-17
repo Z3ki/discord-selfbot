@@ -47,190 +47,23 @@ const ALLOWED_MIME_TYPES = new Set([
   'audio/opus',
 ]);
 
-// Allowlist of safe commands and patterns
-const ALLOWED_COMMANDS = [
-  // Basic system info
-  'ls',
-  'pwd',
-  'whoami',
-  'date',
-  'uptime',
-  'uname',
-  'id',
-  'groups',
-  // File operations (read-only)
-  'cat',
-  'head',
-  'tail',
-  'less',
-  'more',
-  'wc',
-  'grep',
-  'find',
-  'locate',
-  // System monitoring
-  'ps',
-  'top',
-  'htop',
-  'df',
-  'du',
-  'free',
-  'lscpu',
-  'lsblk',
-  'lsusb',
-  // Network tools (read-only)
-  'ping',
-  'traceroute',
-  'nslookup',
-  'dig',
-  'netstat',
-  'ss',
-  'ip',
-  // Development tools
-  'node',
-  'npm',
-  'python',
-  'python3',
-  'git',
-  'gcc',
-  'make',
-  'cmake',
-  // Text processing
-  'echo',
-  'printf',
-  'sort',
-  'uniq',
-  'cut',
-  'awk',
-  'sed',
-  'tr',
-  // Archive tools
-  'tar',
-  'zip',
-  'unzip',
-  'gzip',
-  'gunzip',
-];
-
-const ALLOWED_PATTERNS = [
-  // File paths
-  /^[a-zA-Z0-9/._-]+$/,
-  // Basic options
-  /^-[a-zA-Z]$/,
-  /^--[a-zA-Z-]+$/,
-  // Numbers
-  /^\d+$/,
-  // Common combinations
-  /^-[a-zA-Z]\s+[a-zA-Z0-9/._-]+$/,
-];
-
 /**
- * Validates shell command using allowlist approach
+ * Validates shell command - DISABLED for security
  * @param {string} command - Command to validate
  * @returns {Object} Validation result with safe flag and reason
  */
 export function validateShellCommand(command) {
-  if (!command || typeof command !== 'string') {
-    return { safe: false, reason: 'Invalid command format' };
-  }
-
-  const trimmedCommand = command.trim();
-
-  // Check for encoded dangerous commands
-  try {
-    const decoded = Buffer.from(command, 'base64').toString();
-    if (decoded !== command) {
-      logger.warn(`Encoded command blocked: ${command}`, {
-        decoded: decoded,
-        userId: 'unknown',
-      });
-      return {
-        safe: false,
-        reason: 'Encoded commands are not allowed',
-      };
+  logger.warn(
+    'Shell command validation attempted - shell execution is disabled',
+    {
+      command: command ? command.substring(0, 50) + '...' : 'null',
     }
-  } catch (error) {
-    // Invalid base64, continue with normal validation
-  }
+  );
 
-  // Check for command substitution
-  if (/`[^`]*`|\$\([^)]*\)/.test(trimmedCommand)) {
-    logger.warn(`Command substitution blocked: ${command}`, {
-      userId: 'unknown',
-    });
-    return {
-      safe: false,
-      reason: 'Command substitution is not allowed',
-    };
-  }
-
-  // Check for pipes and redirects (restrictive)
-  if (/[|&><]/.test(trimmedCommand)) {
-    logger.warn(`Command with pipes/redirects blocked: ${command}`, {
-      userId: 'unknown',
-    });
-    return {
-      safe: false,
-      reason: 'Pipes and redirects are not allowed',
-    };
-  }
-
-  // Split command into parts
-  const parts = trimmedCommand.split(/\s+/);
-  const baseCommand = parts[0];
-
-  // Check if base command is in allowlist
-  if (!ALLOWED_COMMANDS.includes(baseCommand)) {
-    logger.warn(`Command not in allowlist: ${baseCommand}`, {
-      command: trimmedCommand,
-      userId: 'unknown',
-    });
-    return {
-      safe: false,
-      reason: `Command '${baseCommand}' is not allowed`,
-    };
-  }
-
-  // Validate all arguments
-  for (let i = 1; i < parts.length; i++) {
-    const arg = parts[i];
-    let isValidArg = false;
-
-    // Check against allowed patterns
-    for (const pattern of ALLOWED_PATTERNS) {
-      if (pattern.test(arg)) {
-        isValidArg = true;
-        break;
-      }
-    }
-
-    // Allow common safe arguments
-    if (
-      arg.startsWith('-') ||
-      /^\d+$/.test(arg) ||
-      /^[a-zA-Z0-9/._-]+$/.test(arg)
-    ) {
-      isValidArg = true;
-    }
-
-    if (!isValidArg) {
-      logger.warn(`Invalid argument blocked: ${arg}`, {
-        command: trimmedCommand,
-        argument: arg,
-        userId: 'unknown',
-      });
-      return {
-        safe: false,
-        reason: `Argument '${arg}' is not allowed`,
-      };
-    }
-  }
-
-  logger.debug(`Command allowed: ${trimmedCommand}`, {
-    userId: 'unknown',
-  });
-
-  return { safe: true, reason: 'Command is allowed' };
+  return {
+    safe: false,
+    reason: 'Shell command execution has been disabled for security reasons',
+  };
 }
 
 /**
