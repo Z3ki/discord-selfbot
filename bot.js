@@ -9,7 +9,7 @@ import {
 } from './providers.js';
 import { CONFIG, validateConfig } from './config/config.js';
 import { Bot } from './services/Bot.js';
-import { transcriptionService } from './services/TranscriptionService.js';
+
 import { logger } from './utils/logger.js';
 
 // Clean old logs on startup
@@ -43,15 +43,6 @@ validateConfig();
   providerManager.setPrimaryProvider('nvidia-nim');
   providerManager.setFallbackProvider('google');
 
-  // Start transcription service
-  try {
-    await transcriptionService.start();
-    logger.info('Transcription service started successfully');
-  } catch (error) {
-    logger.error('Failed to start transcription service:', error);
-    // Continue without transcription service
-  }
-
   // Initialize and start bot
   const bot = new Bot();
   await bot.initialize(providerManager);
@@ -83,19 +74,25 @@ validateConfig();
 
   setInterval(async () => {
     if (fs.existsSync(triggerFile)) {
-      logger.info('Manual trigger detected for proactive cognitive loop via polling.');
+      logger.info(
+        'Manual trigger detected for proactive cognitive loop via polling.'
+      );
       logger.debug('Bot ready status:', { isReady: bot.isReady() });
 
       if (bot.isReady()) {
         await bot.proactiveCognitiveLoop();
       } else {
-        logger.warn('Bot not ready, delaying proactive cognitive loop trigger via polling.');
+        logger.warn(
+          'Bot not ready, delaying proactive cognitive loop trigger via polling.'
+        );
         // Retry after a short delay
         setTimeout(async () => {
           if (bot.isReady()) {
             await bot.proactiveCognitiveLoop();
           } else {
-            logger.error('Bot still not ready after delay, failed to trigger proactive cognitive loop via polling.');
+            logger.error(
+              'Bot still not ready after delay, failed to trigger proactive cognitive loop via polling.'
+            );
           }
         }, 5000);
       }
@@ -120,7 +117,7 @@ function setupProcessHandlers(bot) {
 
     try {
       await bot.shutdown();
-      await transcriptionService.stop();
+
       process.exit(0);
     } catch (error) {
       logger.error('Error during graceful shutdown', { error: error.message });
