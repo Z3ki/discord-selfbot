@@ -136,3 +136,6 @@ globalPrompt.txt
 
 # Cache directories
 cache/
+
+# Docker files
+docker/
