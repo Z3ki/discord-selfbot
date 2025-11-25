@@ -396,18 +396,18 @@ export async function generateResponse(
   // Self-response loop prevention: Filter out bot messages from memory by default
   // Only include bot messages when directly replying to prevent AI confusion
 
-  // Optimize memory: limit to last 15 messages and clean old entries (24 hours)
+  // Optimize memory: limit to last 10 messages and clean old entries (24 hours)
   const now = Date.now();
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
   // Remove messages older than 24 hours
   memory = memory.filter((msg) => now - msg.timestamp < maxAge);
 
-  if (memory.length > 15) {
-    // Keep only last 15 messages to prevent memory bloat
-    const excess = memory.length - 15;
+  if (memory.length > 10) {
+    // Keep only last 10 messages to prevent memory bloat
+    const excess = memory.length - 10;
     memory.splice(0, excess);
-    logger.debug('Trimmed channel memory to 15 messages', {
+    logger.debug('Trimmed channel memory to 10 messages', {
       channelId: message.channel?.id || message.channelId,
       removed: excess,
       remaining: memory.length,
@@ -440,7 +440,7 @@ export async function generateResponse(
 
   // Filter and prepare target messages - filter out bot messages by default to prevent self-reference
   // Only include bot messages when directly replying to a bot message
-  let targetMessages = memory.slice(-15).filter((m) => m.user !== 'SYSTEM');
+  let targetMessages = memory.slice(-10).filter((m) => m.user !== 'SYSTEM');
 
   if (!message.isReplyToBot) {
     // Filter out bot messages to prevent AI confusion with its own responses
@@ -536,11 +536,11 @@ export async function generateResponse(
     if (userContext) {
       // Limit user context to prevent bloat (32k tokens ~ 128k chars)
       const themes = userContext.themes
-        ? userContext.themes.slice(0, 10).join(', ')
+        ? userContext.themes.slice(0, 5).join(', ')
         : 'None';
       const prefs =
-        userContext.preferences && userContext.preferences.length > 2000
-          ? userContext.preferences.substring(0, 2000) + '...'
+        userContext.preferences && userContext.preferences.length > 1000
+          ? userContext.preferences.substring(0, 1000) + '...'
           : userContext.preferences || 'None';
       const displayName = userContext.displayName || 'Unknown';
       contextText += `\n\nCURRENT_USER_CONTEXT: Display Name - ${displayName}\nPreferences - ${prefs}\nThemes: ${themes}`;
@@ -585,12 +585,10 @@ export async function generateResponse(
   const currentTime = new Date().toLocaleString('en-US', {
     timeZone: 'UTC',
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
-    weekday: 'long',
   });
   const mentionInfo = message.isMentioned
     ? 'YOU ARE BEING MENTIONED/PINGED IN THIS MESSAGE. The user is directly addressing you.'
@@ -720,7 +718,7 @@ export async function generateResponse(
       let summary = `EMBED ${index + 1}:`;
       if (embed.title) summary += ` Title: "${embed.title}"`;
       if (embed.description)
-        summary += ` Description: "${embed.description.substring(0, 200)}${embed.description.length > 200 ? '...' : ''}"`;
+        summary += ` Description: "${embed.description.substring(0, 100)}${embed.description.length > 100 ? '...' : ''}"`;
       if (embed.url) summary += ` URL: ${embed.url}`;
       if (embed.author?.name) summary += ` Author: "${embed.author.name}"`;
       if (embed.fields && embed.fields.length > 0) {

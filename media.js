@@ -869,7 +869,7 @@ export async function processMessageMedia(
             const videoData = await processVideo(attachment.url);
 
             // Add extracted frames to multimodal content (limit to prevent API errors and context overload)
-            const maxFrames = Math.min(videoData.frames.length, 32); // Increased for better video analysis
+            const maxFrames = Math.min(videoData.frames.length, 16); // Reduced for shorter prompts
             for (let i = 0; i < maxFrames; i++) {
               const frame = videoData.frames[i];
               multimodalContent.push({
@@ -906,7 +906,7 @@ export async function processMessageMedia(
             const gifData = await processGif(attachment.url);
 
             // Add extracted frames to multimodal content (limit to prevent context overload)
-            const maxGifFrames = Math.min(gifData.frames.length, 6); // Reduced to prevent context bloat
+            const maxGifFrames = Math.min(gifData.frames.length, 4); // Reduced for shorter prompts
             for (let i = 0; i < maxGifFrames; i++) {
               const frame = gifData.frames[i];
               multimodalContent.push({
@@ -1132,7 +1132,7 @@ async function processMediaAsync(message, context) {
             const videoData = await processVideo(attachment.url);
 
             // Add extracted frames to multimodal content (limit to prevent API errors and context overload)
-            const maxFrames = Math.min(videoData.frames.length, 32); // Increased for better video analysis
+            const maxFrames = Math.min(videoData.frames.length, 16); // Reduced for shorter prompts
             for (let i = 0; i < maxFrames; i++) {
               const frame = videoData.frames[i];
               multimodalContent.push({
@@ -1169,7 +1169,7 @@ async function processMediaAsync(message, context) {
             const gifData = await processGif(attachment.url);
 
             // Add extracted frames to multimodal content (limit to prevent context overload)
-            const maxGifFrames = Math.min(gifData.frames.length, 6); // Reduced to prevent context bloat
+            const maxGifFrames = Math.min(gifData.frames.length, 4); // Reduced for shorter prompts
             for (let i = 0; i < maxGifFrames; i++) {
               const frame = gifData.frames[i];
               multimodalContent.push({

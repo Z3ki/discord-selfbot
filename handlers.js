@@ -1175,7 +1175,7 @@ export function setupHandlers(
               (repliedMessage.embeds?.length > 0
                 ? '[Embed Content]'
                 : '[Media/Attachment]');
-            const repliedAuthor = `${repliedMessage.author.username} (${repliedMessage.author.id})`;
+            const repliedAuthor = `${repliedMessage.author.username}`;
 
             // Normal reply context for other users only
             message.content = `Replying to ${repliedAuthor}: "${repliedContent}": ${message.content}${repliedEmbedInfo}`;
@@ -1400,7 +1400,7 @@ export function setupHandlers(
                   message.channel?.id || message.channelId
                 );
                 const userMessage = {
-                  user: `${message.author.displayName || message.author.username} (${message.author.username}) [${message.author.id}]`,
+                  user: `${message.author.displayName || message.author.username} (${message.author.username})`,
                   message:
                     message.content +
                     embedInfo +
@@ -1512,7 +1512,7 @@ export function setupHandlers(
               );
               if (memory) {
                 const botMessage = {
-                  user: `${client.user.displayName || client.user.username} (${client.user.username}) [${client.user.id}]`,
+                  user: `${client.user.displayName || client.user.username} (${client.user.username})`,
                   message: response.response,
                   timestamp: Date.now(),
                 };

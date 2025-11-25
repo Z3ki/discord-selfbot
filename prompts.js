@@ -147,7 +147,7 @@ function buildToolsSection(toolsText, toolsLimit) {
   return (
     '\n=== TOOLS ===\n' +
     limitedToolsText +
-    "\n\nUSAGE: TOOL: functionName param='value' OR functionName(param='value')\nExamples: TOOL: send_dm userId='123' content='Hi'\nmemory_reset(scope='channel', confirm=True)\n\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze."
+    "\n\nUSAGE: TOOL: functionName param='value' OR functionName(param='value')\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze."
   );
 }
 
@@ -389,7 +389,12 @@ Respond ONLY with the JSON array describing your chosen action(s).
  * @param {string} serverPrompt - Server-specific prompt (optional).
  * @returns {string} The complete prompt for the AI.
  */
-export function buildProactivePrompt(recentHistory, selfContext, globalPrompt, serverPrompt = null) {
+export function buildProactivePrompt(
+  recentHistory,
+  selfContext,
+  globalPrompt,
+  serverPrompt = null
+) {
   // Format the history for the prompt
   const formattedHistory = recentHistory
     .map(
@@ -421,7 +426,6 @@ export function buildProactivePrompt(recentHistory, selfContext, globalPrompt, s
 
   return `${finalProactiveSystemPrompt}\\n\\n${historySection}\\n\\n${contextSection}`;
 }
-
 
 // =============================================================================
 // FOLLOW-UP PROMPT BUILDERS
