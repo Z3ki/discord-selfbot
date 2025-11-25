@@ -186,13 +186,13 @@ Simply send messages with attachments:
 Tools can be invoked by the AI automatically or manually:
 
 ```
-TOOL: memory_inspect
+TOOL: change_presence status="online" activity="Playing games"
 
 ```
 
 ## 🛠️ Tool System
 
-### Available Tools (6 Total)
+### Available Tools (5 Total)
 
 #### Discord Management Tools
 
@@ -698,20 +698,10 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 
 - AI would reference its own previous messages as if they were from another person
 - Conversation history showed AI talking to itself
-- Identity confusion between current user and bot's past responses
-
-**Solution**:
-
 - **Enhanced Memory Filtering**: Bot messages are now filtered out of conversation history by default to prevent self-reference
-- **Clear Message Labeling**: Added distinction between `USER_MESSAGE` and `BOT_RESPONSE` in memory text
 - **Improved Context Rules**: Updated conversation history instructions to prevent identity confusion
-- **Smart Reply Handling**: Bot messages are only included when directly replying to a bot message
-- **Debug Logging**: Added comprehensive logging for bot message filtering
-
-**Files Modified**:
-
-- `ai.js` - Enhanced memory filtering and message labeling
-- `prompts.js` - Updated conversation history rules
+- **ID Removal**: Removed all user and channel IDs from prompts and history for privacy
+- `prompts.js` - Updated conversation history rules and removed ID exposure
 
 **Impact**: AI now maintains clear separation between its own responses and user input, eliminating self-confusion behavior.
 
