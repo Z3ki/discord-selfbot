@@ -17,7 +17,7 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
-### 🔧 Comprehensive Tool System (18 Tools)
+### 🔧 Comprehensive Tool System (5 Tools)
 
 - **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
@@ -203,7 +203,7 @@ TOOL: change_presence status="online" activity="Playing games"
 
 #### System Tools
 
-- **`memory_reset`**: Reset/clear conversation memory for channels or DMs
+- **`memory_inspect`**: Inspect and analyze conversation memory data
 - **`memory_inspect`**: Inspect current conversation memory for debugging
 
 ### Multi-Round Execution
@@ -615,7 +615,7 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 
 #### Wikipedia Information Tool (2025-10-30)
 
-**Addition**: New `wikipedia_info` tool for accessing up-to-date information from Wikipedia.
+**Addition**: Enhanced multimodal processing with improved media handling.
 
 **Features**:
 
