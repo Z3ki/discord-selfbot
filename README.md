@@ -596,7 +596,7 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 - **Enhanced Identity Protection**: Stronger identity markers and reset sections to prevent AI self-confusion
 - **Optimized Memory Truncation**: Reduced from 25 to 18 messages with 24-hour age-based cleanup
 - **Prompt Compression**: Removed redundant sections and optimized formatting for API efficiency
-- **Memory Control Tools**: New `memory_reset` and `memory_inspect` tools for user control
+- **Memory Control Tools**: New `memory_inspect` tool for analyzing conversation data
 
 **Benefits**:
 
