@@ -7,7 +7,6 @@ import { joinServerTool } from './discord/joinServer.js';
 import { leaveServerTool } from './discord/leaveServer.js';
 
 import { memoryInspectTool } from './system/memoryInspect.js';
-import { dockerExecTool } from './system/dockerExec.js';
 
 // Combine all tools
 export const tools = [
@@ -16,7 +15,6 @@ export const tools = [
   joinServerTool,
   leaveServerTool,
   memoryInspectTool,
-  dockerExecTool,
 ];
 
 // Tool registry for execution
@@ -50,7 +48,7 @@ export class ToolRegistry {
         'join_server',
         'leave_server',
       ],
-      SYSTEM: ['memory_inspect'],
+      SYSTEM: ['memory_inspect', 'docker_exec'],
       RELATIONSHIPS: [],
     };
 

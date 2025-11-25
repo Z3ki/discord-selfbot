@@ -30,7 +30,7 @@ async function testPromptOptimization() {
    - Check if tools section is being truncated
    - Add tool examples in multiple formats
    - Repeat critical tool information
-   - Verify shell access logic for docker_exec
+
 
 3. OPTIMIZE PROMPT STRUCTURE:
    - Review character allocation percentages

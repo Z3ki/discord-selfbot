@@ -30,7 +30,6 @@ The project has a modular architecture with a clear separation of concerns:
 - Node.js 18+
 - Python 3.8+
 - FFmpeg
-- Docker (optional)
 
 **Installation:**
 

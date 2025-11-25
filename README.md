@@ -21,7 +21,7 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 
 - **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
-- **System Tools**: Docker shell execution (optional)
+- **System Tools**: Memory inspection
 - **Information Tools**: Wikipedia information lookup
 - **Relationship Tools**: Friend request management and monitoring
 
@@ -41,7 +41,7 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 
 ### 📊 Advanced Features
 
-- **Docker Shell Access**: Optional isolated command execution
+- **Memory Inspection**: System memory analysis
 - **Server-Specific Prompts**: Custom AI behavior per server
 - **Safe Mode**: Family-friendly response toggles
 - **Health Monitoring**: Real-time system metrics and diagnostics
@@ -65,7 +65,7 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 - **Node.js 18+** with npm
 - **Python 3.8+** with pip
 - **FFmpeg** for media processing
-- **Docker** (optional, for shell access)
+
 - **Discord user token** (⚠️ Never share this)
 - **Google AI API key** (required for AI functionality)
 - **NVIDIA NIM API key** (optional, for fallback AI provider)
@@ -102,19 +102,6 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
    ```bash
    npm start
    ```
-
-### Docker Setup (Optional)
-
-For shell access functionality, ensure Docker is running:
-
-```bash
-# Start Docker daemon
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Test Docker installation
-docker --version
-```
 
 ## ⚙️ Configuration
 
@@ -199,7 +186,7 @@ Simply send messages with attachments:
 Tools can be invoked by the AI automatically or manually:
 
 ```
-TOOL: docker_exec command="ping example.com" timeout="10"
+TOOL: memory_inspect
 
 ```
 
@@ -377,14 +364,6 @@ data-selfbot/
 - **Per-Server Settings**: Shell access, safe mode, and prompts configurable per server
 - **Rate Limiting**: Built-in protection against API abuse (10 req/min per user)
 - **Command Validation**: Input sanitization and XSS prevention
-
-### Docker Shell Security
-
-- **Disabled by Default**: Shell access must be explicitly enabled per server/DM
-- **Isolated Execution**: Commands run in isolated Docker container
-- **AI-Controlled Timeouts**: Automatic timeout selection prevents hanging commands
-- **No Persistence**: Shell access settings reset on bot restart
-- **Admin Only**: Only administrators can enable shell access
 
 ## 🔧 Troubleshooting
 
