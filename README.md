@@ -287,7 +287,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 #### Tool Executor (`tools/ToolExecutor.js`)
 
-- 16 consolidated tools across 5 categories
+- 5 consolidated tools across 3 categories
 - Multi-round execution with shared message editing
 - Live progress updates for long-running operations
 - Dynamic tool availability based on permissions
