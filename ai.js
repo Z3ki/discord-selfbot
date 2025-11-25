@@ -581,7 +581,7 @@ export async function generateResponse(
     userRole = ' (SERVER ADMIN)';
   }
 
-  const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}${userRole}`;
+  const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}${userRole}`;
   const currentTime = new Date().toLocaleString('en-US', {
     timeZone: 'UTC',
     year: 'numeric',
@@ -600,7 +600,7 @@ export async function generateResponse(
   let mentionedUsersInfo = '';
   if (message.mentions?.users?.size > 0) {
     const mentionedUsers = message.mentions.users
-      .map((user) => `${user.username} (ID: ${user.id})`)
+      .map((user) => `${user.username}`)
       .join(', ');
     mentionedUsersInfo = ` TARGET_USERS (mentioned for actions): ${mentionedUsers}`;
   }
@@ -608,7 +608,7 @@ export async function generateResponse(
   const replyInfo = message.isReplyToBot
     ? 'This message is a reply to one of your previous messages.'
     : 'This message is not a reply to you.';
-  const messageInfo = `=== MESSAGE INFO ===\nCurrent message ID: ${message.id}, Channel ID: ${message.channel?.id || message.channelId} (this is a channel, not a user), Channel Type: ${message.channel?.type || 'unknown'}, Time: ${currentTime} UTC. ${mentionInfo}${mentionedUsersInfo} ${replyInfo}`;
+  const messageInfo = `=== MESSAGE INFO ===\nTime: ${currentTime} UTC. ${mentionInfo}${mentionedUsersInfo} ${replyInfo}`;
 
   // Show processing message for messages with media (images, videos, GIFs, stickers)
   const hasMediaAttachments =
@@ -1227,7 +1227,12 @@ export async function elicitProactiveThought(
   serverPrompt = null
 ) {
   logger.info('Building proactive prompt...');
-  const prompt = buildProactivePrompt(recentHistory, selfContext, globalPrompt, serverPrompt);
+  const prompt = buildProactivePrompt(
+    recentHistory,
+    selfContext,
+    globalPrompt,
+    serverPrompt
+  );
 
   try {
     logger.info('Sending proactive prompt to AI...');
@@ -1241,7 +1246,9 @@ export async function elicitProactiveThought(
     // Clean the response to get only the JSON part
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      logger.warn('Proactive thought response was not valid JSON.', { response: responseText });
+      logger.warn('Proactive thought response was not valid JSON.', {
+        response: responseText,
+      });
       return { action: 'none' };
     }
 

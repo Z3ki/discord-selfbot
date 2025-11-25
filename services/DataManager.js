@@ -248,8 +248,7 @@ export class DataManager {
     return {
       name: 'Maxwell',
       userId: process.env.DISCORD_USER_ID,
-      coreObjective:
-        'To be a helpful, curious, and engaging AI assistant.',
+      coreObjective: 'To be a helpful, curious, and engaging AI assistant.',
     };
   }
 
@@ -259,7 +258,7 @@ export class DataManager {
    * @param {string} timeUnit - The unit of time (e.g., 'hours', 'days').
    * @returns {Promise<Array>} A sorted array of recent messages.
    */
-  async getRecentHistory(timeValue, timeUnit) {
+  async getRecentHistory(timeValue, timeUnit, client) {
     const now = Date.now();
     let cutoff;
 
@@ -279,13 +278,17 @@ export class DataManager {
 
     for (const [channelId, messages] of allMemories.entries()) {
       if (Array.isArray(messages)) {
+        const channel = client.channels.cache.get(channelId);
+        const channelName = channel ? channel.name : 'Unknown';
         const recent = messages
           .filter((msg) => msg.timestamp >= cutoff)
           .map((msg) => ({
             ...msg,
             content: msg.message, // Standardize content field
-            authorId: msg.user, // Standardize author field
-            channelId: channelId, // Add channelId to each message
+            authorName: msg.user, // Author name without ID
+            channelName: channelName, // Channel name
+            channelId: channelId, // Keep for proactive
+            authorId: msg.user, // Keep for proactive
           }));
         recentMessages.push(...recent);
       }

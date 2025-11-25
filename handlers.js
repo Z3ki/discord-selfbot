@@ -346,7 +346,7 @@ export async function handleCommand(
           .join('\n---\n');
 
         const toolsText = toolRegistry.getToolsText();
-        const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}, ID: ${message.author.id}`;
+        const currentUserInfo = `CURRENT_USER (asking you now): Username: ${message.author.username}, Display Name: ${message.author.globalName || 'None'}`;
         const currentTime = new Date().toLocaleString('en-US', {
           timeZone: 'UTC',
           year: 'numeric',
@@ -360,7 +360,7 @@ export async function handleCommand(
         const mentionInfo = message.isMentioned
           ? 'YOU ARE BEING MENTIONED/PINGED IN THIS MESSAGE. The user is directly addressing you.'
           : 'You are not mentioned in this message.';
-        const messageInfo = `=== MESSAGE INFO ===\nCurrent message ID: ${message.id}, Channel ID: ${message.channel?.id || message.channelId} (this is a channel, not a user), Channel Type: ${message.channel?.type || 'unknown'}, Time: ${currentTime} UTC. ${mentionInfo}`;
+        const messageInfo = `=== MESSAGE INFO ===\nTime: ${currentTime} UTC. ${mentionInfo}`;
         const presenceInfo = 'Bot status: available';
 
         // Sample message content

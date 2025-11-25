@@ -550,12 +550,18 @@ export class Bot {
     logger.info('Starting proactive cognitive loop...');
     try {
       // 1. Observe: Gather context from the last 24 hours
-      const allRecentHistory = await this.dataManager.getRecentHistory(1, 'days');
+      const allRecentHistory = await this.dataManager.getRecentHistory(
+        1,
+        'days',
+        this.client
+      );
       const selfContext = this.dataManager.getSelfContext();
       const globalPrompt = this.globalPrompt[0];
 
       if (allRecentHistory.length === 0) {
-        logger.info('No recent history to analyze. Skipping proactive thought.');
+        logger.info(
+          'No recent history to analyze. Skipping proactive thought.'
+        );
         return;
       }
 
@@ -566,18 +572,22 @@ export class Bot {
         const serverPrompt = this.serverPrompts.get(guildId) || null;
 
         // Filter history relevant to this specific guild
-        const guildRecentHistory = allRecentHistory.filter(msg => {
+        const guildRecentHistory = allRecentHistory.filter((msg) => {
           // Check if the message is from a channel within this guild
           const channel = this.client.channels.cache.get(msg.channelId);
           return channel && channel.guildId === guildId;
         });
 
         if (guildRecentHistory.length === 0) {
-          logger.debug(`No recent history for guild ${guild.name} (${guildId}). Skipping proactive thought for this guild.`);
+          logger.debug(
+            `No recent history for guild ${guild.name} (${guildId}). Skipping proactive thought for this guild.`
+          );
           continue;
         }
 
-        logger.info(`Eliciting proactive thought for guild ${guild.name} (${guildId})...`);
+        logger.info(
+          `Eliciting proactive thought for guild ${guild.name} (${guildId})...`
+        );
         const thoughtsForGuild = await elicitProactiveThought(
           guildRecentHistory,
           selfContext,
@@ -590,23 +600,41 @@ export class Bot {
 
       // 3. Act: Execute the thought(s)
       if (allProactiveThoughts.length > 0) {
-        logger.info(`AI decided to perform ${allProactiveThoughts.length} action(s) across all guilds.`);
+        logger.info(
+          `AI decided to perform ${allProactiveThoughts.length} action(s) across all guilds.`
+        );
         for (const actionObject of allProactiveThoughts) {
-          if (actionObject.action === 'send_message' && actionObject.channelId && actionObject.content) {
-            logger.info(`AI decided to send a message to channel ${actionObject.channelId}`);
+          if (
+            actionObject.action === 'send_message' &&
+            actionObject.channelId &&
+            actionObject.content
+          ) {
+            logger.info(
+              `AI decided to send a message to channel ${actionObject.channelId}`
+            );
             try {
-              const targetChannel = await this.client.channels.fetch(actionObject.channelId);
+              const targetChannel = await this.client.channels.fetch(
+                actionObject.channelId
+              );
               if (targetChannel && targetChannel.isText()) {
                 await targetChannel.send(actionObject.content);
                 logger.info('Successfully sent proactive message.');
               } else {
-                logger.warn(`Could not find or send to channel ${actionObject.channelId}. It might not be a text channel or is inaccessible.`);
+                logger.warn(
+                  `Could not find or send to channel ${actionObject.channelId}. It might not be a text channel or is inaccessible.`
+                );
               }
             } catch (channelError) {
-              logger.error(`Error sending message to channel ${actionObject.channelId}:`, channelError);
+              logger.error(
+                `Error sending message to channel ${actionObject.channelId}:`,
+                channelError
+              );
             }
           } else {
-            logger.warn('AI returned an unrecognized or incomplete action object:', actionObject);
+            logger.warn(
+              'AI returned an unrecognized or incomplete action object:',
+              actionObject
+            );
           }
         }
       } else {
