@@ -48,7 +48,7 @@ export class ToolRegistry {
         'join_server',
         'leave_server',
       ],
-      SYSTEM: ['memory_inspect', 'docker_exec'],
+      SYSTEM: ['memory_inspect'],
       RELATIONSHIPS: [],
     };
 
