@@ -1100,10 +1100,10 @@ export async function processMessageMedia(
               fallbackText += fallback + ' ';
             }
           } catch (textError) {
-            logger.error(
-              `Text file processing failed for ${attachment.url}:`,
-              textError
-            );
+            logger.error(`Text file processing failed for ${attachment.url}:`, {
+              error: textError.message,
+              stack: textError.stack,
+            });
             // Fallback to text description
             const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
             multimodalContent.push({ text: fallback });
@@ -1398,10 +1398,10 @@ async function processMediaAsync(message, context) {
               // fallbackText += fallback + ' ';
             }
           } catch (textError) {
-            logger.error(
-              `Text file processing failed for ${attachment.url}:`,
-              textError
-            );
+            logger.error(`Text file processing failed for ${attachment.url}:`, {
+              error: textError.message,
+              stack: textError.stack,
+            });
             // Fallback to text description
             const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
             multimodalContent.push({ text: fallback });

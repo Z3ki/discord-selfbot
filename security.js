@@ -38,6 +38,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/x-msvideo',
   'audio/mpeg',
   'audio/wav',
+  'audio/x-wav',
   'audio/ogg',
   'audio/webm',
   'audio/mp3',

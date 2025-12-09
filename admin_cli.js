@@ -12,7 +12,9 @@ if (args.length === 0) {
   console.log('  node admin_cli.js <userId>     - Toggle admin status');
   console.log('  node admin_cli.js list         - List all admins');
   console.log('  node admin_cli.js clear        - Clear all admins');
-  console.log('  node admin_cli.js think        - Trigger the proactive cognitive loop');
+  console.log(
+    '  node admin_cli.js think        - Trigger the proactive cognitive loop'
+  );
   console.log('');
   console.log('Examples:');
   console.log('  node admin_cli.js 123456789012345678');
