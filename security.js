@@ -45,6 +45,10 @@ const ALLOWED_MIME_TYPES = new Set([
   'audio/aac',
   'audio/flac',
   'audio/opus',
+  'text/plain',
+  'text/markdown',
+  'application/json',
+  'text/csv',
 ]);
 
 /**
@@ -106,6 +110,9 @@ const MAGIC_NUMBERS = {
   // Documents
   'application/pdf': [0x25, 0x50, 0x44, 0x46],
   'text/plain': [], // No specific magic number for text files
+  'text/markdown': [], // No specific magic number for markdown files
+  'application/json': [0x7b, 0x22], // JSON starts with {"
+  'text/csv': [], // No specific magic number for CSV files
 };
 
 /**
@@ -157,9 +164,50 @@ export function validateFileWithMagicNumbers(fileBuffer, expectedMimeType) {
 }
 
 /**
+ * Validates text file content for security
+ * @param {string} content - Text content to validate
+ * @param {string} filename - Filename for context
+ * @returns {Object} Validation result
+ */
+export function validateTextContent(content, filename) {
+  if (!content || typeof content !== 'string') {
+    return { valid: false, reason: 'Invalid text content' };
+  }
+
+  // Check for extremely long content
+  if (content.length > 100000) {
+    return { valid: false, reason: 'Text content too long' };
+  }
+
+  // Check for suspicious patterns that might indicate malicious content
+  const suspiciousPatterns = [
+    /<script[^>]*>.*?<\/script>/gi, // Script tags
+    /javascript:/gi, // JavaScript URLs
+    /on\w+\s*=/gi, // Event handlers
+    /<iframe[^>]*>/gi, // Iframes
+    /<object[^>]*>/gi, // Objects
+    /<embed[^>]*>/gi, // Embeds
+    /eval\s*\(/gi, // eval() calls
+    /exec\s*\(/gi, // exec() calls
+    /system\s*\(/gi, // system() calls
+  ];
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(content)) {
+      logger.warn(`Suspicious content pattern detected in ${filename}`, {
+        pattern: pattern.source,
+      });
+      return { valid: false, reason: 'Suspicious content pattern detected' };
+    }
+  }
+
+  return { valid: true, reason: 'Text content appears safe' };
+}
+
+/**
  * Validates file type for media processing with magic number checking
  * @param {string} filename - Filename to validate
- * @param {string} mimeType - MIME type of the file
+ * @param {string} mimeType - MIME type of file
  * @param {Buffer} fileBuffer - Optional file buffer for magic number validation
  * @returns {Object} Validation result
  */
@@ -312,4 +360,5 @@ export default {
   sanitizeDiscordContent,
   validateUrl,
   checkRateLimit,
+  validateTextContent,
 };

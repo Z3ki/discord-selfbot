@@ -20,6 +20,125 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
+ * Downloads a text file from a URL and returns its content
+ * @param {string} url - The text file URL to download
+ * @param {number} maxRedirects - Maximum number of redirects to follow (default: 5)
+ * @returns {Promise<{content: string, mimeType: string}>} Object containing text content and MIME type
+ */
+export async function downloadTextFile(url, maxRedirects = 5) {
+  // Validate URL format
+  if (!validateUrl(url)) {
+    throw new Error(`Invalid URL format: ${url}`);
+  }
+
+  // Check cache first
+  const cacheKey = mediaCache.generateKey(url);
+  const cachedData = await mediaCache.get(cacheKey);
+  if (cachedData) {
+    const mimeType = 'text/plain'; // Default, should be stored with cache
+    return {
+      content: cachedData.toString('utf-8'),
+      mimeType,
+    };
+  }
+
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https:') ? https : http;
+
+    const makeRequest = (requestUrl, redirects = 0) => {
+      protocol
+        .get(requestUrl, (res) => {
+          if (res.statusCode === 302 || res.statusCode === 301) {
+            if (redirects >= maxRedirects) {
+              reject(new Error(`Too many redirects: ${redirects}`));
+              return;
+            }
+            const redirectUrl = res.headers.location;
+            if (!redirectUrl) {
+              reject(new Error('Redirect without location header'));
+              return;
+            }
+            // Validate redirect URL
+            if (!validateUrl(redirectUrl)) {
+              reject(new Error(`Invalid redirect URL: ${redirectUrl}`));
+              return;
+            }
+            makeRequest(redirectUrl, redirects + 1);
+            return;
+          }
+
+          if (res.statusCode !== 200) {
+            reject(new Error(`Failed to download file: ${res.statusCode}`));
+            return;
+          }
+
+          const chunks = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('end', async () => {
+            const buffer = Buffer.concat(chunks);
+            const maxSize = CONFIG.media.maxTextFileSize;
+            if (buffer.length > maxSize) {
+              const { createBotError } = await import(
+                './utils/errorHandler.js'
+              );
+              reject(
+                createBotError(
+                  `Text file too large: ${buffer.length} bytes (max ${maxSize})`,
+                  'TEXT_FILE_TOO_LARGE',
+                  true,
+                  { fileSize: buffer.length, maxSize, url }
+                )
+              );
+              return;
+            }
+
+            const mimeType = res.headers['content-type'] || 'text/plain';
+
+            // Validate file type from MIME type
+            const urlPath = new URL(url).pathname;
+            const filename = urlPath.split('/').pop() || 'unknown';
+
+            // Check if this is a supported text file type
+            if (
+              !CONFIG.media.supportedTextTypes.includes(mimeType) &&
+              !filename.match(/\.(txt|md|json|csv)$/i)
+            ) {
+              reject(
+                new Error(
+                  `Unsupported text file type: ${mimeType} (${filename})`
+                )
+              );
+              return;
+            }
+
+            // Security check for malicious content
+            const content = buffer.toString('utf-8');
+            const { validateTextContent } = await import('./security.js');
+            const textValidation = validateTextContent(content, filename);
+
+            if (!textValidation.valid) {
+              reject(
+                new Error(
+                  `Text content validation failed: ${textValidation.reason}`
+                )
+              );
+              return;
+            }
+
+            // Cache downloaded content
+            await mediaCache.set(cacheKey, buffer);
+
+            resolve({ content, mimeType });
+          });
+        })
+        .on('error', reject);
+    };
+
+    makeRequest(url);
+  });
+}
+
+/**
  * Downloads a file from a URL and converts it to base64 format for multimodal AI processing
  * @param {string} url - The file URL to download
  * @param {number} maxRedirects - Maximum number of redirects to follow (default: 5)
@@ -955,6 +1074,41 @@ export async function processMessageMedia(
             multimodalContent.push({ text: fallback });
             fallbackText += fallback + ' ';
           }
+        } else if (
+          CONFIG.media.supportedTextTypes.includes(attachment.contentType) ||
+          attachment.name.match(/\.(txt|md|json|csv)$/i)
+        ) {
+          // Process text files
+          hasMedia = true;
+          try {
+            const textData = await downloadTextFile(attachment.url);
+
+            // Add text content for AI processing
+            const textContent = textData.content.trim();
+            if (textContent) {
+              const fileType = attachment.name.split('.').pop().toUpperCase();
+              multimodalContent.push({
+                text: `**TEXT FILE (${fileType})**: ${textContent}`,
+              });
+              fallbackText += `**TEXT FILE**: ${attachment.name} (${textContent.length} characters) `;
+              logger.debug(
+                `Successfully processed text file: ${attachment.name} (${textContent.length} chars)`
+              );
+            } else {
+              const fallback = `**TEXT FILE**: ${attachment.name} (empty file)`;
+              multimodalContent.push({ text: fallback });
+              fallbackText += fallback + ' ';
+            }
+          } catch (textError) {
+            logger.error(
+              `Text file processing failed for ${attachment.url}:`,
+              textError
+            );
+            // Fallback to text description
+            const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
+            multimodalContent.push({ text: fallback });
+            fallbackText += fallback + ' ';
+          }
         }
       } catch (error) {
         logger.error(`Failed to process media ${attachment.url}:`, error);
@@ -1215,6 +1369,41 @@ async function processMediaAsync(message, context) {
             );
             // Fallback to text description
             const fallback = `**AUDIO MEDIA**: ${attachment.contentType} file (transcription failed: ${audioError.message})`;
+            multimodalContent.push({ text: fallback });
+            // fallbackText += fallback + ' ';
+          }
+        } else if (
+          CONFIG.media.supportedTextTypes.includes(attachment.contentType) ||
+          attachment.name.match(/\.(txt|md|json|csv)$/i)
+        ) {
+          // Process text files
+          // hasMedia = true;
+          try {
+            const textData = await downloadTextFile(attachment.url);
+
+            // Add text content for AI processing
+            const textContent = textData.content.trim();
+            if (textContent) {
+              const fileType = attachment.name.split('.').pop().toUpperCase();
+              multimodalContent.push({
+                text: `**TEXT FILE (${fileType})**: ${textContent}`,
+              });
+              // fallbackText += `**TEXT FILE**: ${attachment.name} (${textContent.length} characters) `;
+              logger.debug(
+                `Successfully processed text file: ${attachment.name} (${textContent.length} chars)`
+              );
+            } else {
+              const fallback = `**TEXT FILE**: ${attachment.name} (empty file)`;
+              multimodalContent.push({ text: fallback });
+              // fallbackText += fallback + ' ';
+            }
+          } catch (textError) {
+            logger.error(
+              `Text file processing failed for ${attachment.url}:`,
+              textError
+            );
+            // Fallback to text description
+            const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
             multimodalContent.push({ text: fallback });
             // fallbackText += fallback + ' ';
           }

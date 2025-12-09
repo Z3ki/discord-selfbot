@@ -68,6 +68,8 @@ export const CONFIG = {
   },
   media: {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 4 * 1024 * 1024, // 4MB limit for Gemini
+    maxTextFileSize:
+      parseInt(process.env.MAX_TEXT_FILE_SIZE) || 1 * 1024 * 1024, // 1MB limit for text files
     maxRedirects: parseInt(process.env.MAX_REDIRECTS) || 5,
     supportedImageTypes: (
       process.env.SUPPORTED_IMAGE_TYPES ||
@@ -76,6 +78,10 @@ export const CONFIG = {
     supportedAudioTypes: (
       process.env.SUPPORTED_AUDIO_TYPES ||
       'audio/mpeg,audio/wav,audio/ogg,audio/mp4'
+    ).split(','),
+    supportedTextTypes: (
+      process.env.SUPPORTED_TEXT_TYPES ||
+      'text/plain,text/markdown,application/json,text/csv'
     ).split(','),
     tempDir: process.env.TEMP_DIR || './temp',
   },
