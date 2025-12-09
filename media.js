@@ -895,13 +895,46 @@ export async function processMessageMedia(
               );
               syncFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (download failed) `;
             }
+          } else if (
+            CONFIG.media.supportedTextTypes.includes(attachment.contentType) ||
+            attachment.name.match(/\.(txt|md|json|csv)$/i)
+          ) {
+            // Process text files synchronously for AI response
+            try {
+              const textData = await downloadTextFile(attachment.url);
+              const textContent = textData.content.trim();
+              if (textContent) {
+                const fileType = attachment.name.split('.').pop().toUpperCase();
+                syncMultimodalContent.push({
+                  text: `**TEXT FILE (${fileType})**: ${textContent}`,
+                });
+                syncFallbackText += `**TEXT FILE**: ${attachment.name} (${textContent.length} characters) `;
+                logger.debug(
+                  `Successfully processed text file synchronously: ${attachment.name} (${textContent.length} chars)`
+                );
+              } else {
+                const fallback = `**TEXT FILE**: ${attachment.name} (empty file)`;
+                syncMultimodalContent.push({ text: fallback });
+                syncFallbackText += fallback + ' ';
+              }
+            } catch (textError) {
+              logger.error(
+                `Failed to process text file synchronously ${attachment.url}:`,
+                {
+                  error: textError.message,
+                }
+              );
+              const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
+              syncMultimodalContent.push({ text: fallback });
+              syncFallbackText += fallback + ' ';
+            }
           }
         } catch (error) {
           logger.error(
-            `Failed to process image attachment synchronously ${attachment.url}:`,
+            `Failed to process attachment synchronously ${attachment.url}:`,
             error
           );
-          syncFallbackText += `**IMAGE MEDIA**: ${attachment.contentType} image (processing failed) `;
+          syncFallbackText += `**MEDIA**: ${attachment.contentType} file (processing failed) `;
         }
       }
     }
@@ -1369,41 +1402,6 @@ async function processMediaAsync(message, context) {
             );
             // Fallback to text description
             const fallback = `**AUDIO MEDIA**: ${attachment.contentType} file (transcription failed: ${audioError.message})`;
-            multimodalContent.push({ text: fallback });
-            // fallbackText += fallback + ' ';
-          }
-        } else if (
-          CONFIG.media.supportedTextTypes.includes(attachment.contentType) ||
-          attachment.name.match(/\.(txt|md|json|csv)$/i)
-        ) {
-          // Process text files
-          // hasMedia = true;
-          try {
-            const textData = await downloadTextFile(attachment.url);
-
-            // Add text content for AI processing
-            const textContent = textData.content.trim();
-            if (textContent) {
-              const fileType = attachment.name.split('.').pop().toUpperCase();
-              multimodalContent.push({
-                text: `**TEXT FILE (${fileType})**: ${textContent}`,
-              });
-              // fallbackText += `**TEXT FILE**: ${attachment.name} (${textContent.length} characters) `;
-              logger.debug(
-                `Successfully processed text file: ${attachment.name} (${textContent.length} chars)`
-              );
-            } else {
-              const fallback = `**TEXT FILE**: ${attachment.name} (empty file)`;
-              multimodalContent.push({ text: fallback });
-              // fallbackText += fallback + ' ';
-            }
-          } catch (textError) {
-            logger.error(`Text file processing failed for ${attachment.url}:`, {
-              error: textError.message,
-              stack: textError.stack,
-            });
-            // Fallback to text description
-            const fallback = `**TEXT FILE**: ${attachment.name} (processing failed: ${textError.message})`;
             multimodalContent.push({ text: fallback });
             // fallbackText += fallback + ' ';
           }
