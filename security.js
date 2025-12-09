@@ -175,9 +175,14 @@ export function validateTextContent(content, filename) {
     return { valid: false, reason: 'Invalid text content' };
   }
 
-  // Check for extremely long content
-  if (content.length > 100000) {
-    return { valid: false, reason: 'Text content too long' };
+  // Check for extremely long content (configurable limit)
+  const maxTextContentLength =
+    parseInt(process.env.MAX_TEXT_CONTENT_LENGTH) || 10000000; // 10MB default for very long text files
+  if (content.length > maxTextContentLength) {
+    return {
+      valid: false,
+      reason: `Text content too long: ${content.length} > ${maxTextContentLength} characters`,
+    };
   }
 
   // Check for suspicious patterns that might indicate malicious content

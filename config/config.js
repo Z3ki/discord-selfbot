@@ -70,6 +70,8 @@ export const CONFIG = {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 4 * 1024 * 1024, // 4MB limit for Gemini
     maxTextFileSize:
       parseInt(process.env.MAX_TEXT_FILE_SIZE) || 1 * 1024 * 1024, // 1MB limit for text files
+    maxTextContentLength:
+      parseInt(process.env.MAX_TEXT_CONTENT_LENGTH) || 10000000, // 10MB character limit for very long text files
     maxRedirects: parseInt(process.env.MAX_REDIRECTS) || 5,
     supportedImageTypes: (
       process.env.SUPPORTED_IMAGE_TYPES ||
