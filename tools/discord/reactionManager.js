@@ -49,8 +49,15 @@ export const reactionManagerTool = {
         enum: ['add', 'remove', 'get'],
         description: 'Action to perform: add, remove, or get reactions',
       },
-      channelId: { type: 'string' },
-      messageId: { type: 'string' },
+      channelId: {
+        type: 'string',
+        description:
+          'Channel ID (optional, defaults to current message channel)',
+      },
+      messageId: {
+        type: 'string',
+        description: 'Message ID (optional, defaults to current message)',
+      },
       emoji: {
         type: 'string',
         description: 'Emoji to add/remove (required for add/remove)',
@@ -61,7 +68,7 @@ export const reactionManagerTool = {
           'User identifier: ID, username, display name, or mention (optional for remove, defaults to bot)',
       },
     },
-    required: ['action', 'channelId', 'messageId'],
+    required: ['action'],
   },
 };
 
@@ -70,12 +77,10 @@ export async function executeReactionManager(args, client, message) {
     const { validateChannelId, validateUserId } = await import(
       '../../utils/index.js'
     );
-    const channel = validateChannelId(
-      client,
-      args.channelId,
-      'reaction management'
-    );
-    const messageObj = await channel.messages.fetch(args.messageId);
+    const channelId = args.channelId || message.channel.id;
+    const messageId = args.messageId || message.id;
+    const channel = validateChannelId(client, channelId, 'reaction management');
+    const messageObj = await channel.messages.fetch(messageId);
 
     switch (args.action) {
       case 'add':
