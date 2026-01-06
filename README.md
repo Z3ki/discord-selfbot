@@ -196,7 +196,7 @@ TOOL: change_presence status="online" activity="Playing games"
 
 #### Discord Management Tools
 
-- **`reaction_manager`**: Add, remove, and get reactions (channelId and messageId optional, defaults to current message)
+- **`reaction_manager`**: Add, remove, and get reactions on the current message
 - **`join_server`**: Join Discord servers via invite
 - **`leave_server`**: Leave specified servers
 - **`change_presence`**: Change bot presence status

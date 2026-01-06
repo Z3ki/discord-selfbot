@@ -49,15 +49,6 @@ export const reactionManagerTool = {
         enum: ['add', 'remove', 'get'],
         description: 'Action to perform: add, remove, or get reactions',
       },
-      channelId: {
-        type: 'string',
-        description:
-          'Channel ID (optional, defaults to current message channel)',
-      },
-      messageId: {
-        type: 'string',
-        description: 'Message ID (optional, defaults to current message)',
-      },
       emoji: {
         type: 'string',
         description: 'Emoji to add/remove (required for add/remove)',
@@ -74,20 +65,9 @@ export const reactionManagerTool = {
 
 export async function executeReactionManager(args, client, message) {
   try {
-    const { validateChannelId, validateUserId } = await import(
-      '../../utils/index.js'
-    );
-    // Handle "unknown" values by treating them as undefined
-    const channelId =
-      args.channelId && args.channelId !== 'unknown'
-        ? args.channelId
-        : message.channel.id;
-    const messageId =
-      args.messageId && args.messageId !== 'unknown'
-        ? args.messageId
-        : message.id;
-    const channel = validateChannelId(client, channelId, 'reaction management');
-    const messageObj = await channel.messages.fetch(messageId);
+    const { validateUserId } = await import('../../utils/index.js');
+    // Always use the current message that triggered the tool call
+    const messageObj = message;
 
     switch (args.action) {
       case 'add':
