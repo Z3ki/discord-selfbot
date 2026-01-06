@@ -244,23 +244,44 @@ export function extractToolCalls(text) {
   while ((match = regex2.exec(text)) !== null) {
     try {
       const content = match[1].trim();
-      // Parse the content within backticks - should be "funcName params" format
-      const lines = content
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line);
-      let funcName, paramsStr;
 
-      if (lines.length >= 1) {
-        // First line is function name, rest are params
-        funcName = lines[0];
-        paramsStr = lines.slice(1).join(' ');
-      }
+      // Check if content contains function call syntax
+      const funcCallMatch = content.match(
+        new RegExp('^(' + validToolNamesPattern + ')\\s*\\(([^)]*)\\)$')
+      );
+      if (funcCallMatch) {
+        // Handle function call syntax within ```tool blocks
+        const funcName = funcCallMatch[1];
+        const argsStr = funcCallMatch[2].trim();
+        if (validToolNames.has(funcName)) {
+          toolCalls.push({ funcName, args: parseFunctionArgs(argsStr) });
+        } else {
+          logger.warn(
+            `Invalid tool name in \`\`\`tool format function call: ${funcName}`
+          );
+        }
+      } else {
+        // Parse the content within backticks - should be "funcName params" format
+        const lines = content
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line);
+        let funcName, paramsStr;
 
-      if (funcName && funcName !== 'tool' && validToolNames.has(funcName)) {
-        toolCalls.push({ funcName, args: parseToolArgs(funcName, paramsStr) });
-      } else if (funcName && !validToolNames.has(funcName)) {
-        logger.warn(`Invalid tool name in \`\`\`tool format: ${funcName}`);
+        if (lines.length >= 1) {
+          // First line is function name, rest are params
+          funcName = lines[0];
+          paramsStr = lines.slice(1).join(' ');
+        }
+
+        if (funcName && funcName !== 'tool' && validToolNames.has(funcName)) {
+          toolCalls.push({
+            funcName,
+            args: parseToolArgs(funcName, paramsStr),
+          });
+        } else if (funcName && !validToolNames.has(funcName)) {
+          logger.warn(`Invalid tool name in \`\`\`tool format: ${funcName}`);
+        }
       }
     } catch (e) {
       logger.error('Failed to parse ```tool call', {

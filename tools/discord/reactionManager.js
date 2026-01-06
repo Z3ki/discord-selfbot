@@ -77,8 +77,15 @@ export async function executeReactionManager(args, client, message) {
     const { validateChannelId, validateUserId } = await import(
       '../../utils/index.js'
     );
-    const channelId = args.channelId || message.channel.id;
-    const messageId = args.messageId || message.id;
+    // Handle "unknown" values by treating them as undefined
+    const channelId =
+      args.channelId && args.channelId !== 'unknown'
+        ? args.channelId
+        : message.channel.id;
+    const messageId =
+      args.messageId && args.messageId !== 'unknown'
+        ? args.messageId
+        : message.id;
     const channel = validateChannelId(client, channelId, 'reaction management');
     const messageObj = await channel.messages.fetch(messageId);
 
