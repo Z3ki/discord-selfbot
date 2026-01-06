@@ -18,7 +18,6 @@ export function getHealthMetrics(client) {
 
   // Memory in MB
   const memoryMB = {
-    rss: Math.round(memory.rss / 1024 / 1024),
     heapUsed: Math.round(memory.heapUsed / 1024 / 1024),
     heapTotal: Math.round(memory.heapTotal / 1024 / 1024),
   };
@@ -53,7 +52,7 @@ export function getHealthMetrics(client) {
 export async function logHealthMetrics(metrics) {
   const timestamp = new Date().toISOString();
   const perf = metrics.performance;
-  const logEntry = `${timestamp} - Uptime: ${metrics.uptime}, Memory: RSS ${metrics.memory.rss}MB (${perf.memoryUsage}), API Latency: ${metrics.apiLatency}ms, Responses: ${perf.totalResponses}, Cache Hit Rate: ${perf.cacheHitRate}, Avg Response Time: ${perf.averageResponseTime}\n`;
+  const logEntry = `${timestamp} - Uptime: ${metrics.uptime}, Memory: ${perf.memoryUsage}, API Latency: ${metrics.apiLatency}ms, Responses: ${perf.totalResponses}, Cache Hit Rate: ${perf.cacheHitRate}, Avg Response Time: ${perf.averageResponseTime}\n`;
 
   await fs.promises.appendFile(HEALTH_LOG_FILE, logEntry);
 }

@@ -744,7 +744,7 @@ export async function handleCommand(
               : 'LOW';
         const healthText = `**Bot Health Status**
 **Uptime:** ${metrics.uptime}
-**Memory Usage:** RSS ${metrics.memory.rss}MB, Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
+**Memory Usage:** Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
 **API Latency:** ${metrics.apiLatency}ms
 **Last Error:** ${metrics.lastError}`;
         await message.reply(healthText);
