@@ -3,7 +3,7 @@ import assert from 'node:assert';
 
 // Mock the docker exec function for testing
 function mockExecuteDockerExec(args, progressCallback) {
-  const { command, timeout } = args;
+  const { command } = args;
   
   // Return mock result
   return new Promise((resolve) => {

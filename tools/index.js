@@ -8,8 +8,6 @@ import { leaveServerTool } from './discord/leaveServer.js';
 
 import { memoryInspectTool } from './system/memoryInspect.js';
 
-import { webSearchTool } from './web/search.js';
-
 // Combine all tools
 export const tools = [
   changePresenceTool,
@@ -17,7 +15,6 @@ export const tools = [
   joinServerTool,
   leaveServerTool,
   memoryInspectTool,
-  webSearchTool,
 ];
 
 // Tool registry for execution
@@ -52,7 +49,7 @@ export class ToolRegistry {
         'leave_server',
       ],
       SYSTEM: ['memory_inspect'],
-      WEB: ['web_search'],
+      WEB: [],
       RELATIONSHIPS: [],
     };
 

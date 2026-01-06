@@ -25,7 +25,7 @@ async function resolveUserId(identifier, client, message) {
         return member.id;
       }
     } catch (error) {
-      logger.error('Error resolving user:', error);
+      // Ignore errors when searching for members
     }
   }
 
@@ -85,7 +85,7 @@ export async function executeReactionManager(args, client, message) {
         await messageObj.react(args.emoji);
         return 'Reaction added successfully';
 
-      case 'remove':
+      case 'remove': {
         if (!args.emoji) {
           return 'Error: emoji is required for remove action';
         }
@@ -108,8 +108,9 @@ export async function executeReactionManager(args, client, message) {
 
         await messageObj.reactions.resolve(args.emoji).users.remove(user);
         return 'Reaction removed successfully';
+      }
 
-      case 'get':
+      case 'get': {
         const reactions = [];
         messageObj.reactions.cache.forEach((reaction, emoji) => {
           reactions.push({
@@ -119,6 +120,7 @@ export async function executeReactionManager(args, client, message) {
           });
         });
         return JSON.stringify(reactions, null, 2);
+      }
 
       default:
         return 'Error: Invalid action. Use add, remove, or get';

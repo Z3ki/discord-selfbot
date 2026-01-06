@@ -25,8 +25,7 @@ export const memoryInspectTool = {
     { scope = 'channel', limit = 5 },
     message,
     client,
-    channelMemories,
-    dmOrigins
+    channelMemories
   ) {
     const channelId = message.channel?.id || message.channelId;
     const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
@@ -86,7 +85,6 @@ export const memoryInspectTool = {
       })
       .join('\n');
 
-    const scopeText = scope === 'dm' ? 'DM' : 'channel';
     return `Recent ${scope} memory (${recentMessages.length}/${memories.length} messages):\n${summary}`;
   },
 };

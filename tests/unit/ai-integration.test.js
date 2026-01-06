@@ -9,7 +9,6 @@ describe('AI Integration - Multi-Round Execution', () => {
       return new Promise((resolve) => {
         let round = 0;
         let allToolResults = [];
-        let currentPrompt = "Initial user message";
         
         async function executeRound(toolCalls) {
           round++;
@@ -22,19 +21,16 @@ describe('AI Integration - Multi-Round Execution', () => {
           
           allToolResults.push(...toolResults);
           
-          // Simulate AI generating follow-up with more tool calls
-          if (round < maxRounds) {
-            // AI decides to make more tool calls
-            const followUpResponse = `I need more info:
-TOOL: docker_exec {"command": "ls round${round + 1}", "timeout": 10}`;
-            
-            // Extract new tool calls (simplified)
+           // Simulate AI generating follow-up with more tool calls
+           if (round < maxRounds) {
+             // AI decides to make more tool calls
+
+             // Extract new tool calls (simplified)
             const newToolCalls = [
               { funcName: 'docker_exec', args: { command: `ls round${round + 1}`, timeout: 10 } }
             ];
             
             if (newToolCalls.length > 0) {
-              currentPrompt = followUpResponse;
               return executeRound(newToolCalls);
             }
           }
