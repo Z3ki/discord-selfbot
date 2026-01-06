@@ -139,3 +139,6 @@ cache/
 
 # Docker files
 docker/
+
+# Websites directory
+websites/
