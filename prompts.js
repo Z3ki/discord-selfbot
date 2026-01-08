@@ -120,17 +120,7 @@ function buildResponseRules(messageInfo, safeMode = false) {
       ' - Use [IGNORE] to ignore messages if desired\n' +
       ' - Server prompts override';
   }
-
-  if (messageInfo.includes('DM')) {
-    rules += '\n- In DMs: respond directly, use send_dm only for other users';
-  }
-
-  // Shell access is permanently disabled
-  rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands';
-
-  // Shell access is permanently disabled
-  rules += '\n- SHELL ACCESS DISABLED: Cannot run system commands';
-
+  
   return rules;
 }
 
