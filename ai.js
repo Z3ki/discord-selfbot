@@ -898,7 +898,6 @@ export async function generateResponse(
     multimodalContent,
     fallbackText,
     audioTranscription,
-    message.repliedMessageContent,
     serverPrompt,
     safeMode
   );

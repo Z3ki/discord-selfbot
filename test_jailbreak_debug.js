@@ -15,9 +15,7 @@ const testPrompt = buildPromptContent(
   '', // fallbackText
   '', // audioTranscription
   null, // serverPrompt
-  false, // safeMode
-  null, // lastToolResults
-  'qwen/qwen3-next-80b-a3b-instruct' // modelName
+  false // safeMode
 );
 
 console.log('=== JAILBREAK TEST ===');

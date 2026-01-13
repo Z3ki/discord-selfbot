@@ -37,10 +37,7 @@ async function simulate() {
     '',
     '',
     null,
-    null,
-    false,
-    null,
-    'qwen/qwen3-next-80b-a3b-instruct'
+    false
   );
 
   // Print full system prompt so you can see exactly what the model receives

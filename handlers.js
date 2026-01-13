@@ -378,7 +378,6 @@ export async function handleCommand(
           [],
           '',
           '',
-          null,
           serverPrompt,
           safeMode
         );
