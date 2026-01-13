@@ -1,5 +1,3 @@
-very shitty code that is vibe coded.
-
 # Maxwell Discord Selfbot
 
 A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B-IT fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
