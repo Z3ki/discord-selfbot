@@ -68,7 +68,6 @@ async function simulate() {
     channel: { id: 'SIM_CHANNEL', type: 'GUILD_TEXT' },
     attachments: new Map(),
     mentions: { users: new Map(), has: () => false },
-    isReplyToBot: false,
     isMentioned: false,
   };
 

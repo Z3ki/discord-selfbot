@@ -394,9 +394,25 @@ export async function generateResponse(
   apiResourceManager,
   bot = null
 ) {
+  // Check if this is a DM reply without bot mention - if so, use empty memory
   const isDM = message.channel?.type === 'DM' || message.channel?.type === 1;
-  let memory =
-    channelMemories.get(message.channel?.id || message.channelId) || [];
+  const isReply = message.reference && message.reference.messageId;
+  const isMentioned = message.mentions?.has(client.user.id) || false;
+
+  let memory;
+  if (isDM && isReply && !isMentioned) {
+    // DM reply without mention - use empty memory to prevent context leakage
+    memory = [];
+    logger.debug('Using empty memory for DM reply without mention', {
+      channelId: message.channel?.id || message.channelId,
+      isReply: true,
+      isMentioned: false,
+    });
+  } else {
+    // Normal case - use full conversation memory
+    memory =
+      channelMemories.get(message.channel?.id || message.channelId) || [];
+  }
 
   // Self-response loop prevention: Filter out bot messages from memory by default
   // Only include bot messages when directly replying to prevent AI confusion

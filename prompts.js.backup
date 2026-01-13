@@ -61,11 +61,20 @@ function buildMessageSection(
   messageContent,
   audioTranscription,
   messageLimit,
+  repliedMessageContent = null,
   safeMode = false
 ) {
   const limitedMessageContent = truncateContent(messageContent, messageLimit);
   let section =
     '=== MESSAGE ===\n' + messageInfo + '\n\nUSER: ' + limitedMessageContent;
+
+  if (repliedMessageContent) {
+    const limitedReplyContent = truncateContent(
+      repliedMessageContent,
+      Math.floor(messageLimit * 0.3)
+    );
+    section += '\n\nREPLYING TO: ' + limitedReplyContent;
+  }
 
   if (audioTranscription) {
     section += '\n\nAUDIO: ' + audioTranscription;
@@ -111,7 +120,7 @@ function buildResponseRules(messageInfo, safeMode = false) {
       ' - Use [IGNORE] to ignore messages if desired\n' +
       ' - Server prompts override';
   }
-
+  
   return rules;
 }
 
@@ -219,6 +228,7 @@ export function buildPromptContent(
   multimodalContent,
   fallbackText,
   audioTranscription = '',
+  repliedMessageContent = null,
   serverPrompt = null,
   safeMode = false
 ) {
@@ -231,6 +241,7 @@ export function buildPromptContent(
     messageContent,
     audioTranscription,
     allocation.message,
+    repliedMessageContent,
     safeMode
   );
   const responseRules = buildResponseRules(messageInfo, safeMode);

@@ -980,13 +980,31 @@ export function setupHandlers(
       // Stickers are now processed in the image processing function
 
       const isMentioned = message.mentions?.has(client.user.id) || false;
+      let isReplyToBot = false;
+      let repliedMessageContent = null;
+      if (message.reference && message.reference.messageId) {
+        try {
+          const repliedMessage = await message.channel?.messages?.fetch(
+            message.reference.messageId
+          );
+          isReplyToBot = repliedMessage.author.id === client.user.id;
+          if (isReplyToBot) {
+            repliedMessageContent = repliedMessage.content;
+          }
+        } catch (error) {
+          // Ignore fetch errors
+        }
+      }
 
       // Add mention info to message for AI awareness
       message.isMentioned = isMentioned;
+      message.isReplyToBot = isReplyToBot;
+      message.repliedMessageContent = repliedMessageContent;
 
       logger.debug('Message analysis', {
         isDM,
         isMentioned,
+        isReplyToBot,
         botId: client.user.id,
         mentions: message.mentions?.users?.map((u) => u.id) || [],
         contentLength: message.content.length,
@@ -997,6 +1015,7 @@ export function setupHandlers(
         authorId: message.author.id,
         botId: client.user.id,
         isBot: message.author.bot,
+        isReplyToBot: isReplyToBot,
         repliedMessageAuthor: message.reference ? 'checked' : 'none',
         channelType: message.channel?.type,
         hasMentions: message.mentions?.users?.size > 0,
@@ -1041,7 +1060,7 @@ export function setupHandlers(
       }
 
       if (message.author.bot) return; // Ignore all bot messages
-      if (!isDM && !isMentioned) return; // In channels, only respond to mentions
+      if (!isDM && !isMentioned && !isReplyToBot) return; // In channels, only respond to mentions or replies
 
       // Anti-spam check (only for messages the bot will process)
       const userId = message.author.id;
@@ -1097,6 +1116,108 @@ export function setupHandlers(
 
       // Update last message time
       userChannels.set(channelId, now);
+
+      // Include replied message content if replying to user (not bot)
+      let repliedMediaInfo = '';
+      if (message.reference && message.reference.messageId) {
+        try {
+          logger.debug('Fetching replied message', {
+            repliedMessageId: message.reference.messageId,
+            channelId: message.channel?.id || message.channelId,
+          });
+          const repliedMessage = await message.channel?.messages?.fetch(
+            message.reference.messageId
+          );
+
+          // Skip all reply context - bot should not see what user is replying to
+          // Process replies only if bot is mentioned/pinged, otherwise ignore reply context
+          if (!isReplyToBot && message.mentions?.has(client.user.id)) {
+            logger.debug('Fetched replied message', {
+              repliedAuthor: repliedMessage.author.username,
+              repliedContentLength: repliedMessage.content.length,
+              repliedAttachments: repliedMessage.attachments.size,
+              repliedEmbeds: repliedMessage.embeds?.length || 0,
+              isBot: repliedMessage.author.bot,
+              hasRepliedEmbeds: !!(repliedMessage.embeds?.length > 0),
+            });
+
+            // Process replied message embeds
+            let repliedEmbedInfo = '';
+            if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
+              const embedSummaries = repliedMessage.embeds.map(
+                (embed, index) => {
+                  let summary = `EMBED ${index + 1}:`;
+                  if (embed.title) summary += ` Title: "${embed.title}"`;
+                  if (embed.description)
+                    summary += ` Description: "${embed.description.substring(0, 200)}${embed.description.length > 200 ? '...' : ''}"`;
+                  if (embed.url) summary += ` URL: ${embed.url}`;
+                  if (embed.author?.name)
+                    summary += ` Author: "${embed.author.name}"`;
+                  if (embed.fields && embed.fields.length > 0) {
+                    summary += ` Fields: ${embed.fields.map((field) => `"${field.name}: ${field.value.substring(0, 100)}${field.value.length > 100 ? '...' : ''}"`).join(', ')}`;
+                  }
+                  if (embed.image?.url) summary += ` Image: ${embed.image.url}`;
+                  if (embed.thumbnail?.url)
+                    summary += ` Thumbnail: ${embed.thumbnail.url}`;
+                  if (embed.footer?.text)
+                    summary += ` Footer: "${embed.footer.text}"`;
+                  return summary;
+                }
+              );
+              repliedEmbedInfo = `\n\nREPLIED EMBEDS: ${embedSummaries.join(' | ')}`;
+              logger.debug('Replied embeds processed', {
+                count: repliedMessage.embeds.length,
+              });
+            }
+
+            const repliedContent =
+              repliedMessage.content ||
+              (repliedMessage.embeds?.length > 0
+                ? '[Embed Content]'
+                : '[Media/Attachment]');
+            const repliedAuthor = `${repliedMessage.author.username}`;
+
+            // Normal reply context for other users only
+            message.content = `Replying to ${repliedAuthor}: "${repliedContent}": ${message.content}${repliedEmbedInfo}`;
+
+            // Also include replied attachments for processing
+            if (repliedMessage.attachments.size > 0) {
+              logger.debug('Adding replied attachments', {
+                count: repliedMessage.attachments.size,
+              });
+              // Add replied attachments to message attachments for multimodal processing
+              repliedMessage.attachments.forEach((attachment, key) => {
+                if (!message.attachments?.has(key)) {
+                  // Avoid duplicates if same
+                  message.attachments.set(key, attachment);
+                }
+              });
+              const repliedMediaAttachments = repliedMessage.attachments.filter(
+                (attachment) =>
+                  attachment.contentType &&
+                  (attachment.contentType.startsWith('image/') ||
+                    attachment.contentType.startsWith('video/') ||
+                    attachment.contentType === 'image/gif')
+              );
+              if (repliedMediaAttachments.length > 0) {
+                repliedMediaInfo = `\n\nREPLIED MEDIA ATTACHMENTS: ${repliedMediaAttachments.map((media) => `${media.url} (${media.contentType})`).join(', ')}`;
+                logger.debug('Replied media attachments added', {
+                  count: repliedMediaAttachments.length,
+                });
+              }
+            }
+          } else {
+            logger.debug(
+              'Skipping reply context - replying to self to prevent AI confusion'
+            );
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch replied message', {
+            error: error.message,
+            repliedMessageId: message.reference.messageId,
+          });
+        }
+      }
 
       logger.debug('Processing message for response', {
         hasAttachments: message.attachments.size > 0,
@@ -1281,7 +1402,11 @@ export function setupHandlers(
                 const userMessage = {
                   user: `${message.author.displayName || message.author.username} (${message.author.username})`,
                   message:
-                    message.content + embedInfo + mediaInfo + transcriptionInfo,
+                    message.content +
+                    embedInfo +
+                    mediaInfo +
+                    repliedMediaInfo +
+                    transcriptionInfo,
                   timestamp: Date.now(),
                 };
                 memory.push(userMessage);

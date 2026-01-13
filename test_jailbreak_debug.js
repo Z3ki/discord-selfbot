@@ -14,7 +14,6 @@ const testPrompt = buildPromptContent(
   [], // multimodalContent
   '', // fallbackText
   '', // audioTranscription
-  null, // repliedMessageContent
   null, // serverPrompt
   false, // safeMode
   null, // lastToolResults

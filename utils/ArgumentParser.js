@@ -51,31 +51,40 @@ export function parseToolArgs(funcName, paramsStr) {
     try {
       // Clean up the JSON string for proper parsing
       let cleanJsonStr = paramsStr.trim();
-      
+
       // Fix escaped quotes and newlines for JSON parsing
       cleanJsonStr = cleanJsonStr
         .replace(/\\n/g, '\n') // Fix escaped newlines
         .replace(/\\"/g, '"') // Fix escaped quotes
         .replace(/\\\\/g, '\\'); // Fix double backslashes
-      
+
       // Remove problematic control characters manually
-      // eslint-disable-next-line no-control-regex
-      cleanJsonStr = cleanJsonStr.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
-      
+      cleanJsonStr = cleanJsonStr.replace(
+        // eslint-disable-next-line no-control-regex
+        /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,
+        ''
+      );
+
       // Handle triple quotes by converting them to regular quotes for JSON parsing
-      cleanJsonStr = cleanJsonStr.replace(/"""([^]*?)"""/g, (match, content) => {
-        return JSON.stringify(content);
-      });
-      
+      cleanJsonStr = cleanJsonStr.replace(
+        /"""([^]*?)"""/g,
+        (match, content) => {
+          return JSON.stringify(content);
+        }
+      );
+
       const parsed = JSON.parse(cleanJsonStr);
-      
+
       // Validate that all required parameters are present
       if (typeof parsed === 'object' && parsed !== null) {
         return parsed;
       }
     } catch (jsonError) {
       // JSON parsing failed, fall back to key=value parsing
-      console.debug('JSON parsing failed, falling back to key=value format:', jsonError.message);
+      console.debug(
+        'JSON parsing failed, falling back to key=value format:',
+        jsonError.message
+      );
     }
   }
 
@@ -270,22 +279,22 @@ export function safeJsonParse(jsonStr, defaultValue = null) {
  */
 export function handleTripleQuotes(htmlContent) {
   if (!htmlContent) return htmlContent;
-  
+
   // Handle triple quotes: """content""" -> "content"
   if (htmlContent.startsWith('"""') && htmlContent.endsWith('"""')) {
     let content = htmlContent.slice(3, -3);
-    
+
     // Unescape the content since it was wrapped in triple quotes
     content = content
-      .replace(/\\"/g, '"')  // Fix escaped quotes
+      .replace(/\\"/g, '"') // Fix escaped quotes
       .replace(/\\\\/g, '\\') // Fix double backslashes
-      .replace(/\\n/g, '\n')  // Fix newlines
-      .replace(/\\t/g, '\t')  // Fix tabs
+      .replace(/\\n/g, '\n') // Fix newlines
+      .replace(/\\t/g, '\t') // Fix tabs
       .replace(/\\r/g, '\r'); // Fix carriage returns
-    
+
     return content;
   }
-  
+
   return htmlContent;
 }
 

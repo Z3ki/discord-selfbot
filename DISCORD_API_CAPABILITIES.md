@@ -77,7 +77,6 @@ This document outlines Discord API features and data that we're not currently ut
 - `tts`: Text-to-speech flag
 - `webhookId`: If sent by webhook
 - `interaction`: Slash command interaction data
-- `reference`: Reply information
 - `stickers`: Sticker attachments
 - `components`: Buttons, selects, etc.
 

@@ -601,7 +601,6 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 **Benefits**:
 
 - 50-70% reduction in API calls through intelligent caching
-- Eliminated AI identity confusion and self-reference issues
 - Improved response quality with cleaner conversation context
 - User control over memory management and debugging
 
@@ -698,7 +697,6 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 
 - AI would reference its own previous messages as if they were from another person
 - Conversation history showed AI talking to itself
-- **Enhanced Memory Filtering**: Bot messages are now filtered out of conversation history by default to prevent self-reference
 - **Improved Context Rules**: Updated conversation history instructions to prevent identity confusion
 - **ID Removal**: Removed all user and channel IDs from prompts and history for privacy
 - `prompts.js` - Updated conversation history rules and removed ID exposure
