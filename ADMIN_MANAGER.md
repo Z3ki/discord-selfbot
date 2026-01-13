@@ -4,17 +4,32 @@ The Admin Manager provides a secure way to manage bot administrators through Dis
 
 ## Features
 
-- **Toggle Admin Status**: Add or remove admins by Discord user ID
-- **List Admins**: View all current administrators
-- **Persistent Storage**: Admin list saved to `data/admins.json`
-- **Validation**: Validates Discord user ID format
-- **Security**: Only allows proper Discord snowflake IDs
+- **Environment-Based Permanent Admin**: Set via `ADMIN_USER_ID` environment variable for permanent access
+- **Dynamic Admin Management**: Runtime addition/removal of admins with persistent storage
+- **Toggle Admin Status**: Add or remove admins by Discord user ID with validation
+- **List Admins**: View all current administrators with total count
+- **Persistent Storage**: Admin list saved to `data/admins.json` with atomic writes
+- **ID Validation**: Validates Discord snowflake ID format (17-19 digits)
+- **Security**: Comprehensive validation, audit logging, and access control
+- **CLI Interface**: Command-line tool for quick admin management
 
 ## Usage
 
 ### Discord Bot Commands
 
-#### Method 1: Direct Commands (Recommended)
+#### Method 1: Environment-Based Permanent Admin (Recommended)
+
+Set `ADMIN_USER_ID` in your `.env` file for permanent admin access:
+
+```env
+ADMIN_USER_ID=your_discord_user_id_here
+```
+
+- **Permanent Access**: This admin cannot be removed via commands
+- **Environment Security**: Stored securely in environment variables
+- **Fallback Option**: Use dynamic admin commands if needed
+
+### Method 2: Dynamic Admin Commands
 
 Use `,admin` command with the following actions:
 
@@ -24,8 +39,9 @@ Use `,admin` command with the following actions:
 ,admin add <your_user_id>
 ```
 
-- Only works when no admins exist
+- Only works when no dynamic admins exist
 - Sets yourself as the first administrator
+- Can be used alongside environment-based admin
 
 #### Add Admin
 
@@ -97,8 +113,11 @@ node admin_cli.js clear
 ## Security Features
 
 - **ID Validation**: Only accepts valid Discord snowflake IDs (17-19 digits)
-- **File Permissions**: Admin data stored in secure data directory
-- **Logging**: All admin changes are logged
+- **File Permissions**: Admin data stored in secure data directory with atomic writes
+- **Audit Logging**: All admin operations logged with timestamps and user tracking
+- **Access Control**: Commands validate admin status before execution
+- **Error Handling**: Graceful handling of invalid inputs and permission errors
+- **Persistent Security**: Admin list survives bot restarts and updates
 - **Error Handling**: Graceful handling of invalid inputs
 
 ## Examples

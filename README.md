@@ -32,10 +32,12 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 
 ### 🛡️ Security & Privacy
 
-- **Admin Management**: Environment-based permanent admin system
-- **Per-Server Controls**: Shell access, safe mode, and prompts per server
-- **Rate Limiting**: Built-in protection against API abuse
-- **Local Data Storage**: All data stored locally with JSON persistence
+- **Admin Management**: Environment-based permanent admin system with dynamic admin list
+- **Per-Server Controls**: Shell access, safe mode, and prompts configurable per server
+- **Rate Limiting**: 10 requests/minute per user with spam detection and anti-spam measures
+- **Local Data Storage**: All data stored locally with JSON persistence and atomic writes
+- **Input Sanitization**: XSS prevention, content filtering, and file type validation
+- **Access Control**: Command validation, environment-based security, and audit logging
 
 ### 📊 Advanced Features
 
@@ -271,31 +273,33 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 #### Bot Service (`services/Bot.js`)
 
-- Main orchestrator with stability features
-- LRU-cached memory management (50 channels, 100 DM contexts)
-- Automatic reconnection with exponential backoff
-- Periodic data saving and memory cleanup
+- Main orchestrator with stability features and dependency injection
+- LRU-cached memory management (50 channels, 100 DM contexts, 24-hour cleanup)
+- Automatic reconnection with exponential backoff and proactive cognitive loops
+- Periodic data saving every 10 minutes with graceful shutdown handling
+- Memory monitoring (500MB warning, 1GB forced GC) and health checks
 
 #### AI System (`providers.js`, `ai.js`)
 
-- Multi-provider AI with automatic failover
-- NVIDIA NIM (primary) + Google Gemma 3-27B-IT (fallback)
-- Enhanced response metadata extraction
-- Stealth features for API requests
+- Multi-provider AI with automatic failover (NVIDIA NIM primary, Google Gemma fallback)
+- Response caching with LRU cache to prevent redundant API calls
+- Enhanced metadata extraction (token usage, safety ratings, finish reasons)
+- Stealth features for API requests with random user agents and human-like delays
+- Tool execution with multi-round support and shared message editing
 
 #### Tool Executor (`tools/ToolExecutor.js`)
 
-- 5 consolidated tools across 3 categories
-- Multi-round execution with shared message editing
-- Live progress updates for long-running operations
-- Dynamic tool availability based on permissions
+- 5 consolidated tool categories: communication, discord, information, relationship, system
+- Multi-round execution with shared message editing for clean user experience
+- Live progress updates and error recovery for long-running operations
+- Dynamic tool availability based on permissions and parameter validation
 
 #### Media Processor (`media.js`)
 
-- Multimodal content handling (images, videos, audio, GIFs)
-- Automatic download and validation
-- Frame extraction and audio transcription
-- Base64 encoding for AI input
+- Multimodal content handling (images, videos, audio, GIFs) with async processing
+- Automatic download, validation, and file type checking with magic numbers
+- Frame extraction for videos, audio transcription via Whisper, and GIF processing
+- Base64 encoding for AI input with MIME type verification
 
 #### Transcription Service (`services/TranscriptionService.py`)
 
@@ -321,12 +325,19 @@ data-selfbot/
 
 #### Memory Management
 
-- **LRU Caches**: Automatic cleanup of old data with response caching
-- **Channel Memories**: Last 18 messages per channel with 24-hour age cleanup
-- **DM Contexts**: User preferences and conversation history
-- **Dynamic Allocation**: Memory limits adjust based on conversation complexity
-- **Identity Protection**: Enhanced filtering to prevent AI self-confusion
-- **Cross-Session Continuity**: Periodic data saving every 10 minutes
+- **LRU Caches**: Automatic cleanup with size-based eviction and age-based filtering
+- **Channel Memories**: Last 18 messages per channel with 24-hour cleanup and identity protection
+- **DM Contexts**: User preferences, themes, and conversation history (100 contexts max)
+- **Dynamic Allocation**: Memory limits adjust based on conversation complexity and multimodal content
+- **Identity Protection**: Stronger identity markers and reset sections to prevent AI self-confusion
+- **Cross-Session Continuity**: Periodic saves every 10 minutes with atomic file writes
+
+### Proactive Cognitive Loop
+
+- **Daily Execution**: Runs at 12 PM to analyze recent conversation history
+- **Context Gathering**: Examines channel memories and DM contexts for engagement opportunities
+- **AI Decision Making**: Determines when and what to post proactively based on server-specific behavior
+- **Server-Specific Settings**: Different behavior per Discord server with customizable prompts
 
 ### Logging System
 
@@ -334,34 +345,36 @@ data-selfbot/
 
 - `bot.log` - General activity and events
 - `errors.log` - Error messages and stack traces
-
 - `debug.log` - Detailed debugging information
-- `health.log` - System health metrics
-- `rate_limits.log` - Rate limiting events
+- `health.log` - System health metrics and memory usage
+- `rate_limits.log` - Rate limiting events and API usage
 
 #### Features
 
-- Structured logging with rotation
-- Performance monitoring and debugging
-- Reasoning activity tracking
-- Automatic log cleanup (7 days)
+- Structured logging with rotation and sanitization
+- Performance monitoring, memory profiling, and error rate tracking
+- Reasoning activity tracking and audit trails
+- Automatic log cleanup (7 days) with configurable levels
 
 ## 🔒 Security & Privacy
 
 ### Data Protection
 
-- **Local Storage Only**: All data stored locally in JSON files
+- **Local Storage Only**: All data stored locally in JSON files with atomic writes
 - **No External Transmission**: Only API calls to Google/NVIDIA for AI processing
-- **Environment Variables**: Sensitive configuration via .env file
-- **File Type Validation**: Security checking for all uploaded media
+- **Environment Variables**: Sensitive configuration via .env file with optional encryption
+- **File Type Validation**: Magic number checking and MIME type verification for media
 - **Public Data Only**: Investigation tools access only public user information
+- **Content Security**: XSS prevention, malicious pattern detection, and URL validation
 
 ### Access Control
 
 - **Environment-Based Admin**: Permanent admin via `ADMIN_USER_ID` environment variable
+- **Dynamic Admin List**: Runtime admin management with persistent storage
 - **Per-Server Settings**: Shell access, safe mode, and prompts configurable per server
-- **Rate Limiting**: Built-in protection against API abuse (10 req/min per user)
-- **Command Validation**: Input sanitization and XSS prevention
+- **Rate Limiting**: 10 requests/minute per user with spam detection and CAPTCHA avoidance
+- **Command Validation**: Input sanitization, XSS prevention, and audit logging
+- **Safe Mode**: Family-friendly response toggles with server-specific settings
 
 ## 🔧 Troubleshooting
 

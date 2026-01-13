@@ -1,61 +1,218 @@
-# Project Overview
+# Maxwell Discord Selfbot - Project Overview
 
-This is a sophisticated Discord selfbot named "Maxwell" that uses AI to interact with users and perform various tasks. It's built with Node.js and utilizes multiple AI providers, including NVIDIA NIM and Google Gemma, with a fallback system. The bot supports multimodal input (text, images, videos, audio) and has a rich set of tools for interacting with Discord, the system, and more.
+## What is Maxwell?
 
-**Key Technologies:**
+Maxwell is a sophisticated Discord selfbot that leverages advanced AI to provide intelligent, multimodal interactions within Discord servers and direct messages. Built with a focus on modularity, security, and performance, it integrates multiple AI providers with comprehensive tool capabilities for enhanced Discord automation.
 
-- **Backend:** Node.js
-- **AI Providers:** NVIDIA NIM, Google Gemma
-- **Discord Interaction:** `discord.js-selfbot-v13`
-- **Configuration:** `dotenv`
-- **Linting & Formatting:** ESLint, Prettier
+## Core Architecture
 
-**Architecture:**
+### Modular Design
 
-The project has a modular architecture with a clear separation of concerns:
+- **Dependency Injection**: Custom `DependencyContainer` for service management
+- **Provider Pattern**: AI providers with automatic failover (NVIDIA NIM → Google Gemma)
+- **Observer Pattern**: Discord event handling with extensible architecture
+- **Strategy Pattern**: Multiple prompt building strategies for safe/unrestricted modes
 
-- `bot.js`: The main entry point of the application. It initializes the AI providers, the transcription service, and the bot itself.
-- `services/Bot.js`: The core of the bot, responsible for managing the Discord client, data persistence, and event handling.
-- `handlers.js`: Contains the logic for handling commands and messages.
-- `ai.js`: Manages the interaction with the AI providers, including prompt construction and tool execution.
-- `providers.js`: Implements the communication with the different AI providers (NVIDIA NIM, Google Gemma).
-- `tools/`: Contains the definitions of the various tools the bot can use.
-- `config/config.js`: Manages the bot's configuration using environment variables.
-- `data-selfbot/`: Stores the bot's data, such as conversation history and user contexts.
+### Key Components
 
-# Building and Running
+- **Bot Service** (`services/Bot.js`): Main orchestrator with LRU caching and health monitoring
+- **AI System** (`ai.js`, `providers.js`): Multi-provider AI with response caching and tool execution
+- **Tool Executor** (`tools/ToolExecutor.js`): 5 tool categories with multi-round execution
+- **Media Processor** (`media.js`): Multimodal content handling (text, images, videos, audio, GIFs)
+- **Data Manager** (`services/DataManager.js`): Persistent JSON storage with atomic writes
+- **Transcription Service** (`services/TranscriptionService.py`): Python-based Whisper integration
 
-**Prerequisites:**
+## AI Integration
 
-- Node.js 18+
-- Python 3.8+
-- FFmpeg
+### Providers
 
-**Installation:**
+- **Primary**: NVIDIA NIM (OpenAI-compatible API with Llama models)
+- **Fallback**: Google Gemma 3-27B-IT (multimodal support)
+- **Caching**: LRU cache prevents redundant API calls (50-70% reduction)
+- **Metadata**: Comprehensive extraction of token usage, safety ratings, and finish reasons
 
-1.  Clone the repository.
-2.  Install Node.js dependencies: `npm install`
-3.  Install Python dependencies: `pip install torch faster-whisper`
-4.  Create a `.env` file from the `.env.example` and fill in the required values (Discord token, API keys, etc.).
+### Multimodal Support
 
-**Running the bot:**
+- **Images**: JPEG, PNG, GIF, WebP, BMP with synchronous processing
+- **Videos**: MP4, WebM, QuickTime, AVI with frame extraction and async analysis
+- **Audio**: MP3, WAV, OGG, WebM, M4A, AAC, FLAC, Opus with Whisper transcription
+- **GIFs**: Frame-by-frame processing with async follow-up
 
-- Start the bot: `npm start`
+## Tool System (14 Tools)
 
-**Running tests:**
+### Communication Tools
 
-- Run all tests: `npm test`
-- Run unit tests: `npm test:unit`
+- `send_dm`: Direct messaging with context management
+- `update_context`: User preference and theme updates
 
-# Development Conventions
+### Discord Management Tools
 
-- **Coding Style:** The project uses ESLint and Prettier to enforce a consistent coding style.
-- **Linting:** Run `npm run lint` to check for linting errors.
-- **Formatting:** Run `npm run format` to automatically format the code.
-- **Modularity:** The code is organized into modules with specific responsibilities.
-- **Error Handling:** The bot includes robust error handling and graceful shutdown mechanisms.
-- **Logging:** The project uses a logger (`utils/logger.js`) to provide detailed information about the bot's activity.
-- **Configuration:** All configuration is managed through environment variables.
-- **Data Persistence:** The bot's data is stored locally in JSON files in the `data-selfbot/` directory.
-- **Tool System:** New tools can be added by creating a new file in the `tools/` directory and registering it in `tools/index.js`.
-- **Commit & Push Workflow:** After making changes, always run a lint check (`npm run lint`). If it passes, commit the changes with a descriptive message and push to the repository.
+- `investigate_user`: Comprehensive user profile analysis
+- `change_presence`: Bot status and activity management
+- `reaction_manager`: Add/remove reactions on messages
+- `message_manager`: Message editing and management
+- `invite_manager`: Server invite creation and management
+- `leave_server`: Server departure functionality
+
+### Information Tools
+
+- `get_user_profile_complete`: Enhanced user profile retrieval
+- `reason_complex`: Complex reasoning and analysis
+- `wikipedia`: Information lookup with search fallback
+
+### Relationship Tools
+
+- `check_friend_requests`: Friend request monitoring
+- `handle_friend_request`: Manual friend request processing
+
+### System Tools
+
+- `memory_inspect`: Conversation memory analysis and debugging
+
+## Security & Privacy
+
+### Access Control
+
+- **Environment-Based Admin**: Permanent admin via `ADMIN_USER_ID`
+- **Dynamic Admin Management**: Runtime admin addition/removal
+- **Per-Server Controls**: Safe mode, prompts, and shell access per server
+- **Rate Limiting**: 10 req/min per user with spam detection
+
+### Data Protection
+
+- **Local Storage**: All data in JSON files with atomic writes
+- **No External Transmission**: Only AI API calls for processing
+- **Input Validation**: XSS prevention, file type checking, URL validation
+- **Audit Logging**: Comprehensive logging of all admin actions
+
+## Memory Management
+
+### LRU Caching
+
+- **Channel Memories**: 50 channels, 18 messages each, 24-hour cleanup
+- **DM Contexts**: 100 contexts with user preferences and themes
+- **Response Cache**: Prevents redundant AI API calls
+- **Memory Pools**: Efficient memory usage with buffer pools
+
+### Persistence
+
+- **Periodic Saves**: Every 10 minutes with graceful shutdown
+- **Identity Protection**: Prevents AI self-confusion with strong markers
+- **Dynamic Allocation**: Memory limits adjust based on conversation complexity
+
+## Proactive Features
+
+### Cognitive Loop
+
+- **Daily Execution**: 12 PM analysis of recent conversations
+- **Context Gathering**: Examines memories for engagement opportunities
+- **Server-Specific Behavior**: Customizable per-server interaction patterns
+
+### Health Monitoring
+
+- **System Metrics**: Memory usage, API performance, error rates
+- **Automatic Cleanup**: Log rotation, cache eviction, memory management
+- **Performance Tracking**: Response times and cache hit rates
+
+## Development & Deployment
+
+### Prerequisites
+
+- **Node.js 18+** with npm
+- **Python 3.8+** with pip (for Whisper transcription)
+- **FFmpeg** for media processing
+- **Discord User Token** (⚠️ Selfbot - use at own risk)
+- **AI API Keys**: Google AI Studio and/or NVIDIA NIM
+
+### Installation
+
+```bash
+git clone <repository>
+cd maxwell-selfbot
+npm install
+pip install torch faster-whisper
+cp .env.example .env
+# Configure .env with tokens and keys
+npm start
+```
+
+### Configuration
+
+```env
+DISCORD_USER_TOKEN=your_token
+GOOGLE_API_KEY=your_google_key
+NVIDIA_NIM_API_KEY=optional_fallback
+ADMIN_USER_ID=your_admin_id
+LOG_LEVEL=info
+```
+
+### Development Workflow
+
+- **Linting**: `npm run lint` (ESLint + Prettier)
+- **Testing**: `npm test` (unit and integration tests)
+- **Modularity**: Clear separation of concerns with dependency injection
+- **Error Handling**: Comprehensive try-catch with graceful degradation
+- **Logging**: Structured logging with multiple log files and rotation
+
+## Performance Optimizations
+
+### API Efficiency
+
+- **Response Caching**: LRU cache for prompt/response pairs
+- **Request Queuing**: Prevents rate limit violations
+- **Stealth Features**: Human-like delays and random user agents
+- **Batch Processing**: Optimized for multimodal content
+
+### Memory Management
+
+- **Automatic GC**: Forced garbage collection at 1GB usage
+- **Cache Eviction**: Size and age-based cleanup
+- **Buffer Pools**: Reusable buffers for frequent operations
+- **Profiling**: Detailed memory usage tracking
+
+## Recent Improvements
+
+### Media Processing Optimization (2025-11-04)
+
+- Synchronous image/sticker processing for immediate responses
+- Asynchronous video/audio/GIF processing with follow-up messages
+- Better user experience with faster visual content handling
+
+### Memory Management & Performance (2025-11-02)
+
+- 50-70% API call reduction through intelligent caching
+- Enhanced identity protection preventing AI self-confusion
+- Optimized memory truncation and prompt compression
+
+### Tool Enhancements
+
+- Wikipedia information tool with automatic search fallback
+- Memory inspection tools for debugging and analysis
+- Enhanced user profile and relationship management
+
+## Future Roadmap
+
+### High Priority
+
+- Type safety migration to TypeScript
+- Native tool calling (replace custom [TOOL] syntax)
+- Confidence scoring with log probabilities
+- Real-time presence tracking and analytics
+
+### Medium Priority
+
+- Advanced Discord API utilization (voice, moderation)
+- Plugin system for extensibility
+- Multi-instance architecture support
+- Enhanced security with OAuth admin authentication
+
+### Long Term
+
+- Machine learning for behavior optimization
+- Enterprise deployment options
+- Advanced analytics dashboard
+- Voice response generation
+
+---
+
+**Maxwell Selfbot** - Advanced AI-powered Discord automation with comprehensive multimodal support, robust security, and extensible tool architecture.

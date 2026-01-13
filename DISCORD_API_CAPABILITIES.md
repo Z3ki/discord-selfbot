@@ -4,13 +4,13 @@
 
 This document outlines Discord API features and data that we're not currently utilizing in the Maxwell selfbot.
 
-## Currently Implemented Discord Tools (12 tools)
+## Currently Implemented Discord Tools (14 tools)
 
-- send_dm, update_context
-- investigate_user, change_presence, reaction_manager, message_manager
-- invite_manager, leave_server
-- get_user_profile_complete, reason_complex
-- check_friend_requests, handle_friend_request
+- **Communication**: send_dm, update_context
+- **Discord Management**: investigate_user, change_presence, reaction_manager, message_manager, invite_manager, leave_server
+- **Information**: get_user_profile_complete, reason_complex
+- **Relationship**: check_friend_requests, handle_friend_request
+- **System**: memory_inspect (recently added)
 
 ## Missing Discord API Features
 
@@ -265,13 +265,14 @@ export async function executeGetUserPresence(args, client) {
 
 ## Current Status
 
-- ✅ **Basic server/channel/user info**: Implemented
-- ✅ **Message reactions and pins**: Implemented
-- ✅ **Thread management**: Implemented
-- ✅ **Basic permissions**: Implemented
-- ❌ **Advanced analytics**: Not implemented
-- ❌ **Presence tracking**: Not implemented
-- ❌ **Voice analysis**: Not implemented
+- ✅ **Basic server/channel/user info**: Implemented with enhanced user profiles
+- ✅ **Message reactions and pins**: Implemented with reaction management
+- ✅ **Thread management**: Implemented with invite and server utilities
+- ✅ **Basic permissions**: Implemented with role and permission analysis
+- ✅ **Memory inspection**: Recently added for conversation data analysis
+- 🔄 **Advanced analytics**: Partially implemented (server features, verification levels)
+- ❌ **Real-time presence tracking**: Not implemented
+- ❌ **Voice channel analysis**: Not implemented
 - ❌ **Content moderation data**: Not implemented
 
 ## Next Steps

@@ -141,17 +141,30 @@ This document outlines the additional data and capabilities available from the A
 
 ## Current Implementation Status
 
-✅ **Implemented**: Basic text generation, token counting, finish reasons
-🔄 **Partially Implemented**: Enhanced metadata extraction, raw response access
-❌ **Not Implemented**: Log probabilities, reasoning content, native tool calls, grounding
+✅ **Implemented**: Basic text generation, token counting, finish reasons, safety ratings
+🔄 **Partially Implemented**: Enhanced metadata extraction, raw response access, response caching
+❌ **Not Implemented**: Log probabilities, reasoning content, native tool calls, grounding, audio content
+🚧 **In Development**: Confidence scoring, factual grounding, uncertainty handling
+
+## Current Usage in Maxwell
+
+The bot currently leverages:
+
+- **Response Caching**: LRU cache prevents redundant API calls (50-70% reduction)
+- **Multi-Provider Failover**: NVIDIA NIM primary, Google Gemma fallback
+- **Enhanced Metadata**: Token usage, safety ratings, finish reasons for monitoring
+- **Multimodal Support**: Images, videos, audio processed with base64 encoding
+- **Tool Execution**: Custom [TOOL] syntax with multi-round conversation support
 
 ## Next Steps
 
-1. **Extract Log Probabilities**: Add confidence scoring to responses
-2. **Implement Native Tool Calling**: Replace custom syntax with API-native tools
-3. **Add Grounding Display**: Show source citations for factual information
-4. **Reasoning Transparency**: Optionally show model's thinking process
-5. **Modality Analytics**: Track and optimize multimodal usage patterns
+1. **Extract Log Probabilities**: Add confidence scoring to responses for uncertainty handling
+2. **Implement Native Tool Calling**: Replace custom [TOOL] syntax with API-native tool_calls
+3. **Add Grounding Display**: Show source citations and factual grounding for responses
+4. **Reasoning Transparency**: Optionally expose model's internal reasoning process
+5. **Modality Analytics**: Track token usage by modality (text, image, video, audio)
+6. **Audio Content Generation**: Leverage audio generation capabilities if available
+7. **Service Tier Awareness**: Optimize based on service level and performance
 
 ## Testing
 
