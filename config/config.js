@@ -38,7 +38,7 @@ export const CONFIG = {
     google: {
       apiKey: process.env.GOOGLE_API_KEY,
       model: process.env.GOOGLE_AI_MODEL || 'models/gemma-3-27b-it',
-      temperature: parseFloat(process.env.GOOGLE_AI_TEMPERATURE) || 0.7,
+      temperature: parseFloat(process.env.GOOGLE_AI_TEMPERATURE) || 1.0,
     },
     nvidia: {
       apiKey: process.env.NVIDIA_NIM_API_KEY,
