@@ -47,7 +47,7 @@ export const CONFIG = {
         'https://integrate.api.nvidia.com/v1',
       model: process.env.NVIDIA_NIM_MODEL || 'meta/llama-3.3-70b-instruct',
       maxTokens: parseInt(process.env.NVIDIA_NIM_MAX_TOKENS) || 32768,
-      temperature: parseFloat(process.env.NVIDIA_NIM_TEMPERATURE) || 0.5,
+      temperature: parseFloat(process.env.NVIDIA_NIM_TEMPERATURE) || 1.0,
     },
   },
   admin: {
