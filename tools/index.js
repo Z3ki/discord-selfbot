@@ -7,6 +7,7 @@ import { joinServerTool } from './discord/joinServer.js';
 import { leaveServerTool } from './discord/leaveServer.js';
 
 import { memoryInspectTool } from './system/memoryInspect.js';
+import { createMessageFileTool } from './system/createMessageFile.js';
 
 // Combine all tools
 export const tools = [
@@ -15,6 +16,7 @@ export const tools = [
   joinServerTool,
   leaveServerTool,
   memoryInspectTool,
+  createMessageFileTool,
 ];
 
 // Tool registry for execution
@@ -48,7 +50,7 @@ export class ToolRegistry {
         'join_server',
         'leave_server',
       ],
-      SYSTEM: ['memory_inspect'],
+      SYSTEM: ['memory_inspect', 'create_message_file'],
       WEB: [],
       RELATIONSHIPS: [],
     };
