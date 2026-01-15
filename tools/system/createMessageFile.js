@@ -77,15 +77,10 @@ export const createMessageFileTool = {
         `// User: ${message.author.username} (${message.author.id})`,
         `// Channel: ${message.channel?.name || 'DM'} (${message.channel?.id || message.channelId})`,
         description ? `// Description: ${description}` : '',
-        `// Total Content Length: ${content.length + capturedLlmResponse.length} characters`,
+        `// Content Length: ${content.length} characters`,
         '',
         '====================================',
-        'ORIGINAL LLM RESPONSE:',
-        '====================================',
-        capturedLlmResponse || '(No LLM response captured)',
-        '',
-        '====================================',
-        'REQUESTED FILE CONTENT:',
+        'CONTENT:',
         '====================================',
         '',
         content,
@@ -118,11 +113,7 @@ export const createMessageFileTool = {
           ],
         };
 
-        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Content Size:** ${content.length} characters${capturedLlmResponse ? ` + LLM response: ${capturedLlmResponse.length} characters` : ''}`;
-        if (description) {
-          messageText += `\n**Description:** ${description}`;
-        }
-        messageText += `\n**Note:** File includes the original LLM response that led to this file creation.`;
+        let messageText = capturedLlmResponse || '';
 
         if (isDM) {
           await message.channel.send({ content: messageText, ...attachment });
