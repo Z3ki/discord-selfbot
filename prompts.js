@@ -127,7 +127,7 @@ function buildToolsSection(toolsText, toolsLimit) {
   return (
     '\n=== TOOLS ===\n' +
     limitedToolsText +
-    "\n\nUSAGE: TOOL: functionName param='value' OR functionName(param='value')\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze."
+    "\n\nUSAGE: TOOL: functionName param='value' OR functionName(param='value')\nCHAIN: Use && or ; for multiple commands\nNote: Cannot execute code, only analyze.\nIMPORTANT: CANNOT use tools inside code blocks (```code```) - tools must be called outside code blocks."
   );
 }
 
