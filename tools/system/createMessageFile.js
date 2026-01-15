@@ -116,9 +116,17 @@ export const createMessageFileTool = {
         let messageText = capturedLlmResponse || '';
 
         if (isDM) {
-          await message.channel.send({ content: messageText, ...attachment });
+          await message.channel.send(
+            messageText
+              ? { content: messageText, ...attachment }
+              : { ...attachment }
+          );
         } else {
-          await message.reply({ content: messageText, ...attachment });
+          await message.reply(
+            messageText
+              ? { content: messageText, ...attachment }
+              : { ...attachment }
+          );
         }
 
         // Clean up temp file after sending
