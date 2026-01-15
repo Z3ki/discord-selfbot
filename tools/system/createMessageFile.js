@@ -28,7 +28,7 @@ export const createMessageFileTool = {
   },
   execute: async function (
     { content, filename, description = '' },
-    { message, client }
+    { message }
   ) {
     try {
       // Create temp directory if it doesn't exist
