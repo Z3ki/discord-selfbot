@@ -516,22 +516,13 @@ export async function handleCommand(
           dmContexts.clear();
           dmOrigins.clear();
 
-          // Save empty state to disk
-          scheduleMemorySave(
-            'channelMemories',
+          // Save empty state to disk immediately (skip debouncing for refresh)
+          await saveMapToJSON(
             channelMemories,
             'data-selfbot/channelMemories.json'
           );
-          scheduleMemorySave(
-            'dmContexts',
-            dmContexts,
-            'data-selfbot/dmContexts.json'
-          );
-          scheduleMemorySave(
-            'dmOrigins',
-            dmOrigins,
-            'data-selfbot/dmOrigins.json'
-          );
+          await saveMapToJSON(dmContexts, 'data-selfbot/dmContexts.json');
+          await saveMapToJSON(dmOrigins, 'data-selfbot/dmOrigins.json');
 
           // Force reload to ensure consistency
           await bot.loadData();
@@ -630,8 +621,8 @@ export async function handleCommand(
             // Clear memory
             bot.channelMemories.clear();
             channelMemories.clear();
-            scheduleMemorySave(
-              'channelMemories',
+            // Save empty state to disk immediately (skip debouncing for refresh)
+            await saveMapToJSON(
               channelMemories,
               'data-selfbot/channelMemories.json'
             );
