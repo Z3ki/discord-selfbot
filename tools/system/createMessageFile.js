@@ -1,15 +1,17 @@
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../../utils/logger.js';
 
 export const createMessageFileTool = {
   name: 'create_message_file',
   description:
-    'Create a text file with content that is too long for Discord messages',
+    'Send content as a text file attachment when it is too long for Discord messages',
   parameters: {
     type: 'object',
     properties: {
       content: {
         type: 'string',
-        description: 'The content to write to the file',
+        description: 'The content to send as a file attachment',
       },
       filename: {
         type: 'string',
@@ -18,7 +20,7 @@ export const createMessageFileTool = {
       },
       description: {
         type: 'string',
-        description: 'Optional description of the file content',
+        description: 'Optional description to include in the message',
         default: '',
       },
     },
@@ -26,12 +28,14 @@ export const createMessageFileTool = {
   },
   execute: async function (
     { content, filename, description = '' },
-    { message }
+    { message, client }
   ) {
     try {
-      // Import DataManager dynamically to avoid circular imports
-      const { DataManager } = await import('../../services/DataManager.js');
-      const dataManager = new DataManager('./data-selfbot');
+      // Create temp directory if it doesn't exist
+      const tempDir = path.join(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
 
       // Sanitize filename to prevent path traversal attacks
       let safeFilename;
@@ -78,19 +82,72 @@ export const createMessageFileTool = {
         .filter((line) => line !== '')
         .join('\n');
 
-      // Save the file
-      const filePath = dataManager.getFilePath(safeFilename);
-      await dataManager.atomicWriteFile(filePath, fileContent);
+      // Create temporary file
+      const tempFilePath = path.join(tempDir, safeFilename);
+      await fs.promises.writeFile(tempFilePath, fileContent, 'utf8');
 
-      logger.info('Message file created', {
+      logger.info('Message file created for sending', {
         filename: safeFilename,
-        filePath,
+        tempFilePath,
         contentLength: content.length,
         userId: message.author.id,
         channelId: message.channel?.id || message.channelId,
       });
 
-      return `✅ File created successfully!\n\n**Filename:** \`${safeFilename}\`\n**Location:** \`data-selfbot/${safeFilename}\`\n**Size:** ${content.length} characters\n\nYou can access this file in the bot's data directory. ${description ? `\n\n**Description:** ${description}` : ''}`;
+      try {
+        // Send the file as an attachment
+        const isDM =
+          message.channel?.type === 'DM' || message.channel?.type === 1;
+        const attachment = {
+          files: [
+            {
+              attachment: tempFilePath,
+              name: safeFilename,
+            },
+          ],
+        };
+
+        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Size:** ${content.length} characters`;
+        if (description) {
+          messageText += `\n**Description:** ${description}`;
+        }
+
+        if (isDM) {
+          await message.channel.send({ content: messageText, ...attachment });
+        } else {
+          await message.reply({ content: messageText, ...attachment });
+        }
+
+        // Clean up temp file after sending
+        setTimeout(() => {
+          try {
+            fs.unlinkSync(tempFilePath);
+            logger.debug('Cleaned up temporary file', { tempFilePath });
+          } catch (cleanupError) {
+            logger.warn('Failed to clean up temporary file', {
+              tempFilePath,
+              error: cleanupError.message,
+            });
+          }
+        }, 5000); // Clean up after 5 seconds
+
+        return `✅ File sent successfully as Discord attachment!\n\n**Filename:** \`${safeFilename}\`\n**Size:** ${content.length} characters${description ? `\n**Description:** ${description}` : ''}`;
+      } catch (sendError) {
+        logger.error('Error sending file attachment', {
+          error: sendError.message,
+          filename: safeFilename,
+          userId: message.author.id,
+        });
+
+        // Clean up temp file on send failure
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+
+        return `❌ Error sending file: ${sendError.message}`;
+      }
     } catch (error) {
       logger.error('Error creating message file', {
         error: error.message,
