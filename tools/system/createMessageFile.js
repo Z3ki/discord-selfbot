@@ -79,10 +79,6 @@ export const createMessageFileTool = {
         description ? `// Description: ${description}` : '',
         `// Content Length: ${content.length} characters`,
         '',
-        '====================================',
-        'CONTENT:',
-        '====================================',
-        '',
         content,
       ];
 

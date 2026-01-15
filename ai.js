@@ -1005,7 +1005,6 @@ export async function generateResponse(
     let allToolResults = [];
     let maxRounds = 5; // Prevent infinite loops
     let round = 0;
-    let sharedStatusMessage = null;
 
     // Multi-round tool execution loop
     while (toolCalls.length > 0 && round < maxRounds) {
@@ -1013,6 +1012,12 @@ export async function generateResponse(
       logger.debug(`Tool execution round ${round}`, {
         toolCallsCount: toolCalls.length,
       });
+
+      // Clean tool calls from response before passing to tools
+      const cleanedResponse = response
+        .replace(/TOOL:[^\n]*/g, '')
+        .replace(/^\w+\s+.*=.*/gm, '')
+        .trim();
 
       // Execute current batch of tools with shared status message
       const executionResult = await toolExecutor.executeTools(
@@ -1028,13 +1033,8 @@ export async function generateResponse(
         lastToolCalls,
         lastToolResults,
         apiResourceManager,
-        response
+        cleanedResponse
       );
-
-      // Update shared status message for next round
-      if (executionResult.statusMessage) {
-        sharedStatusMessage = executionResult.statusMessage;
-      }
 
       // Filter out tools that returned null (indicating they handled their own response)
       const validToolResults = executionResult.results.filter(
