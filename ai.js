@@ -1017,6 +1017,9 @@ export async function generateResponse(
       const cleanedResponse = response
         .replace(/TOOL:[^\n]*/g, '')
         .replace(/^\w+\s+.*=.*/gm, '')
+        .replace(/\b\w+\s*\([^)]*\)/g, '')
+        .replace(/```tool\s+[^`]*```/g, '')
+        .replace(/```create_message_file[^`]*```/g, '')
         .trim();
 
       // Execute current batch of tools with shared status message
