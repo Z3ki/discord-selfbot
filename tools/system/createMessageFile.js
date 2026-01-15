@@ -131,7 +131,16 @@ export const createMessageFileTool = {
           }
         }, 5000); // Clean up after 5 seconds
 
-        return `✅ File sent successfully as Discord attachment!\n\n**Filename:** \`${safeFilename}\`\n**Size:** ${content.length} characters${description ? `\n**Description:** ${description}` : ''}`;
+        logger.info('File sent successfully as Discord attachment', {
+          filename: safeFilename,
+          contentLength: content.length,
+          userId: message.author.id,
+          channelId: message.channel?.id || message.channelId,
+        });
+
+        // Return null to prevent normal response processing
+        // The file has been sent directly as a Discord message
+        return null;
       } catch (sendError) {
         logger.error('Error sending file attachment', {
           error: sendError.message,
