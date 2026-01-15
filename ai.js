@@ -1149,21 +1149,7 @@ export async function generateResponse(
       .replace(/^\w+\s+.*=.*/gm, '')
       .trim();
 
-    // Check Discord message length limit (2000 characters)
-    if (cleanedFollowUp.length > 2000) {
-      logger.warn(
-        'Follow-up response too long for Discord, replacing with latest output',
-        {
-          originalLength: cleanedFollowUp.length,
-          channelId: message.channel.id,
-        }
-      );
-      // Truncate to 1990 characters to show latest output only
-      return {
-        response: cleanedFollowUp.substring(0, 1990),
-        toolResults: allToolResults,
-      };
-    }
+    // Note: Long responses are now handled by chunking at the sending level
 
     // Cache the response with tool results
     const responseToCache = {
@@ -1200,18 +1186,7 @@ export async function generateResponse(
       return null;
     }
 
-    // Check Discord message length limit (2000 characters)
-    if (cleanedResponse.length > 2000) {
-      logger.warn(
-        'Response too long for Discord, replacing with latest output',
-        {
-          originalLength: cleanedResponse.length,
-          channelId: message.channel.id,
-        }
-      );
-      // Truncate to 1990 characters to show latest output only
-      return { response: cleanedResponse.substring(0, 1990), toolResults: [] };
-    }
+    // Note: Long responses are now handled by chunking at the sending level
 
     // Cache the response
     const responseToCache = { response: cleanedResponse, toolResults: [] };

@@ -1354,17 +1354,51 @@ export function setupHandlers(
               // No stealth processing - direct response
 
               try {
-                // Use reply() in channels for better context, but send() in DMs since reply isn't needed there
-                if (isDM) {
-                  await message.channel.send(response.response);
+                // Handle response chunking for long messages
+                const { chunkMessage } = await import(
+                  './utils/messageUtils.js'
+                );
+                const responseText = response.response;
+
+                if (responseText.length > 2000) {
+                  const chunks = chunkMessage(responseText);
+                  for (let i = 0; i < chunks.length; i++) {
+                    const chunkText =
+                      i === 0
+                        ? chunks[i]
+                        : `**Response (Part ${i + 1}/${chunks.length})**\n\n${chunks[i]}`;
+
+                    if (i === 0) {
+                      // First chunk uses reply/send as before
+                      if (isDM) {
+                        await message.channel.send(chunkText);
+                      } else {
+                        await message.reply(chunkText);
+                      }
+                    } else {
+                      // Subsequent chunks use send
+                      await message.channel.send(chunkText);
+                    }
+                  }
+                  logger.debug('Chunked response sent successfully', {
+                    channelId: message.channel?.id || message.channelId,
+                    userId: message.author.id,
+                    totalChunks: chunks.length,
+                    usedReply: !isDM,
+                  });
                 } else {
-                  await message.reply(response.response);
+                  // Original logic for short responses
+                  if (isDM) {
+                    await message.channel.send(responseText);
+                  } else {
+                    await message.reply(responseText);
+                  }
+                  logger.debug('Follow-up response sent successfully', {
+                    channelId: message.channel?.id || message.channelId,
+                    userId: message.author.id,
+                    usedReply: !isDM,
+                  });
                 }
-                logger.debug('Follow-up response sent successfully', {
-                  channelId: message.channel?.id || message.channelId,
-                  userId: message.author.id,
-                  usedReply: !isDM,
-                });
               } catch (error) {
                 if (
                   error.code === 50035 &&

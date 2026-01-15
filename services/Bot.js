@@ -617,8 +617,30 @@ export class Bot {
                 actionObject.channelId
               );
               if (targetChannel && targetChannel.isText()) {
-                await targetChannel.send(actionObject.content);
-                logger.info('Successfully sent proactive message.');
+                // Handle chunking for long proactive messages
+                const { chunkMessage } = await import(
+                  '../utils/messageUtils.js'
+                );
+                const messageContent = actionObject.content;
+
+                if (messageContent.length > 2000) {
+                  const chunks = chunkMessage(messageContent);
+                  for (let i = 0; i < chunks.length; i++) {
+                    const chunkText =
+                      i === 0
+                        ? chunks[i]
+                        : `**Proactive Update (Part ${i + 1}/${chunks.length})**\n\n${chunks[i]}`;
+
+                    await targetChannel.send(chunkText);
+                  }
+                  logger.info('Successfully sent chunked proactive message.', {
+                    totalChunks: chunks.length,
+                    channelId: actionObject.channelId,
+                  });
+                } else {
+                  await targetChannel.send(actionObject.content);
+                  logger.info('Successfully sent proactive message.');
+                }
               } else {
                 logger.warn(
                   `Could not find or send to channel ${actionObject.channelId}. It might not be a text channel or is inaccessible.`
