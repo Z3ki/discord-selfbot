@@ -5,13 +5,19 @@ import { logger } from '../../utils/logger.js';
 export const createMessageFileTool = {
   name: 'create_message_file',
   description:
-    'Send content as a text file attachment when it is too long for Discord messages',
+    'Send content as a text file attachment when it is too long for Discord messages. Can include the original LLM response for context.',
   parameters: {
     type: 'object',
     properties: {
       content: {
         type: 'string',
         description: 'The content to send as a file attachment',
+      },
+      llmResponse: {
+        type: 'string',
+        description:
+          'The original LLM response to include in the file for context',
+        default: '',
       },
       filename: {
         type: 'string',
@@ -27,7 +33,7 @@ export const createMessageFileTool = {
     required: ['content'],
   },
   execute: async function (
-    { content, filename, description = '' },
+    { content, llmResponse = '', filename, description = '' },
     { message }
   ) {
     try {
@@ -69,18 +75,39 @@ export const createMessageFileTool = {
       }
 
       // Create file content with metadata
-      const fileContent = [
+      const fileSections = [
         `// Created by Maxwell Selfbot`,
         `// Date: ${new Date().toISOString()}`,
         `// User: ${message.author.username} (${message.author.id})`,
         `// Channel: ${message.channel?.name || 'DM'} (${message.channel?.id || message.channelId})`,
         description ? `// Description: ${description}` : '',
-        `// Content Length: ${content.length} characters`,
+        `// Total Content Length: ${content.length + llmResponse.length} characters`,
         '',
-        content,
-      ]
-        .filter((line) => line !== '')
-        .join('\n');
+      ];
+
+      // Add LLM response section if provided
+      if (llmResponse) {
+        fileSections.push(
+          '====================================',
+          'ORIGINAL LLM RESPONSE:',
+          '====================================',
+          llmResponse,
+          '',
+          '====================================',
+          'REQUESTED FILE CONTENT:',
+          '===================================='
+        );
+      } else {
+        fileSections.push(
+          '====================================',
+          'FILE CONTENT:',
+          '===================================='
+        );
+      }
+
+      fileSections.push('', content);
+
+      const fileContent = fileSections.join('\n');
 
       // Create temporary file
       const tempFilePath = path.join(tempDir, safeFilename);
@@ -107,9 +134,12 @@ export const createMessageFileTool = {
           ],
         };
 
-        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Size:** ${content.length} characters`;
+        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Size:** ${content.length} characters${llmResponse ? ` + LLM response: ${llmResponse.length} characters` : ''}`;
         if (description) {
           messageText += `\n**Description:** ${description}`;
+        }
+        if (llmResponse) {
+          messageText += `\n**Note:** File includes both original LLM response and requested content.`;
         }
 
         if (isDM) {

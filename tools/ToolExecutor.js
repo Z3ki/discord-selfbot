@@ -27,7 +27,8 @@ export class ToolExecutor {
     channelMemories,
     dmOrigins,
     globalPrompt,
-    apiResourceManager
+    apiResourceManager,
+    currentLlmResponse = null
   ) {
     const { funcName, args } = call;
     const tool = this.registry.getTool(funcName);
@@ -63,7 +64,13 @@ export class ToolExecutor {
 
       // Check if tool has embedded execute function
       if (tool.execute) {
-        return await tool.execute(args, {
+        // For create_message_file tool, add current LLM response if available
+        let enhancedArgs = args;
+        if (funcName === 'create_message_file' && currentLlmResponse) {
+          enhancedArgs = { ...args, llmResponse: currentLlmResponse };
+        }
+
+        return await tool.execute(enhancedArgs, {
           message,
           client,
           providerManager,
@@ -186,7 +193,8 @@ export class ToolExecutor {
     lastResponse,
     lastToolCalls,
     lastToolResults,
-    apiResourceManager
+    apiResourceManager,
+    currentLlmResponse = null
   ) {
     const results = [];
 
@@ -200,7 +208,8 @@ export class ToolExecutor {
           channelMemories,
           dmOrigins,
           globalPrompt,
-          apiResourceManager
+          apiResourceManager,
+          currentLlmResponse
         );
         results.push({
           tool: toolCall.funcName,

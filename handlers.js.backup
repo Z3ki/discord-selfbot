@@ -12,6 +12,20 @@ import { processMessageMedia } from './media.js';
 
 // Stealth utilities removed - no stealth features
 
+// Helper function to safely send replies
+async function safeReply(message, content) {
+  try {
+    return await message.reply(content);
+  } catch (error) {
+    logger.error('Failed to reply to message', {
+      error: error.message,
+      channelId: message.channel?.id || message.channelId,
+      userId: message.author.id,
+    });
+    return null;
+  }
+}
+
 // eslint-disable-next-line no-unused-vars
 export async function handleCommand(
   message,
@@ -69,7 +83,7 @@ export async function handleCommand(
 \`,health\` - Health (admin)
 \`,testqueue\` - Test queue
  \`,safemode\` - Toggle safe mode (restricted/unrestricted responses)`;
-        await message.reply(helpText);
+        await safeReply(message, helpText);
         break;
       }
 
@@ -104,7 +118,7 @@ export async function handleCommand(
 \`,admin list\`
 
 **Note:** Use Discord Developer Mode to get user IDs`;
-          await message.reply(adminHelp);
+          await safeReply(message, adminHelp);
           return;
         }
 
@@ -119,15 +133,17 @@ export async function handleCommand(
               }
               const addResult = adminManager.toggleAdmin(userId);
               if (addResult.success && addResult.action === 'added') {
-                await message.reply(
+                await safeReply(
+                  message,
                   `**Admin Added**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`
                 );
               } else if (addResult.success && addResult.action === 'removed') {
-                await message.reply(
+                await safeReply(
+                  message,
                   `**User was already admin** - removed instead\n\n**User ID:** ${userId}`
                 );
               } else {
-                await message.reply(`**Error:** ${addResult.error}`);
+                await safeReply(message, `**Error:** ${addResult.error}`);
               }
               break;
             }
@@ -141,18 +157,20 @@ export async function handleCommand(
               }
               const removeResult = adminManager.toggleAdmin(userId);
               if (removeResult.success && removeResult.action === 'removed') {
-                await message.reply(
+                await safeReply(
+                  message,
                   `**Admin Removed**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`
                 );
               } else if (
                 removeResult.success &&
                 removeResult.action === 'added'
               ) {
-                await message.reply(
+                await safeReply(
+                  message,
                   `**User was not admin** - added instead\n\n**User ID:** ${userId}`
                 );
               } else {
-                await message.reply(`**Error:** ${removeResult.error}`);
+                await safeReply(message, `**Error:** ${removeResult.error}`);
               }
               break;
             }
@@ -170,11 +188,12 @@ export async function handleCommand(
                   toggleResult.action === 'added'
                     ? 'Now an admin'
                     : 'No longer an admin';
-                await message.reply(
+                await safeReply(
+                  message,
                   `**Admin Status Toggled**\n\n**User ID:** ${userId}\n**Action:** ${toggleResult.action}\n**Status:** ${status}\n**Total Admins:** ${adminManager.getAdminCount()}`
                 );
               } else {
-                await message.reply(`**Error:** ${toggleResult.error}`);
+                await safeReply(message, `**Error:** ${toggleResult.error}`);
               }
               break;
             }
@@ -190,20 +209,22 @@ export async function handleCommand(
               } else {
                 listResponse += `*No administrators configured*`;
               }
-              await message.reply(listResponse);
+              await safeReply(message, listResponse);
               break;
             }
 
             case 'clear': {
               const clearResult = adminManager.clearAdmins();
-              await message.reply(
+              await safeReply(
+                message,
                 `**All Admins Cleared**\n\n**Removed:** ${clearResult.count} admin(s)\n**Warning:** No admins remain!`
               );
               break;
             }
 
             default:
-              await message.reply(
+              await safeReply(
+                message,
                 `Unknown action: ${action}\n\nUse \`,admin\` to see available actions.`
               );
               break;
@@ -273,10 +294,11 @@ export async function handleCommand(
               i === 0
                 ? '**Available Functions/Tools**'
                 : `**Functions/Tools (Part ${i + 1}/${chunks.length})**`;
-            await message.reply(`${title}\n\n${chunks[i]}`);
+            await safeReply(message, `${title}\n\n${chunks[i]}`);
           }
         } else {
-          await message.reply(
+          await safeReply(
+            message,
             `**Available Functions/Tools**\n\n${functionsList}`
           );
         }
@@ -378,7 +400,6 @@ export async function handleCommand(
           [],
           '',
           '',
-          null,
           serverPrompt,
           safeMode
         );
@@ -403,7 +424,7 @@ export async function handleCommand(
         }
 
         // Send the main debug info first
-        await message.reply(debugInfo);
+        await safeReply(message, debugInfo);
 
         // Send the full last prompt in separate messages if it exists
         if (lastPrompt[0]) {
@@ -414,7 +435,8 @@ export async function handleCommand(
           const maxChunkSize = 1900;
 
           if (fullPrompt.length <= maxChunkSize) {
-            await message.reply(
+            await safeReply(
+              message,
               `**FULL LAST PROMPT SENT TO AI:**\n${fullPrompt}`
             );
           } else {
@@ -429,17 +451,17 @@ export async function handleCommand(
                 i === 0
                   ? '**FULL LAST PROMPT SENT TO AI (Part 1):**\n'
                   : `**FULL LAST PROMPT (Part ${i + 1}/${chunks.length}):**\n`;
-              await message.reply(title + chunks[i]);
+              await safeReply(message, title + chunks[i]);
             }
           }
         } else {
-          await message.reply('**No last prompt available**');
+          await safeReply(message, '**No last prompt available**');
         }
         break;
       }
 
       case 'restart':
-        await message.reply('Restarting bot...');
+        await safeReply(message, 'Restarting bot...');
         logger.info('Bot restart requested', {
           username: message.author.username,
           userId: message.author.id,
@@ -448,7 +470,10 @@ export async function handleCommand(
         break;
 
       case 'refresh_commands':
-        await message.reply('Command refresh not needed with ; prefix system!');
+        await safeReply(
+          message,
+          'Command refresh not needed with ; prefix system!'
+        );
         break;
 
       case 'refresh': {
@@ -527,13 +552,15 @@ export async function handleCommand(
         }
 
         if (refreshType === 'all') {
-          await message.reply(
+          await safeReply(
+            message,
             'All memories, user context, and DM metadata cleared!'
           );
         } else if (clearedItems.length > 0) {
-          await message.reply(`Cleared: ${clearedItems.join(', ')}.`);
+          await safeReply(message, `Cleared: ${clearedItems.join(', ')}.`);
         } else {
-          await message.reply(
+          await safeReply(
+            message,
             'Invalid refresh type. Use `,refresh` to see available options.'
           );
         }
@@ -554,15 +581,13 @@ export async function handleCommand(
           const newPromptArgs = isClearAll ? args.slice(2) : args.slice(1);
           const newPrompt = newPromptArgs.join(' ').trim();
 
-          if (!newPrompt) {
-            if (isClearAll) {
-              await message.reply(
-                'Usage: `,prompt clear all <new prompt text>` - Clears memory and sets new global prompt'
-              );
-            } else {
-              await message.reply(
-                'Usage: `,prompt clear <new prompt text>` - Clears memory and sets new server prompt'
-              );
+            if (!newPrompt) {
+              if (isClearAll) {
+                await safeReply(message, 'Usage: `,prompt clear all <new prompt text>` - Clears memory and sets new global prompt');
+              } else {
+                await safeReply(message, 'Usage: `,prompt clear <new prompt text>` - Clears memory and sets new server prompt');
+              }
+              return;
             }
             return;
           }
@@ -596,7 +621,8 @@ export async function handleCommand(
             if (isClearAll || isDM) {
               await fs.promises.writeFile('globalPrompt.txt', newPrompt);
               globalPrompt[0] = newPrompt;
-              await message.reply(
+              await safeReply(
+                message,
                 'Memory cleared and global prompt updated successfully!'
               );
             } else {
@@ -609,7 +635,8 @@ export async function handleCommand(
                 'serverPrompts.json',
                 bot.serverPrompts
               );
-              await message.reply(
+              await safeReply(
+                message,
                 'Memory cleared and server prompt updated successfully!'
               );
             }
@@ -646,7 +673,7 @@ export async function handleCommand(
           }
           response += `You can include newlines and formatting in your prompt.`;
 
-          await message.reply(response);
+          await safeReply(message, response);
           return;
         }
 
@@ -662,15 +689,13 @@ export async function handleCommand(
             }
 
             if (!promptText) {
-              await message.reply(
-                'Usage: `,prompt all <text>` - Set a new global prompt'
-              );
+              await safeReply(message, 'Usage: `,prompt all <text>` - Set a new global prompt');
               return;
             }
 
             await fs.promises.writeFile('globalPrompt.txt', promptText);
             globalPrompt[0] = promptText;
-            await message.reply('Global prompt updated successfully!');
+            await safeReply(message, 'Global prompt updated successfully!');
           } else {
             // Server-specific prompt
             if (!bot.serverPrompts) {
@@ -681,29 +706,17 @@ export async function handleCommand(
               'serverPrompts.json',
               bot.serverPrompts
             );
-            await message.reply('Server prompt updated successfully!');
+            await safeReply(message, 'Server prompt updated successfully!');
           }
-        } catch (error) {
-          await message.reply('Failed to update prompt: ' + error.message);
-        }
-        break;
-      }
-
-      case 'nvidia': {
-        const nvidiaMessage = args.join(' ');
-        if (
-          !nvidiaMessage &&
-          message.attachments.size === 0 &&
-          !message.stickers?.size
-        ) {
-          await message.reply(
-            'Usage: `,nvidia <message>` - Send a message to NVIDIA NIM AI provider (supports text, images, and media)'
-          );
-          return;
+           } catch (error) {
+             await safeReply(message, 'Failed to clear memory and update prompt: ' + error.message);
+           }
+           return;
+         }
         }
 
         try {
-          await message.reply('*Using NVIDIA NIM provider...*');
+          await safeReply(message, '*Using NVIDIA NIM provider...*');
 
           // Process media attachments for NVIDIA NIM
           const { multimodalContent } = await processMessageMedia(message);
@@ -713,25 +726,21 @@ export async function handleCommand(
 
           // Call NVIDIA provider directly
           const response = await providerManager.generateContent(contentToSend);
-          await message.reply(response);
+          await safeReply(message, response);
         } catch (error) {
           logger.error('NVIDIA NIM command failed', { error: error.message });
-          await message.reply('NVIDIA NIM provider failed: ' + error.message);
+          await safeReply(message, 'NVIDIA NIM provider failed: ' + error.message);
         }
         break;
       }
 
       case 'info':
-        await message.reply(
-          `This is ${client.user.username}, a Discord selfbot powered by Google's Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools.`
-        );
+        await safeReply(message, `This is ${client.user.username}, a Discord selfbot powered by Google's Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools.`);
         break;
 
       case 'health': {
         if (!hasHealthPermission(message)) {
-          await message.reply(
-            'You do not have permission to view health metrics. This command requires Manage Server permission.'
-          );
+          await safeReply(message, 'You do not have permission to view health metrics. This command requires Manage Server permission.');
           break;
         }
         const metrics = getHealthMetrics(client);
@@ -747,7 +756,7 @@ export async function handleCommand(
 **Memory Usage:** Heap ${metrics.memory.heapUsed}/${metrics.memory.heapTotal}MB (${memoryStatus})
 **API Latency:** ${metrics.apiLatency}ms
 **Last Error:** ${metrics.lastError}`;
-        await message.reply(healthText);
+        await safeReply(message, healthText);
         break;
       }
 
@@ -757,7 +766,7 @@ export async function handleCommand(
         const tempQueue = new RequestQueue();
         const testMessage = tempQueue.formatPositionMessage(2); // Test with position 2
 
-        const sentMessage = await message.reply(testMessage);
+        const sentMessage = await safeReply(message, testMessage);
 
         // Animate for 5 seconds then delete
         let animationCount = 0;
@@ -797,7 +806,7 @@ export async function handleCommand(
             blacklisted.length > 0
               ? `Blacklisted servers (${blacklisted.length}):\n${blacklisted.join('\n')}`
               : 'No servers are blacklisted.';
-          await message.reply(response);
+          await safeReply(message, response);
           break;
         }
 
@@ -807,37 +816,33 @@ export async function handleCommand(
             break;
           }
           if (bot.blacklist.has(serverId)) {
-            await message.reply(`Server ${serverId} is already blacklisted.`);
+            await safeReply(message, `Server ${serverId} is already blacklisted.`);
           } else {
             bot.blacklist.add(serverId);
             await bot.saveData();
-            await message.reply(`Server ${serverId} added to blacklist.`);
+            await safeReply(message, `Server ${serverId} added to blacklist.`);
           }
         } else if (subcommand === 'remove' || subcommand === 'rm') {
           if (!serverId) {
-            await message.reply('Usage: `,blacklist remove <server_id>`');
+            await safeReply(message, 'Usage: `,blacklist remove <server_id>`');
             break;
           }
           if (bot.blacklist.has(serverId)) {
             bot.blacklist.delete(serverId);
             await bot.saveData();
-            await message.reply(`Server ${serverId} removed from blacklist.`);
+            await safeReply(message, `Server ${serverId} removed from blacklist.`);
           } else {
-            await message.reply(`Server ${serverId} is not blacklisted.`);
+            await safeReply(message, `Server ${serverId} is not blacklisted.`);
           }
         } else {
-          await message.reply(
-            'Usage: `,blacklist` (show), `,blacklist add <server_id>`, `,blacklist remove <server_id>`'
-          );
+          await safeReply(message, 'Usage: `,blacklist` (show), `,blacklist add <server_id>`, `,blacklist remove <server_id>`');
         }
         break;
       }
 
       case 'safemode': {
         if (!message.guild) {
-          await message.reply(
-            'Safe mode can only be toggled in servers, not DMs.'
-          );
+          await safeReply(message, 'Safe mode can only be toggled in servers, not DMs.');
           break;
         }
 
@@ -857,16 +862,12 @@ export async function handleCommand(
         await bot.saveData();
 
         const modeText = newMode ? 'ENABLED' : 'DISABLED';
-        await message.reply(
-          `Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`
-        );
+        await safeReply(message, `Safe mode ${modeText} for this server. In safe mode, the bot will provide restricted, family-friendly responses.`);
         break;
       }
 
       default:
-        await message.reply(
-          `Unknown command: ${command}. Use \`,help\` for available commands.`
-        );
+        await safeReply(message, `Unknown command: ${command}. Use \`,help\` for available commands.`);
     }
   } catch (error) {
     logger.error('Error handling command', {
@@ -980,31 +981,13 @@ export function setupHandlers(
       // Stickers are now processed in the image processing function
 
       const isMentioned = message.mentions?.has(client.user.id) || false;
-      let isReplyToBot = false;
-      let repliedMessageContent = null;
-      if (message.reference && message.reference.messageId) {
-        try {
-          const repliedMessage = await message.channel?.messages?.fetch(
-            message.reference.messageId
-          );
-          isReplyToBot = repliedMessage.author.id === client.user.id;
-          if (isReplyToBot) {
-            repliedMessageContent = repliedMessage.content;
-          }
-        } catch (error) {
-          // Ignore fetch errors
-        }
-      }
 
       // Add mention info to message for AI awareness
       message.isMentioned = isMentioned;
-      message.isReplyToBot = isReplyToBot;
-      message.repliedMessageContent = repliedMessageContent;
 
       logger.debug('Message analysis', {
         isDM,
         isMentioned,
-        isReplyToBot,
         botId: client.user.id,
         mentions: message.mentions?.users?.map((u) => u.id) || [],
         contentLength: message.content.length,
@@ -1015,7 +998,6 @@ export function setupHandlers(
         authorId: message.author.id,
         botId: client.user.id,
         isBot: message.author.bot,
-        isReplyToBot: isReplyToBot,
         repliedMessageAuthor: message.reference ? 'checked' : 'none',
         channelType: message.channel?.type,
         hasMentions: message.mentions?.users?.size > 0,
@@ -1060,7 +1042,7 @@ export function setupHandlers(
       }
 
       if (message.author.bot) return; // Ignore all bot messages
-      if (!isDM && !isMentioned && !isReplyToBot) return; // In channels, only respond to mentions or replies
+      if (!isDM && !isMentioned) return; // In channels, only respond to mentions
 
       // Anti-spam check (only for messages the bot will process)
       const userId = message.author.id;
@@ -1116,108 +1098,6 @@ export function setupHandlers(
 
       // Update last message time
       userChannels.set(channelId, now);
-
-      // Include replied message content if replying to user (not bot)
-      let repliedMediaInfo = '';
-      if (message.reference && message.reference.messageId) {
-        try {
-          logger.debug('Fetching replied message', {
-            repliedMessageId: message.reference.messageId,
-            channelId: message.channel?.id || message.channelId,
-          });
-          const repliedMessage = await message.channel?.messages?.fetch(
-            message.reference.messageId
-          );
-
-          // Skip all reply context - bot should not see what user is replying to
-          // Process replies only if bot is mentioned/pinged, otherwise ignore reply context
-          if (!isReplyToBot && message.mentions?.has(client.user.id)) {
-            logger.debug('Fetched replied message', {
-              repliedAuthor: repliedMessage.author.username,
-              repliedContentLength: repliedMessage.content.length,
-              repliedAttachments: repliedMessage.attachments.size,
-              repliedEmbeds: repliedMessage.embeds?.length || 0,
-              isBot: repliedMessage.author.bot,
-              hasRepliedEmbeds: !!(repliedMessage.embeds?.length > 0),
-            });
-
-            // Process replied message embeds
-            let repliedEmbedInfo = '';
-            if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
-              const embedSummaries = repliedMessage.embeds.map(
-                (embed, index) => {
-                  let summary = `EMBED ${index + 1}:`;
-                  if (embed.title) summary += ` Title: "${embed.title}"`;
-                  if (embed.description)
-                    summary += ` Description: "${embed.description.substring(0, 200)}${embed.description.length > 200 ? '...' : ''}"`;
-                  if (embed.url) summary += ` URL: ${embed.url}`;
-                  if (embed.author?.name)
-                    summary += ` Author: "${embed.author.name}"`;
-                  if (embed.fields && embed.fields.length > 0) {
-                    summary += ` Fields: ${embed.fields.map((field) => `"${field.name}: ${field.value.substring(0, 100)}${field.value.length > 100 ? '...' : ''}"`).join(', ')}`;
-                  }
-                  if (embed.image?.url) summary += ` Image: ${embed.image.url}`;
-                  if (embed.thumbnail?.url)
-                    summary += ` Thumbnail: ${embed.thumbnail.url}`;
-                  if (embed.footer?.text)
-                    summary += ` Footer: "${embed.footer.text}"`;
-                  return summary;
-                }
-              );
-              repliedEmbedInfo = `\n\nREPLIED EMBEDS: ${embedSummaries.join(' | ')}`;
-              logger.debug('Replied embeds processed', {
-                count: repliedMessage.embeds.length,
-              });
-            }
-
-            const repliedContent =
-              repliedMessage.content ||
-              (repliedMessage.embeds?.length > 0
-                ? '[Embed Content]'
-                : '[Media/Attachment]');
-            const repliedAuthor = `${repliedMessage.author.username}`;
-
-            // Normal reply context for other users only
-            message.content = `Replying to ${repliedAuthor}: "${repliedContent}": ${message.content}${repliedEmbedInfo}`;
-
-            // Also include replied attachments for processing
-            if (repliedMessage.attachments.size > 0) {
-              logger.debug('Adding replied attachments', {
-                count: repliedMessage.attachments.size,
-              });
-              // Add replied attachments to message attachments for multimodal processing
-              repliedMessage.attachments.forEach((attachment, key) => {
-                if (!message.attachments?.has(key)) {
-                  // Avoid duplicates if same
-                  message.attachments.set(key, attachment);
-                }
-              });
-              const repliedMediaAttachments = repliedMessage.attachments.filter(
-                (attachment) =>
-                  attachment.contentType &&
-                  (attachment.contentType.startsWith('image/') ||
-                    attachment.contentType.startsWith('video/') ||
-                    attachment.contentType === 'image/gif')
-              );
-              if (repliedMediaAttachments.length > 0) {
-                repliedMediaInfo = `\n\nREPLIED MEDIA ATTACHMENTS: ${repliedMediaAttachments.map((media) => `${media.url} (${media.contentType})`).join(', ')}`;
-                logger.debug('Replied media attachments added', {
-                  count: repliedMediaAttachments.length,
-                });
-              }
-            }
-          } else {
-            logger.debug(
-              'Skipping reply context - replying to self to prevent AI confusion'
-            );
-          }
-        } catch (error) {
-          logger.warn('Failed to fetch replied message', {
-            error: error.message,
-            repliedMessageId: message.reference.messageId,
-          });
-        }
-      }
 
       logger.debug('Processing message for response', {
         hasAttachments: message.attachments.size > 0,
@@ -1357,12 +1237,24 @@ export function setupHandlers(
                   humanMessages[
                     Math.floor(Math.random() * humanMessages.length)
                   ];
-                await message.reply(randomMessage);
+                try {
+                  await message.reply(randomMessage);
+                } catch (replyError) {
+                  logger.error('Failed to send rate limit message', {
+                    error: replyError.message,
+                  });
+                }
               } else {
                 // Generic error message for other failures
-                await message.reply(
-                  "Sorry, I'm having trouble processing your message right now. Please try again later."
-                );
+                try {
+                  await message.reply(
+                    "Sorry, I'm having trouble processing your message right now. Please try again later."
+                  );
+                } catch (replyError) {
+                  logger.error('Failed to send generic error message', {
+                    error: replyError.message,
+                  });
+                }
               }
               return; // Don't continue processing if there's an error
             }
@@ -1402,11 +1294,7 @@ export function setupHandlers(
                 const userMessage = {
                   user: `${message.author.displayName || message.author.username} (${message.author.username})`,
                   message:
-                    message.content +
-                    embedInfo +
-                    mediaInfo +
-                    repliedMediaInfo +
-                    transcriptionInfo,
+                    message.content + embedInfo + mediaInfo + transcriptionInfo,
                   timestamp: Date.now(),
                 };
                 memory.push(userMessage);
@@ -1480,17 +1368,51 @@ export function setupHandlers(
               // No stealth processing - direct response
 
               try {
-                // Use reply() in channels for better context, but send() in DMs since reply isn't needed there
-                if (isDM) {
-                  await message.channel.send(response.response);
+                // Handle response chunking for long messages
+                const { chunkMessage } = await import(
+                  './utils/messageUtils.js'
+                );
+                const responseText = response.response;
+
+                if (responseText.length > 2000) {
+                  const chunks = chunkMessage(responseText);
+                  for (let i = 0; i < chunks.length; i++) {
+                    const chunkText =
+                      i === 0
+                        ? chunks[i]
+                        : `**Response (Part ${i + 1}/${chunks.length})**\n\n${chunks[i]}`;
+
+                    if (i === 0) {
+                      // First chunk uses reply/send as before
+                      if (isDM) {
+                        await message.channel.send(chunkText);
+                      } else {
+                        await message.reply(chunkText);
+                      }
+                    } else {
+                      // Subsequent chunks use send
+                      await message.channel.send(chunkText);
+                    }
+                  }
+                  logger.debug('Chunked response sent successfully', {
+                    channelId: message.channel?.id || message.channelId,
+                    userId: message.author.id,
+                    totalChunks: chunks.length,
+                    usedReply: !isDM,
+                  });
                 } else {
-                  await message.reply(response.response);
+                  // Original logic for short responses
+                  if (isDM) {
+                    await message.channel.send(responseText);
+                  } else {
+                    await message.reply(responseText);
+                  }
+                  logger.debug('Follow-up response sent successfully', {
+                    channelId: message.channel?.id || message.channelId,
+                    userId: message.author.id,
+                    usedReply: !isDM,
+                  });
                 }
-                logger.debug('Follow-up response sent successfully', {
-                  channelId: message.channel?.id || message.channelId,
-                  userId: message.author.id,
-                  usedReply: !isDM,
-                });
               } catch (error) {
                 if (
                   error.code === 50035 &&
@@ -1501,9 +1423,17 @@ export function setupHandlers(
                     'Reply failed due to invalid message_reference, sending without reply',
                     { error: error.message }
                   );
-                  await message.channel.send(response.response);
+                  try {
+                    await message.channel.send(response.response);
+                  } catch (sendError) {
+                    logger.error('Failed to send fallback response', {
+                      error: sendError.message,
+                    });
+                  }
                 } else {
-                  throw error;
+                  logger.error('Failed to send response', {
+                    error: error.message,
+                  });
                 }
               }
               // Add follow-up response to memory
@@ -1596,7 +1526,11 @@ export function setupHandlers(
             const text = interaction.options.getString('text');
             globalPrompt[0] = text;
             await fs.promises.writeFile('globalPrompt.txt', text);
+            try {
             await interaction.editReply('Custom prompt set!');
+          } catch (error) {
+            logger.error('Failed to edit interaction reply', { error: error.message });
+          }
           } else if (interaction.commandName === 'debug') {
             await interaction.deferReply();
             const channelCount = channelMemories.size();
@@ -1640,7 +1574,11 @@ export function setupHandlers(
             if (debugInfo.length > 1900) {
               debugInfo = debugInfo.substring(0, 1900) + '...';
             }
-            await interaction.editReply(debugInfo);
+            try {
+              await interaction.editReply(debugInfo);
+            } catch (error) {
+              logger.error('Failed to edit debug interaction reply', { error: error.message });
+            }
           } else if (interaction.commandName === 'refresh') {
             await interaction.deferReply();
             const refreshType = interaction.options.getString('type') || 'all';
@@ -1672,22 +1610,30 @@ export function setupHandlers(
               clearedItems.push('DM metadata');
             }
 
-            if (refreshType === 'all') {
-              await interaction.editReply(
-                'All memories, user context, and DM metadata cleared! Shell history preserved.'
-              );
-            } else if (clearedItems.length > 0) {
-              await interaction.editReply(
-                `Cleared: ${clearedItems.join(', ')}. Shell history preserved.`
-              );
-            } else {
-              await interaction.editReply('Invalid refresh type.');
+            try {
+              if (refreshType === 'all') {
+                await interaction.editReply(
+                  'All memories, user context, and DM metadata cleared! Shell history preserved.'
+                );
+              } else if (clearedItems.length > 0) {
+                await interaction.editReply(
+                  `Cleared: ${clearedItems.join(', ')}. Shell history preserved.`
+                );
+              } else {
+                await interaction.editReply('Invalid refresh type.');
+              }
+            } catch (error) {
+              logger.error('Failed to edit refresh interaction reply', { error: error.message });
             }
           } else if (interaction.commandName === 'info') {
             await interaction.deferReply();
-            await interaction.editReply(
-              "This is a Discord selfbot powered by Google's Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools."
-            );
+            try {
+              await interaction.editReply(
+                "This is a Discord selfbot powered by Google's Gemma 3-27B-IT model. It can engage in conversations and perform actions via tools."
+              );
+            } catch (error) {
+              logger.error('Failed to edit info interaction reply', { error: error.message });
+            }
           }
         } catch (commandError) {
           logger.error('Error handling slash command', {
@@ -1696,14 +1642,18 @@ export function setupHandlers(
             userId: interaction.user?.id || 'unknown',
           });
           try {
-            if (interaction.replied || interaction.deferred) {
-              await interaction.editReply(
-                'There was an error while executing this command!'
-              );
-            } else {
-              await interaction.reply(
-                'There was an error while executing this command!'
-              );
+            try {
+              if (interaction.replied || interaction.deferred) {
+                await interaction.editReply(
+                  'There was an error while executing this command!'
+                );
+              } else {
+                await interaction.reply(
+                  'There was an error while executing this command!'
+                );
+              }
+            } catch (error) {
+              logger.error('Failed to send interaction error reply', { error: error.message });
             }
           } catch (replyError) {
             logger.error('Failed to send slash command error message', {
