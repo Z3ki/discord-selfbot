@@ -1140,6 +1140,11 @@ export async function generateResponse(
       });
     }
 
+    // If all tools returned null (handled their own responses), don't send AI response
+    if (allToolResults.length === 0) {
+      return null;
+    }
+
     // Get the final response (last response text)
     let finalResponse = currentPrompt;
 
