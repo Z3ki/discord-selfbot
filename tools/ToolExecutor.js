@@ -64,13 +64,7 @@ export class ToolExecutor {
 
       // Check if tool has embedded execute function
       if (tool.execute) {
-        // For create_message_file tool, add current LLM response if available
-        let enhancedArgs = args;
-        if (funcName === 'create_message_file' && currentLlmResponse) {
-          enhancedArgs = { ...args, llmResponse: currentLlmResponse };
-        }
-
-        return await tool.execute(enhancedArgs, {
+        const context = {
           message,
           client,
           providerManager,
@@ -78,7 +72,14 @@ export class ToolExecutor {
           dmOrigins,
           globalPrompt,
           apiResourceManager,
-        });
+        };
+
+        // For create_message_file tool, automatically pass current LLM response
+        if (funcName === 'create_message_file' && currentLlmResponse) {
+          context.llmResponse = currentLlmResponse;
+        }
+
+        return await tool.execute(args, context);
       }
 
       // Route to appropriate execution function based on tool name

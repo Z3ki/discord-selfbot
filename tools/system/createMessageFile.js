@@ -5,19 +5,13 @@ import { logger } from '../../utils/logger.js';
 export const createMessageFileTool = {
   name: 'create_message_file',
   description:
-    'Send content as a text file attachment when it is too long for Discord messages. Can include the original LLM response for context.',
+    'Send content as a text file attachment when it is too long for Discord messages. Automatically includes the original LLM response for context.',
   parameters: {
     type: 'object',
     properties: {
       content: {
         type: 'string',
         description: 'The content to send as a file attachment',
-      },
-      llmResponse: {
-        type: 'string',
-        description:
-          'The original LLM response to include in the file for context',
-        default: '',
       },
       filename: {
         type: 'string',
@@ -33,9 +27,11 @@ export const createMessageFileTool = {
     required: ['content'],
   },
   execute: async function (
-    { content, llmResponse = '', filename, description = '' },
-    { message }
+    { content, filename, description = '' },
+    { message, llmResponse }
   ) {
+    // Set default llmResponse if not provided
+    const capturedLlmResponse = llmResponse || '';
     try {
       // Create temp directory if it doesn't exist
       const tempDir = path.join(process.cwd(), 'temp');
@@ -81,31 +77,19 @@ export const createMessageFileTool = {
         `// User: ${message.author.username} (${message.author.id})`,
         `// Channel: ${message.channel?.name || 'DM'} (${message.channel?.id || message.channelId})`,
         description ? `// Description: ${description}` : '',
-        `// Total Content Length: ${content.length + llmResponse.length} characters`,
+        `// Total Content Length: ${content.length + capturedLlmResponse.length} characters`,
         '',
+        '====================================',
+        'ORIGINAL LLM RESPONSE:',
+        '====================================',
+        capturedLlmResponse || '(No LLM response captured)',
+        '',
+        '====================================',
+        'REQUESTED FILE CONTENT:',
+        '====================================',
+        '',
+        content,
       ];
-
-      // Add LLM response section if provided
-      if (llmResponse) {
-        fileSections.push(
-          '====================================',
-          'ORIGINAL LLM RESPONSE:',
-          '====================================',
-          llmResponse,
-          '',
-          '====================================',
-          'REQUESTED FILE CONTENT:',
-          '===================================='
-        );
-      } else {
-        fileSections.push(
-          '====================================',
-          'FILE CONTENT:',
-          '===================================='
-        );
-      }
-
-      fileSections.push('', content);
 
       const fileContent = fileSections.join('\n');
 
@@ -134,13 +118,11 @@ export const createMessageFileTool = {
           ],
         };
 
-        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Size:** ${content.length} characters${llmResponse ? ` + LLM response: ${llmResponse.length} characters` : ''}`;
+        let messageText = `📎 **File sent:** \`${safeFilename}\`\n**Content Size:** ${content.length} characters${capturedLlmResponse ? ` + LLM response: ${capturedLlmResponse.length} characters` : ''}`;
         if (description) {
           messageText += `\n**Description:** ${description}`;
         }
-        if (llmResponse) {
-          messageText += `\n**Note:** File includes both original LLM response and requested content.`;
-        }
+        messageText += `\n**Note:** File includes the original LLM response that led to this file creation.`;
 
         if (isDM) {
           await message.channel.send({ content: messageText, ...attachment });
