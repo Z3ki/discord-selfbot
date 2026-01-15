@@ -1028,8 +1028,7 @@ export async function generateResponse(
         lastToolCalls,
         lastToolResults,
         apiResourceManager,
-        sharedStatusMessage,
-        currentPrompt
+        response
       );
 
       // Update shared status message for next round
