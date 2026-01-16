@@ -126,10 +126,20 @@ function extractUserIdFromToken(token) {
 
   try {
     const decoded = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-    if (!decoded.id || !/^\d{17,19}$/.test(decoded.id)) {
+
+    // Discord user tokens have the user ID directly in the decoded object
+    // or sometimes the user ID is the decoded value itself
+    let userId = decoded.id || decoded;
+
+    // If the decoded object itself is a number string, that's the user ID
+    if (typeof decoded === 'string' && /^\d{17,19}$/.test(decoded)) {
+      userId = decoded;
+    }
+
+    if (!userId || !/^\d{17,19}$/.test(userId)) {
       throw new Error('Invalid user ID in token');
     }
-    return decoded.id;
+    return userId;
   } catch (e) {
     throw new Error(`Token decoding failed: ${e.message}`);
   }
