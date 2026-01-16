@@ -19,6 +19,52 @@ export class WebServer {
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.static('public'));
 
+    // Authentication middleware for protected routes
+    this.app.use('/health', (req, res, next) => {
+      const adminToken = req.headers.authorization?.replace('Bearer ', '');
+      if (adminToken !== process.env.ADMIN_API_TOKEN) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      next();
+    });
+
+    // Rate limiting middleware
+    const requestCounts = new Map();
+    this.app.use((req, res, next) => {
+      const clientId = req.ip;
+      const now = Date.now();
+      const windowMs = 60000; // 1 minute window
+      const maxRequests = 100; // Max 100 requests per minute
+
+      if (!requestCounts.has(clientId)) {
+        requestCounts.set(clientId, { count: 0, resetTime: now + windowMs });
+      }
+
+      const clientData = requestCounts.get(clientId);
+
+      if (now > clientData.resetTime) {
+        clientData.count = 0;
+        clientData.resetTime = now + windowMs;
+      }
+
+      clientData.count++;
+
+      if (clientData.count > maxRequests) {
+        return res.status(429).json({ error: 'Too many requests' });
+      }
+
+      // Clean up old entries periodically
+      if (requestCounts.size > 10000) {
+        for (const [key, data] of requestCounts.entries()) {
+          if (now > data.resetTime) {
+            requestCounts.delete(key);
+          }
+        }
+      }
+
+      next();
+    });
+
     // Request logging
     this.app.use((req, res, next) => {
       logger.debug('Web request', {
@@ -32,9 +78,15 @@ export class WebServer {
   }
 
   setupRoutes() {
-    // Health check
+    // Health check (protected)
     this.app.get('/health', (req, res) => {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        version: process.env.npm_package_version || 'unknown',
+      });
     });
 
     // Website serving route - /bot/websitename

@@ -2,6 +2,43 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../../utils/logger.js';
 
+/**
+ * Sanitize filename to prevent path traversal attacks
+ */
+function sanitizeFilename(filename) {
+  if (!filename || typeof filename !== 'string') {
+    throw new Error('Invalid filename: must be a non-empty string');
+  }
+
+  // Normalize path first to resolve any traversal attempts
+  const normalized = path.normalize(filename);
+
+  // Check if normalized path tries to escape current directory
+  if (normalized.includes('..') || normalized.startsWith('/')) {
+    throw new Error('Invalid filename: path traversal detected');
+  }
+
+  // Extract just the basename to prevent directory traversal
+  const basename = path.basename(normalized);
+
+  // Only allow alphanumeric, underscore, hyphen, and dot
+  const cleanName = basename.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  // Limit length and ensure it doesn't start with dot
+  const finalName = cleanName
+    .substring(0, 50)
+    .replace(/^\./, '_')
+    .toLowerCase();
+
+  if (!finalName) {
+    throw new Error(
+      'Invalid filename: resulted in empty string after sanitization'
+    );
+  }
+
+  return finalName;
+}
+
 export const createMessageFileTool = {
   name: 'create_message_file',
   description:
@@ -42,21 +79,21 @@ export const createMessageFileTool = {
       // Sanitize filename to prevent path traversal attacks
       let safeFilename;
       if (filename) {
-        // Remove any path separators and dangerous characters
-        safeFilename = filename
-          .replace(/[/\\:*?"<>|]/g, '_') // Replace dangerous chars with underscore
-          .replace(/\.\./g, '_') // Prevent directory traversal
-          .replace(/^\.+/, '') // Remove leading dots
-          .trim();
+        try {
+          safeFilename = sanitizeFilename(filename);
+        } catch (sanitizeError) {
+          logger.warn('Filename sanitization failed, using default', {
+            originalFilename: filename,
+            error: sanitizeError.message,
+          });
+          // Generate default filename with timestamp
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          safeFilename = `message_${timestamp}.txt`;
+        }
 
         // Ensure it ends with .txt
         if (!safeFilename.toLowerCase().endsWith('.txt')) {
           safeFilename += '.txt';
-        }
-
-        // Limit filename length
-        if (safeFilename.length > 100) {
-          safeFilename = safeFilename.substring(0, 96) + '.txt';
         }
       } else {
         // Generate default filename with timestamp

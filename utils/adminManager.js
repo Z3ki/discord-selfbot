@@ -11,13 +11,16 @@ const ADMIN_FILE = join(process.cwd(), 'data', 'admins.json');
 class AdminManager {
   constructor() {
     this.admins = new Set();
+    this.originalAdminId = null;
+    this.lastAdminChange = 0;
     this.loadAdmins();
 
-    // Always make the environment admin permanent
+    // Always make environment admin permanent
     const permanentAdminId =
       process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
     if (permanentAdminId) {
       this.admins.add(permanentAdminId);
+      this.originalAdminId = permanentAdminId;
       this.saveAdmins();
     }
   }
@@ -97,37 +100,58 @@ class AdminManager {
 
   /**
    * Toggle admin status for a user
+   * @param {string} requesterId - Discord user ID making the request
    * @param {string} userId - Discord user ID to toggle
    * @returns {Object} Result with action taken and current status
    */
-  toggleAdmin(userId) {
+  async toggleAdmin(requesterId, userId) {
+    // Rate limiting
+    const now = Date.now();
+    if (this.lastAdminChange && now - this.lastAdminChange < 30000) {
+      return {
+        success: false,
+        error: 'Admin changes are rate limited to once per 30 seconds',
+      };
+    }
+
+    // Validate requester is admin AND is original admin
+    if (!this.isAdmin(requesterId) || requesterId !== this.getOriginalAdmin()) {
+      return {
+        success: false,
+        error: 'Only the original administrator can modify admin permissions',
+      };
+    }
+
     // Validate the user ID
     if (!validateDiscordId(userId)) {
       return {
         success: false,
         error: 'Invalid Discord user ID format',
-        action: null,
       };
     }
 
-    // Prevent removing the permanent admin
+    // Prevent removing permanent admin
     const permanentAdminId =
       process.env.ADMIN_USER_ID || process.env.DISCORD_USER_ID;
     if (userId === permanentAdminId) {
       return {
         success: false,
         error: 'Cannot remove permanent administrator',
-        action: null,
       };
     }
 
     const wasAdmin = this.admins.has(userId);
 
+    // Audit logging before change
+    await this.logAdminAction(requesterId, wasAdmin ? 'remove' : 'add', userId);
+
+    this.lastAdminChange = now;
+
     if (wasAdmin) {
       // Remove admin
       this.admins.delete(userId);
       this.saveAdmins();
-      logger.info(`Removed admin: ${userId}`);
+      logger.info(`Removed admin: ${userId}`, { requesterId });
 
       return {
         success: true,
@@ -139,7 +163,7 @@ class AdminManager {
       // Add admin
       this.admins.add(userId);
       this.saveAdmins();
-      logger.info(`Added admin: ${userId}`);
+      logger.info(`Added admin: ${userId}`, { requesterId });
 
       return {
         success: true,
@@ -148,6 +172,30 @@ class AdminManager {
         message: `Admin ${userId} has been added`,
       };
     }
+  }
+
+  /**
+   * Get the original admin ID (first admin from environment)
+   * @returns {string|null} Original admin ID
+   */
+  getOriginalAdmin() {
+    return this.originalAdminId;
+  }
+
+  /**
+   * Log admin actions for audit purposes
+   * @param {string} executorId - Who performed the action
+   * @param {string} action - Action performed
+   * @param {string} targetUserId - Target user ID
+   */
+  async logAdminAction(executorId, action, targetUserId) {
+    logger.warn('Admin action performed', {
+      executorId,
+      targetUserId,
+      action,
+      timestamp: new Date().toISOString(),
+      adminCount: this.admins.size,
+    });
   }
 
   /**

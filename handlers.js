@@ -43,8 +43,15 @@ function sanitizeInput(input, maxLength = 2000) {
 const VALID_PATHS = ['globalPrompt.txt', 'data-selfbot/'];
 function validatePath(inputPath) {
   if (!inputPath || typeof inputPath !== 'string') return false;
+
   const normalized = path.normalize(inputPath);
-  return VALID_PATHS.some((valid) => normalized.startsWith(valid));
+  const resolved = path.resolve(normalized);
+
+  // Create absolute paths for valid locations
+  const allowedPaths = VALID_PATHS.map((p) => path.resolve(p));
+
+  // Check if the resolved path starts with any allowed path
+  return allowedPaths.some((allowed) => resolved.startsWith(allowed));
 }
 
 /* eslint-disable no-control-regex */

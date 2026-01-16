@@ -14,9 +14,19 @@ export const joinServerTool = {
 };
 
 export async function executeJoinServer(args, client) {
-  const inviteInput = args.inviteLink.trim();
+  // Handle both parameter names for compatibility
+  const { inviteLink, invite } = args;
+  const inviteInput = (inviteLink || invite)?.trim();
+
   if (!inviteInput) {
-    return 'Failed to join server: inviteLink cannot be empty';
+    return 'Failed to join server: inviteLink parameter is required';
+  }
+
+  // Validate invite format
+  const inviteCode =
+    inviteInput.match(/discord\.gg\/([a-zA-Z0-9]+)/)?.[1] || inviteInput;
+  if (!/^[a-zA-Z0-9]+$/.test(inviteCode)) {
+    return 'Invalid invite format. Expected discord.gg/XXXXXX or just the code';
   }
 
   if (!client || !client.ready) {
@@ -24,8 +34,10 @@ export async function executeJoinServer(args, client) {
   }
 
   try {
-    await client.acceptInvite(inviteInput);
-    return `Successfully joined server with invite: ${inviteInput}`;
+    // Use the newer invite accept method
+    const invite = await client.fetchInvite(inviteInput);
+    await invite.accept();
+    return `Successfully joined server: ${invite.guild?.name || inviteInput}`;
   } catch (inviteError) {
     // Handle CAPTCHA requirement
     if (

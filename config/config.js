@@ -5,26 +5,7 @@ config();
 export const CONFIG = {
   discord: {
     token: process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN,
-    clientId:
-      process.env.DISCORD_USER_ID ||
-      (() => {
-        const token =
-          process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN;
-        if (token) {
-          try {
-            const parts = token.split('.');
-            if (parts.length >= 1) {
-              const decoded = Buffer.from(parts[0], 'base64').toString('utf8');
-              return decoded;
-            }
-          } catch (e) {
-            logger.warn('Failed to decode user ID from token', {
-              error: e.message,
-            });
-          }
-        }
-        return process.env.DISCORD_USER_ID;
-      })(),
+    clientId: extractUserIdFromConfig(),
     intents: [
       'Guilds',
       'GuildMembers',
@@ -97,7 +78,62 @@ export const CONFIG = {
     randomDelays: false, // No random delays
     invisibleStatus: false, // Don't stay invisible
   },
+  proactive: {
+    frequency: process.env.PROACTIVE_CRON_SCHEDULE || '0 * * * *', // hourly default
+    boldness: parseFloat(process.env.PROACTIVE_BOLDNESS) || 0.7, // 0-1 scale, higher = more bold
+    enableReactions: process.env.PROACTIVE_REACTIONS_ENABLED !== 'false',
+    maxActionsPerCycle: parseInt(process.env.PROACTIVE_MAX_ACTIONS) || 3,
+    minTimeBetweenActions:
+      parseInt(process.env.PROACTIVE_MIN_TIME_BETWEEN) || 300000, // 5 minutes
+  },
 };
+
+function extractUserIdFromConfig() {
+  // First try explicit environment variable
+  if (process.env.DISCORD_USER_ID) {
+    if (!/^\d{17,19}$/.test(process.env.DISCORD_USER_ID)) {
+      throw new Error(
+        'Invalid DISCORD_USER_ID format. Expected 17-19 digit Discord user ID.'
+      );
+    }
+    return process.env.DISCORD_USER_ID;
+  }
+
+  // Fallback to token extraction with validation
+  const token = process.env.DISCORD_USER_TOKEN || process.env.DISCORD_TOKEN;
+  if (!token) {
+    throw new Error('DISCORD_USER_ID or DISCORD_TOKEN must be provided');
+  }
+
+  try {
+    return extractUserIdFromToken(token);
+  } catch (error) {
+    throw new Error(
+      `Token validation failed: ${error.message}. Please set DISCORD_USER_ID explicitly.`
+    );
+  }
+}
+
+function extractUserIdFromToken(token) {
+  if (!token || typeof token !== 'string') {
+    throw new Error('Invalid token format');
+  }
+
+  const parts = token.split('.');
+  if (parts.length < 3) {
+    throw new Error('Token does not contain expected JWT structure');
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+    if (!decoded.id || !/^\d{17,19}$/.test(decoded.id)) {
+      throw new Error('Invalid user ID in token');
+    }
+    return decoded.id;
+  } catch (e) {
+    throw new Error(`Token decoding failed: ${e.message}`);
+  }
+}
 
 export function validateConfig() {
   const required = ['NVIDIA_NIM_API_KEY'];

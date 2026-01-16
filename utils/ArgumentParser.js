@@ -73,7 +73,7 @@ export function parseToolArgs(funcName, paramsStr) {
         }
       );
 
-      const parsed = JSON.parse(cleanJsonStr);
+      const parsed = parseSecureJson(cleanJsonStr);
 
       // Validate that all required parameters are present
       if (typeof parsed === 'object' && parsed !== null) {
@@ -264,14 +264,52 @@ function isEscaped(str, pos) {
 }
 
 /**
- * Parse JSON string with error handling
+ * Parse JSON string with security measures and depth limits
  */
-export function safeJsonParse(jsonStr, defaultValue = null) {
+export function safeJsonParse(jsonStr, defaultValue = null, maxDepth = 10) {
   try {
-    return JSON.parse(jsonStr);
+    return parseSecureJson(jsonStr, maxDepth);
   } catch (error) {
     return defaultValue;
   }
+}
+
+/**
+ * Secure JSON parsing with depth limit and dangerous key filtering
+ */
+function parseSecureJson(jsonStr, maxDepth = 10) {
+  let depth = 0;
+
+  const jsonObj = JSON.parse(jsonStr, (key, value) => {
+    // Sanitize dangerous keys that could lead to prototype pollution
+    if (['__proto__', 'constructor', 'prototype'].includes(key)) {
+      return undefined;
+    }
+
+    // Check depth to prevent stack overflow attacks
+    if (typeof value === 'object' && value !== null) {
+      depth++;
+      if (depth > maxDepth) {
+        throw new Error(`JSON depth limit exceeded (${maxDepth})`);
+      }
+    }
+
+    // Validate string values for injection attempts
+    if (typeof value === 'string') {
+      // Check for potential injection patterns
+      if (
+        value.includes('<script') ||
+        value.includes('javascript:') ||
+        value.includes('data:')
+      ) {
+        throw new Error('Potentially dangerous content detected in JSON');
+      }
+    }
+
+    return value;
+  });
+
+  return jsonObj;
 }
 
 /**

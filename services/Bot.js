@@ -423,79 +423,110 @@ export class Bot {
 
   startHeartbeat() {
     this.heartbeatInterval = setInterval(async () => {
-      const now = Date.now();
-      const timeSinceLastHeartbeat = now - this.lastHeartbeat;
+      try {
+        const now = Date.now();
+        const timeSinceLastHeartbeat = now - this.lastHeartbeat;
 
-      // Check if connection is stale (no heartbeat for 5 minutes)
-      if (
-        timeSinceLastHeartbeat > 5 * 60 * 1000 &&
-        this.client.ws?.readyState === 1
-      ) {
-        logger.warn('Connection appears stale, attempting reconnection...');
-        this.client.destroy();
-        this.handleReconnect();
-        return;
-      }
-
-      // Memory cleanup and monitoring (every 5 minutes)
-      const timeSinceLastCleanup = now - this.lastMemoryCleanupTime;
-      if (timeSinceLastCleanup >= 5 * 60 * 1000) {
-        // Every 5 minutes
-        await this.performMemoryCleanup();
-        this.lastMemoryCleanupTime = now;
-      }
-
-      // Periodic data saving (every 10 minutes)
-      const timeSinceLastSave = now - this.lastSaveTime;
-      if (timeSinceLastSave >= 10 * 60 * 1000) {
-        // Every 10 minutes
-        try {
-          await this.saveData();
-          this.lastSaveTime = now;
-          logger.info('Periodic data save completed');
-        } catch (error) {
-          logger.error('Failed to save data periodically', {
-            error: error.message,
-          });
-        }
-      }
-
-      // Keep presence invisible for stealth - no status updates
-      // Only update if we need to appear online briefly
-      if (
-        this.client.ws?.readyState === 1 &&
-        !this.isShuttingDown &&
-        Math.random() < 0.01
-      ) {
-        // 1% chance
-        try {
-          await this.client.user.setPresence({
-            status: 'idle', // Less suspicious than online
-            activities: [], // No activities
-          });
-
-          // Return to invisible after 30 seconds
-          setTimeout(async () => {
-            if (!this.isShuttingDown) {
-              try {
-                await this.client.user.setPresence({
-                  status: 'invisible',
-                  activities: [],
-                });
-              } catch (err) {
-                // Ignore errors
-              }
+        // Check if connection is stale (no heartbeat for 5 minutes)
+        if (
+          timeSinceLastHeartbeat > 5 * 60 * 1000 &&
+          this.client.ws?.readyState === 1
+        ) {
+          logger.warn('Connection appears stale, attempting reconnection...');
+          try {
+            if (this.client && typeof this.client.destroy === 'function') {
+              this.client.destroy();
             }
-          }, 30000);
-        } catch (err) {
-          // Ignore presence update errors
+            await this.handleReconnect();
+          } catch (reconnectError) {
+            logger.error('Failed to reconnect during heartbeat', {
+              error: reconnectError.message,
+            });
+          }
+          return;
         }
+
+        // Memory cleanup and monitoring (every 5 minutes)
+        const timeSinceLastCleanup = now - this.lastMemoryCleanupTime;
+        if (timeSinceLastCleanup >= 5 * 60 * 1000) {
+          // Every 5 minutes
+          try {
+            await this.performMemoryCleanup();
+            this.lastMemoryCleanupTime = now;
+          } catch (cleanupError) {
+            logger.error('Memory cleanup failed during heartbeat', {
+              error: cleanupError.message,
+            });
+          }
+        }
+
+        // Periodic data saving (every 10 minutes)
+        const timeSinceLastSave = now - this.lastSaveTime;
+        if (timeSinceLastSave >= 10 * 60 * 1000) {
+          // Every 10 minutes
+          try {
+            await this.saveData();
+            this.lastSaveTime = now;
+            logger.info('Periodic data save completed');
+          } catch (error) {
+            logger.error('Failed to save data periodically', {
+              error: error.message,
+            });
+          }
+        }
+
+        // Keep presence invisible for stealth - no status updates
+        // Only update if we need to appear online briefly
+        if (
+          this.client.ws?.readyState === 1 &&
+          !this.isShuttingDown &&
+          Math.random() < 0.01
+        ) {
+          // 1% chance
+          try {
+            await this.client.user.setPresence({
+              status: 'idle', // Less suspicious than online
+              activities: [], // No activities
+            });
+
+            // Return to invisible after 30 seconds
+            setTimeout(async () => {
+              if (!this.isShuttingDown) {
+                try {
+                  await this.client.user.setPresence({
+                    status: 'invisible',
+                    activities: [],
+                  });
+                } catch (err) {
+                  logger.debug('Failed to set invisible presence', {
+                    error: err.message,
+                  });
+                }
+              }
+            }, 30000);
+          } catch (err) {
+            logger.debug('Failed to update presence', { error: err.message });
+          }
+        }
+      } catch (heartbeatError) {
+        logger.error('Heartbeat failed', { error: heartbeatError.message });
       }
     }, 60000); // Check every minute
   }
 
   async performMemoryCleanup() {
     try {
+      // Clear corrupted entries from LRU caches
+      [this.channelMemories, this.dmContexts, this.dmOrigins].forEach(
+        (cache) => {
+          for (const [key, value] of cache.entries()) {
+            if (!value || (Array.isArray(value) && value.length === 0)) {
+              cache.delete(key);
+            }
+          }
+        }
+      );
+
       // LRU caches automatically handle cleanup, but we can force garbage collection
       const channelMemoryUsage = this.channelMemories.getMemoryUsage();
       const dmContextUsage = this.dmContexts.getMemoryUsage();
@@ -516,9 +547,15 @@ export class Bot {
         heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
       });
 
-      // Alert if memory usage is high
+      // Monitor memory pressure
       const heapUsedMB = memoryUsage.heapUsed / 1024 / 1024;
-      if (heapUsedMB > 200) {
+      if (heapUsedMB > 300) {
+        // 300MB threshold
+        logger.warn(
+          'High memory usage detected, clearing oldest cache entries'
+        );
+        this.channelMemories.clear();
+      } else if (heapUsedMB > 200) {
         // Alert if using more than 200MB
         logger.warn('High memory usage detected', {
           heapUsed: Math.round(heapUsedMB) + 'MB',
@@ -534,7 +571,7 @@ export class Bot {
         }
       }
     } catch (error) {
-      logger.error('Error during memory cleanup', { error: error.message });
+      logger.error('Memory cleanup failed', { error: error.message });
     }
   }
 
@@ -603,7 +640,15 @@ export class Bot {
         logger.info(
           `AI decided to perform ${allProactiveThoughts.length} action(s) across all guilds.`
         );
-        for (const actionObject of allProactiveThoughts) {
+        // Limit actions per cycle
+        const maxActions = CONFIG.proactive.maxActionsPerCycle;
+        const actionsToProcess = allProactiveThoughts.slice(0, maxActions);
+
+        logger.info(
+          `Processing ${actionsToProcess.length} out of ${allProactiveThoughts.length} proactive actions (max: ${maxActions})`
+        );
+
+        for (const actionObject of actionsToProcess) {
           if (
             actionObject.action === 'send_message' &&
             actionObject.channelId &&
@@ -652,10 +697,125 @@ export class Bot {
                 channelError
               );
             }
+          } else if (
+            actionObject.action === 'add_reaction' &&
+            actionObject.messageId &&
+            actionObject.emoji &&
+            CONFIG.proactive.enableReactions
+          ) {
+            logger.info(
+              `AI decided to add reaction ${actionObject.emoji} to message ${actionObject.messageId}`
+            );
+            try {
+              // Use the existing tool system for consistency
+              const { executeReactionManager } = await import(
+                '../tools/discord/reactionManager.js'
+              );
+
+              // Find the channel this message is in
+              let targetChannel = null;
+              let targetMessage = null;
+
+              // Search through recent history to find the channel
+              for (const msg of allRecentHistory) {
+                if (
+                  msg.messageId === actionObject.messageId ||
+                  msg.id === actionObject.messageId
+                ) {
+                  targetChannel = await this.client.channels.fetch(
+                    msg.channelId
+                  );
+                  targetMessage = await targetChannel.messages.fetch(
+                    actionObject.messageId
+                  );
+                  break;
+                }
+              }
+
+              if (targetChannel && targetMessage) {
+                const result = await executeReactionManager(
+                  { action: 'add', emoji: actionObject.emoji },
+                  this.client,
+                  targetMessage
+                );
+                logger.info(
+                  'Successfully added proactive reaction via tool system:',
+                  result
+                );
+              } else {
+                logger.warn(
+                  `Could not find channel or message ${actionObject.messageId}.`
+                );
+              }
+            } catch (reactionError) {
+              logger.error(
+                `Error adding reaction to message ${actionObject.messageId}:`,
+                reactionError
+              );
+            }
+          } else if (
+            actionObject.action === 'react_to_recent' &&
+            actionObject.channelId &&
+            actionObject.emoji &&
+            CONFIG.proactive.enableReactions
+          ) {
+            logger.info(
+              `AI decided to react to recent message in channel ${actionObject.channelId} with ${actionObject.emoji}`
+            );
+            try {
+              // Use the existing tool system for consistency
+              const { executeReactionManager } = await import(
+                '../tools/discord/reactionManager.js'
+              );
+
+              const targetChannel = await this.client.channels.fetch(
+                actionObject.channelId
+              );
+              if (targetChannel && targetChannel.isText()) {
+                const messages = await targetChannel.messages.fetch({
+                  limit: 1,
+                });
+                const lastMessage = messages.first();
+                if (lastMessage) {
+                  const result = await executeReactionManager(
+                    { action: 'add', emoji: actionObject.emoji },
+                    this.client,
+                    lastMessage
+                  );
+                  logger.info(
+                    'Successfully added reaction to recent message via tool system:',
+                    result
+                  );
+                } else {
+                  logger.warn(
+                    `No messages found in channel ${actionObject.channelId}`
+                  );
+                }
+              } else {
+                logger.warn(
+                  `Could not access channel ${actionObject.channelId} for reaction.`
+                );
+              }
+            } catch (reactionError) {
+              logger.error(
+                `Error reacting to recent message in channel ${actionObject.channelId}:`,
+                reactionError
+              );
+            }
           } else {
             logger.warn(
               'AI returned an unrecognized or incomplete action object:',
               actionObject
+            );
+          }
+
+          // Add delay between actions to prevent spam
+          if (
+            actionsToProcess.indexOf(actionObject) <
+            actionsToProcess.length - 1
+          ) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, CONFIG.proactive.minTimeBetweenActions)
             );
           }
         }

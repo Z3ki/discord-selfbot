@@ -10,7 +10,7 @@ import { tmpdir } from 'os';
 import { logger } from './utils/logger.js';
 import { CONFIG } from './config/config.js';
 import { validateFileType, validateUrl } from './security.js';
-import { transcriptionService } from './services/TranscriptionService.js';
+
 import { mediaCache } from './utils/MediaCache.js';
 
 // Set ffmpeg path
@@ -545,15 +545,8 @@ export async function processVideo(url, maxRedirects = 5) {
               const audioPath = path.join(tempDir, `audio_${Date.now()}.mp3`);
               await extractVideoAudio(videoPath, audioPath);
 
-              // Transcribe audio using Whisper
-              logger.info(
-                `Starting Whisper transcription for video audio: ${audioPath}`
-              );
-              const transcriptionResult =
-                await transcriptionService.transcribe(audioPath);
-              const transcription =
-                transcriptionResult.transcription ||
-                'No speech detected in video';
+              // Transcription disabled - service removed
+              const transcription = 'Transcription service disabled';
 
               // Convert frames to base64
               const frames = [];
@@ -736,14 +729,8 @@ export async function processAudio(url, maxRedirects = 5) {
             fileStream.close();
 
             try {
-              // Transcribe audio using Whisper
-              logger.info(
-                `Starting Whisper transcription for audio file: ${audioPath}`
-              );
-
-              // Transcribe audio using persistent transcription service
-              const result = await transcriptionService.transcribe(audioPath);
-              const transcription = result.transcription;
+              // Transcription disabled - service removed
+              const transcription = 'Transcription service disabled';
 
               // Clean up original audio file
               if (fs.existsSync(audioPath)) {
