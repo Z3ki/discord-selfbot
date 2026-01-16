@@ -1,5 +1,38 @@
 import { logger } from '../utils/logger.js';
 
+// Input validation utilities
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
+function validateDiscordId(id) {
+  if (!id || typeof id !== 'string') {
+    return { valid: false, error: 'Invalid ID format' };
+  }
+
+  const snowflakeRegex = /^\d{17,19}$/;
+  if (!snowflakeRegex.test(id)) {
+    return { valid: false, error: 'Invalid Discord ID format' };
+  }
+
+  return { valid: true };
+}
+
 /**
  * Handle admin management commands
  */
@@ -14,8 +47,16 @@ export async function handleAdminCommand(message, args) {
     return;
   }
 
-  const action = args[0]?.toLowerCase();
-  const userId = args[1];
+  const actionValidation = validateUserInput(args[0], 20);
+  const userIdValidation = validateUserInput(args[1], 50);
+
+  if (!actionValidation.valid) {
+    await message.reply('Invalid action parameter');
+    return;
+  }
+
+  const action = actionValidation.sanitized.toLowerCase();
+  const userId = userIdValidation.sanitized;
 
   if (!action) {
     const adminHelp = `**Admin Management**
@@ -49,6 +90,12 @@ export async function handleAdminCommand(message, args) {
           );
           return;
         }
+
+        const userIdCheck = validateDiscordId(userId);
+        if (!userIdCheck.valid) {
+          await message.reply(`Invalid user ID: ${userIdCheck.error}`);
+          return;
+        }
         const addResult = adminManager.toggleAdmin(userId);
         if (addResult.success && addResult.action === 'added') {
           await message.reply(
@@ -71,6 +118,12 @@ export async function handleAdminCommand(message, args) {
           );
           return;
         }
+
+        const userIdCheck = validateDiscordId(userId);
+        if (!userIdCheck.valid) {
+          await message.reply(`Invalid user ID: ${userIdCheck.error}`);
+          return;
+        }
         const removeResult = adminManager.toggleAdmin(userId);
         if (removeResult.success && removeResult.action === 'removed') {
           await message.reply(
@@ -91,6 +144,12 @@ export async function handleAdminCommand(message, args) {
           await message.reply(
             'User ID required for toggle action\nUsage: `,admin toggle <userId>`'
           );
+          return;
+        }
+
+        const userIdCheck = validateDiscordId(userId);
+        if (!userIdCheck.valid) {
+          await message.reply(`Invalid user ID: ${userIdCheck.error}`);
           return;
         }
         const toggleResult = adminManager.toggleAdmin(userId);
@@ -161,8 +220,16 @@ export async function handleBlacklistCommand(message, args, bot) {
     return;
   }
 
-  const action = args[0]?.toLowerCase();
-  const serverId = args[1];
+  const actionValidation = validateUserInput(args[0], 20);
+  const serverIdValidation = validateUserInput(args[1], 50);
+
+  if (!actionValidation.valid) {
+    await message.reply('Invalid action parameter');
+    return;
+  }
+
+  const action = actionValidation.sanitized.toLowerCase();
+  const serverId = serverIdValidation.sanitized;
 
   if (!action) {
     const blacklistHelp = `**Blacklist Management**
@@ -194,6 +261,12 @@ export async function handleBlacklistCommand(message, args, bot) {
           );
           return;
         }
+
+        const serverIdCheck = validateDiscordId(serverId);
+        if (!serverIdCheck.valid) {
+          await message.reply(`Invalid server ID: ${serverIdCheck.error}`);
+          return;
+        }
         bot.blacklist.add(serverId);
         await message.reply(
           `**Server Added to Blacklist**\n\n**Server ID:** ${serverId}\n**Total Blacklisted:** ${bot.blacklist.size}`
@@ -206,6 +279,12 @@ export async function handleBlacklistCommand(message, args, bot) {
           await message.reply(
             'Server ID required for remove action\nUsage: `,blacklist remove <serverId>`'
           );
+          return;
+        }
+
+        const serverIdCheck = validateDiscordId(serverId);
+        if (!serverIdCheck.valid) {
+          await message.reply(`Invalid server ID: ${serverIdCheck.error}`);
           return;
         }
         const removed = bot.blacklist.delete(serverId);

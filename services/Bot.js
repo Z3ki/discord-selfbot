@@ -64,143 +64,169 @@ export class Bot {
   }
 
   async initialize(providerManager) {
-    this.providerManager = providerManager;
+    try {
+      this.providerManager = providerManager;
 
-    // Initialize AI providers
-    await this.providerManager.initializeProviders();
+      // Initialize AI providers
+      await this.providerManager.initializeProviders();
 
-    // Initialize Discord client
-    this.client = new Client({
-      intents: [
-        'Guilds',
-        'GuildMembers',
-        'GuildMessages',
-        'DirectMessages',
-        'MessageContent',
-      ],
-      checkUpdate: false,
-      restTimeOffset: 0, // No delays
-      restRequestTimeout: 30000,
-      restGlobalRateLimit: 50,
-      restSweepInterval: 60000,
-      failIfNotExists: false,
-      // Stealth: No presence or invisible status to avoid detection
-      presence: {
-        status: 'online',
-        activities: [],
-      },
-    });
+      // Initialize Discord client
+      this.client = new Client({
+        intents: [
+          'Guilds',
+          'GuildMembers',
+          'GuildMessages',
+          'DirectMessages',
+          'MessageContent',
+        ],
+        checkUpdate: false,
+        restTimeOffset: 0, // No delays
+        restRequestTimeout: 30000,
+        restGlobalRateLimit: 50,
+        restSweepInterval: 60000,
+        failIfNotExists: false,
+        // Stealth: No presence or invisible status to avoid detection
+        presence: {
+          status: 'online',
+          activities: [],
+        },
+      });
 
-    // Register dependencies in container
-    container.register('client', this.client, true);
-    container.register('bot', this, true);
-    container.register('config', CONFIG, true);
-    container.register('logger', logger, true);
-    container.register('dataManager', this.dataManager, true);
+      // Register dependencies in container
+      container.register('client', this.client, true);
+      container.register('bot', this, true);
+      container.register('config', CONFIG, true);
+      container.register('logger', logger, true);
+      container.register('dataManager', this.dataManager, true);
 
-    // Initialize queues and managers with stealth settings
-    this.globalDMQueue = new GlobalDMQueue(this.client);
-    this.requestQueue.stealthMode = CONFIG.stealth.enabled;
+      // Initialize queues and managers with stealth settings
+      this.globalDMQueue = new GlobalDMQueue(this.client);
+      this.requestQueue.stealthMode = CONFIG.stealth.enabled;
 
-    // Load data
-    await this.loadData();
+      // Load data
+      await this.loadData();
 
-    // Setup stability event handlers
-    this.setupStabilityHandlers();
+      // Setup stability event handlers
+      this.setupStabilityHandlers();
 
-    // Setup handlers
-    this.setupEventHandlers();
+      // Setup handlers
+      this.setupEventHandlers();
 
-    // Register slash commands
-    await this.registerCommands();
+      // Register slash commands
+      await this.registerCommands();
 
-    // Start heartbeat monitoring
-    this.startHeartbeat();
+      // Start heartbeat monitoring
+      this.startHeartbeat();
 
-    logger.info('Bot initialized successfully');
+      logger.info('Bot initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize bot', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   async loadData() {
-    // Load data into existing LRU caches
-    const channelMemoriesData = await this.dataManager.loadData(
-      'channelMemories.json'
-    );
-    const dmContextsData = await this.dataManager.loadData('dmContexts.json');
-    const dmOriginsData = await this.dataManager.loadData('dmOrigins.json');
+    try {
+      // Load data into existing LRU caches
+      const channelMemoriesData = await this.dataManager.loadData(
+        'channelMemories.json'
+      );
+      const dmContextsData = await this.dataManager.loadData('dmContexts.json');
+      const dmOriginsData = await this.dataManager.loadData('dmOrigins.json');
 
-    // Clear existing caches
-    this.channelMemories.clear();
-    this.dmContexts.clear();
-    this.dmOrigins.clear();
+      // Clear existing caches
+      this.channelMemories.clear();
+      this.dmContexts.clear();
+      this.dmOrigins.clear();
 
-    // Populate existing LRU caches with loaded data (skip internal properties)
-    for (const [key, value] of channelMemoriesData) {
-      if (key !== 'maxSize' && key !== 'cache') {
-        this.channelMemories.set(key, value);
+      // Populate existing LRU caches with loaded data (skip internal properties)
+      for (const [key, value] of channelMemoriesData) {
+        if (key !== 'maxSize' && key !== 'cache') {
+          this.channelMemories.set(key, value);
+        }
       }
-    }
-    for (const [key, value] of dmContextsData) {
-      if (key !== 'maxSize' && key !== 'cache') {
-        this.dmContexts.set(key, value);
+      for (const [key, value] of dmContextsData) {
+        if (key !== 'maxSize' && key !== 'cache') {
+          this.dmContexts.set(key, value);
+        }
       }
-    }
-    for (const [key, value] of dmOriginsData) {
-      if (key !== 'maxSize' && key !== 'cache') {
-        this.dmOrigins.set(key, value);
+      for (const [key, value] of dmOriginsData) {
+        if (key !== 'maxSize' && key !== 'cache') {
+          this.dmOrigins.set(key, value);
+        }
       }
-    }
 
-    this.globalPrompt[0] = await this.dataManager.loadGlobalPrompt();
+      this.globalPrompt[0] = await this.dataManager.loadGlobalPrompt();
 
-    // Load server prompts
-    const serverPromptsData =
-      await this.dataManager.loadData('serverPrompts.json');
-    for (const [key, value] of serverPromptsData) {
-      if (key !== 'maxSize' && key !== 'cache') {
-        this.serverPrompts.set(key, value);
+      // Load server prompts
+      const serverPromptsData =
+        await this.dataManager.loadData('serverPrompts.json');
+      for (const [key, value] of serverPromptsData) {
+        if (key !== 'maxSize' && key !== 'cache') {
+          this.serverPrompts.set(key, value);
+        }
       }
-    }
 
-    // Load blacklist
-    const blacklistData = await this.dataManager.loadData('blacklist.json');
-    if (Array.isArray(blacklistData)) {
-      this.blacklist = new Set(blacklistData);
-    } else {
-      this.blacklist = new Set();
-    }
+      // Load blacklist
+      const blacklistData = await this.dataManager.loadData('blacklist.json');
+      if (Array.isArray(blacklistData)) {
+        this.blacklist = new Set(blacklistData);
+      } else {
+        this.blacklist = new Set();
+      }
 
-    // Load safe mode servers
-    const safeModeData = await this.dataManager.loadData(
-      'safeModeServers.json'
-    );
-    logger.debug('SAFE MODE LOAD DEBUG', {
-      safeModeData: safeModeData,
-      type: typeof safeModeData,
-      isMap: safeModeData instanceof Map,
-      size: safeModeData instanceof Map ? safeModeData.size : 'N/A',
-    });
-
-    // DataManager.loadData() already returns a Map, so use it directly
-    if (safeModeData instanceof Map) {
-      this.safeModeServers = safeModeData;
-      logger.info('SAFE MODE LOAD SUCCESS', {
-        size: this.safeModeServers.size,
-        keys: Array.from(this.safeModeServers.keys()),
+      // Load safe mode servers
+      const safeModeData = await this.dataManager.loadData(
+        'safeModeServers.json'
+      );
+      logger.debug('SAFE MODE LOAD DEBUG', {
+        safeModeData: safeModeData,
+        type: typeof safeModeData,
+        isMap: safeModeData instanceof Map,
+        size: safeModeData instanceof Map ? safeModeData.size : 'N/A',
       });
-    } else {
+
+      // DataManager.loadData() already returns a Map, so use it directly
+      if (safeModeData instanceof Map) {
+        this.safeModeServers = safeModeData;
+        logger.info('SAFE MODE LOAD SUCCESS', {
+          size: this.safeModeServers.size,
+          keys: Array.from(this.safeModeServers.keys()),
+        });
+      } else {
+        this.safeModeServers = new Map();
+        logger.debug('SAFE MODE LOAD - using empty map (invalid data type)');
+      }
+
+      // Load shell access servers (default: off, so no need to load - stays empty)
+      // Shell access is intentionally not persisted per user request
+
+      logger.info('Data loaded into existing LRU caches', {
+        channelMemories: this.channelMemories.size(),
+        dmContexts: this.dmContexts.size(),
+        dmOrigins: this.dmOrigins.size(),
+        blacklistedServers: this.blacklist.size,
+      });
+    } catch (error) {
+      logger.error('Failed to load data', {
+        error: error.message,
+        stack: error.stack,
+      });
+
+      // Initialize with empty data if loading fails
+      this.channelMemories.clear();
+      this.dmContexts.clear();
+      this.dmOrigins.clear();
+      this.serverPrompts.clear();
+      this.blacklist.clear();
       this.safeModeServers = new Map();
-      logger.debug('SAFE MODE LOAD - using empty map (invalid data type)');
+      this.globalPrompt[0] = '';
+
+      logger.warn('Initialized with empty data due to loading error');
     }
-
-    // Load shell access servers (default: off, so no need to load - stays empty)
-    // Shell access is intentionally not persisted per user request
-
-    logger.info('Data loaded into existing LRU caches', {
-      channelMemories: this.channelMemories.size(),
-      dmContexts: this.dmContexts.size(),
-      dmOrigins: this.dmOrigins.size(),
-      blacklistedServers: this.blacklist.size,
-    });
   }
 
   setupStabilityHandlers() {
@@ -360,7 +386,17 @@ export class Bot {
   async start() {
     try {
       logger.info('Attempting to connect to Discord...');
-      await this.client.login(CONFIG.discord.token);
+
+      // Add timeout for login
+      const loginPromise = this.client.login(CONFIG.discord.token);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Login timeout after 30 seconds')),
+          30000
+        )
+      );
+
+      await Promise.race([loginPromise, timeoutPromise]);
       logger.info('Bot started successfully');
     } catch (error) {
       logger.error('Failed to start bot', {
@@ -407,7 +443,16 @@ export class Bot {
         return;
       }
 
-      await this.client.login(CONFIG.discord.token);
+      // Add timeout for reconnection
+      const loginPromise = this.client.login(CONFIG.discord.token);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Reconnection timeout after 30 seconds')),
+          30000
+        )
+      );
+
+      await Promise.race([loginPromise, timeoutPromise]);
       logger.info('Reconnection successful');
       this.reconnectAttempts = 0;
     } catch (error) {
@@ -641,7 +686,7 @@ export class Bot {
           `AI decided to perform ${allProactiveThoughts.length} action(s) across all guilds.`
         );
         // Limit actions per cycle
-        const maxActions = CONFIG.proactive.maxActionsPerCycle;
+        const maxActions = CONFIG.proactive?.maxActionsPerCycle || 5;
         const actionsToProcess = allProactiveThoughts.slice(0, maxActions);
 
         logger.info(
@@ -814,9 +859,8 @@ export class Bot {
             actionsToProcess.indexOf(actionObject) <
             actionsToProcess.length - 1
           ) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, CONFIG.proactive.minTimeBetweenActions)
-            );
+            const delay = CONFIG.proactive?.minTimeBetweenActions || 2000;
+            await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }
       } else {

@@ -39,6 +39,71 @@ function sanitizeInput(input, maxLength = 2000) {
   );
 }
 
+// Enhanced input validation utility
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  // Check for potential injection patterns
+  const dangerousPatterns = [
+    /javascript:/i,
+    /vbscript:/i,
+    /onload=/i,
+    /onerror=/i,
+    /onclick=/i,
+    /<script/i,
+    /<iframe/i,
+    /<object/i,
+    /<embed/i,
+    /eval\(/i,
+    /setTimeout\(/i,
+    /setInterval\(/i,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(input)) {
+      return {
+        valid: false,
+        error: 'Input contains potentially dangerous content',
+      };
+    }
+  }
+
+  return { valid: true, sanitized: sanitizeInput(input, maxLength) };
+}
+
+// Validate Discord user ID format
+function validateDiscordUserId(userId) {
+  if (!userId || typeof userId !== 'string') {
+    return { valid: false, error: 'Invalid user ID' };
+  }
+
+  // Discord user IDs are 17-19 digit snowflake IDs
+  const snowflakeRegex = /^\d{17,19}$/;
+  if (!snowflakeRegex.test(userId)) {
+    return { valid: false, error: 'Invalid Discord user ID format' };
+  }
+
+  return { valid: true };
+}
+
+// Validate server ID format
+function validateServerId(serverId) {
+  return validateDiscordUserId(serverId); // Same format as user IDs
+}
+
 // Path validation utility
 const VALID_PATHS = ['globalPrompt.txt', 'data-selfbot/'];
 function validatePath(inputPath) {
@@ -71,8 +136,22 @@ export async function handleCommand(
   apiResourceManager,
   bot
 ) {
+  // Validate message content
+  const messageValidation = validateUserInput(message.content, 4000);
+  if (!messageValidation.valid) {
+    await safeReply(message, 'Invalid message content');
+    return;
+  }
+
   const args = message.content.slice(1).trim().split(' ');
   const command = args.shift().toLowerCase();
+
+  // Validate command
+  const commandValidation = validateUserInput(command, 50);
+  if (!commandValidation.valid) {
+    await safeReply(message, 'Invalid command');
+    return;
+  }
 
   // Import admin manager for admin checks
   const { adminManager } = await import('./utils/adminManager.js');
@@ -124,8 +203,16 @@ export async function handleCommand(
           return;
         }
 
-        const action = args[0]?.toLowerCase();
-        const userId = args[1];
+        const actionValidation = validateUserInput(args[0], 20);
+        const userIdValidation = validateUserInput(args[1], 50);
+
+        if (!actionValidation.valid || !actionValidation.sanitized) {
+          await safeReply(message, 'Invalid action parameter');
+          return;
+        }
+
+        const action = actionValidation.sanitized.toLowerCase();
+        const userId = userIdValidation.sanitized;
 
         if (!action) {
           const adminHelp = `**Admin Management**
@@ -159,6 +246,12 @@ export async function handleCommand(
                 );
                 return;
               }
+
+              const userIdCheck = validateDiscordUserId(userId);
+              if (!userIdCheck.valid) {
+                await message.reply(`Invalid user ID: ${userIdCheck.error}`);
+                return;
+              }
               const addResult = adminManager.toggleAdmin(userId);
               if (addResult.success && addResult.action === 'added') {
                 await safeReply(
@@ -181,6 +274,12 @@ export async function handleCommand(
                 await message.reply(
                   'User ID required for remove action\nUsage: `,admin remove <userId>`'
                 );
+                return;
+              }
+
+              const userIdCheck = validateDiscordUserId(userId);
+              if (!userIdCheck.valid) {
+                await message.reply(`Invalid user ID: ${userIdCheck.error}`);
                 return;
               }
               const removeResult = adminManager.toggleAdmin(userId);
@@ -208,6 +307,12 @@ export async function handleCommand(
                 await message.reply(
                   'User ID required for toggle action\nUsage: `,admin toggle <userId>`'
                 );
+                return;
+              }
+
+              const userIdCheck = validateDiscordUserId(userId);
+              if (!userIdCheck.valid) {
+                await message.reply(`Invalid user ID: ${userIdCheck.error}`);
                 return;
               }
               const toggleResult = adminManager.toggleAdmin(userId);
@@ -505,7 +610,14 @@ export async function handleCommand(
         break;
 
       case 'refresh': {
-        const refreshType = sanitizeInput(args[0]?.toLowerCase());
+        const refreshTypeValidation = validateUserInput(args[0], 20);
+        if (!refreshTypeValidation.valid) {
+          await message.reply(
+            'Usage: `,refresh <type>` where type is:\n- `memories` - Clear conversation memories\n- `context` - Clear user context data\n- `dm` - Clear DM metadata\n- `all` - Clear everything'
+          );
+          break;
+        }
+        const refreshType = refreshTypeValidation.sanitized.toLowerCase();
 
         if (!refreshType) {
           await message.reply(
@@ -597,7 +709,16 @@ export async function handleCommand(
 
       case 'prompt': {
         // Capture everything after ";prompt " to preserve newlines and formatting
-        const promptArgs = sanitizeInput(message.content.slice(8).trim());
+        const promptContent = message.content.slice(8).trim();
+        const promptArgsValidation = validateUserInput(promptContent, 3000);
+        if (
+          !promptArgsValidation.valid &&
+          promptArgsValidation.error !== 'Input cannot be empty'
+        ) {
+          await safeReply(message, 'Invalid prompt content');
+          return;
+        }
+        const promptArgs = promptArgsValidation.sanitized || '';
         const args = promptArgs.split(' ');
 
         const serverId = message.guild?.id;
@@ -763,7 +884,19 @@ export async function handleCommand(
       }
 
       case 'nvidia': {
-        const nvidiaMessage = args.join(' ').trim();
+        const nvidiaMessageValidation = validateUserInput(
+          args.join(' ').trim(),
+          2000,
+          true
+        );
+        if (!nvidiaMessageValidation.valid) {
+          await safeReply(
+            message,
+            'Invalid message content for NVIDIA command'
+          );
+          break;
+        }
+        const nvidiaMessage = nvidiaMessageValidation.sanitized || '';
 
         try {
           await safeReply(message, '*Using NVIDIA NIM provider...*');
@@ -855,8 +988,16 @@ export async function handleCommand(
       }
 
       case 'blacklist': {
-        const subcommand = sanitizeInput(args[0]?.toLowerCase());
-        const serverId = sanitizeInput(args[1]);
+        const subcommandValidation = validateUserInput(args[0], 20, true);
+        const serverIdValidation = validateUserInput(args[1], 50, true);
+
+        if (!subcommandValidation.valid) {
+          await safeReply(message, 'Invalid subcommand');
+          break;
+        }
+
+        const subcommand = subcommandValidation.sanitized?.toLowerCase() || '';
+        const serverId = serverIdValidation.sanitized;
 
         if (!subcommand) {
           // Show current blacklist
@@ -874,6 +1015,12 @@ export async function handleCommand(
             await message.reply('Usage: `,blacklist add <server_id>`');
             break;
           }
+
+          const serverIdCheck = validateServerId(serverId);
+          if (!serverIdCheck.valid) {
+            await message.reply(`Invalid server ID: ${serverIdCheck.error}`);
+            break;
+          }
           if (bot.blacklist.has(serverId)) {
             await safeReply(
               message,
@@ -887,6 +1034,15 @@ export async function handleCommand(
         } else if (subcommand === 'remove' || subcommand === 'rm') {
           if (!serverId) {
             await safeReply(message, 'Usage: `,blacklist remove <server_id>`');
+            break;
+          }
+
+          const serverIdCheck = validateServerId(serverId);
+          if (!serverIdCheck.valid) {
+            await safeReply(
+              message,
+              `Invalid server ID: ${serverIdCheck.error}`
+            );
             break;
           }
           if (bot.blacklist.has(serverId)) {
@@ -1667,10 +1823,20 @@ export function setupHandlers(
         try {
           if (interaction.commandName === 'prompt') {
             await interaction.deferReply();
-            const text = sanitizeInput(interaction.options.getString('text'));
-            globalPrompt[0] = text;
+            const textInput = interaction.options.getString('text');
+            const textValidation = validateUserInput(textInput, 3000);
+            if (!textValidation.valid) {
+              await interaction.editReply(
+                `Invalid prompt: ${textValidation.error}`
+              );
+              return;
+            }
+            globalPrompt[0] = textValidation.sanitized;
             if (validatePath('globalPrompt.txt')) {
-              await fs.promises.writeFile('globalPrompt.txt', text);
+              await fs.promises.writeFile(
+                'globalPrompt.txt',
+                textValidation.sanitized
+              );
             }
             try {
               await interaction.editReply('Custom prompt set!');
@@ -1731,7 +1897,19 @@ export function setupHandlers(
             }
           } else if (interaction.commandName === 'refresh') {
             await interaction.deferReply();
-            const refreshType = interaction.options.getString('type') || 'all';
+            const refreshTypeInput =
+              interaction.options.getString('type') || 'all';
+            const refreshTypeValidation = validateUserInput(
+              refreshTypeInput,
+              20
+            );
+            if (!refreshTypeValidation.valid) {
+              await interaction.editReply(
+                `Invalid refresh type: ${refreshTypeValidation.error}`
+              );
+              return;
+            }
+            const refreshType = refreshTypeValidation.sanitized;
 
             let clearedItems = [];
 

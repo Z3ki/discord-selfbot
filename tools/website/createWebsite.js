@@ -1,3 +1,42 @@
+// Input validation utility
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  // For HTML content, we need to be more permissive with HTML tags but still prevent dangerous patterns
+  const dangerousPatterns = [
+    /javascript:/i,
+    /vbscript:/i,
+    /onload=/i,
+    /onerror=/i,
+    /onclick=/i,
+    /<script/i,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(input)) {
+      return {
+        valid: false,
+        error: 'Input contains potentially dangerous content',
+      };
+    }
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
 // Multi-level JSON decoding for AI-generated HTML
 function decodeHtmlContent(html) {
   let result = html;
@@ -238,7 +277,26 @@ export const createWebsiteTool = {
     try {
       ({ name, html, description = '' } = args);
 
-      // WebsiteManager will sanitize the name, so no validation needed here
+      // Validate inputs
+      const nameValidation = validateUserInput(name, 100);
+      if (!nameValidation.valid) {
+        throw new Error(`Invalid website name: ${nameValidation.error}`);
+      }
+
+      const htmlValidation = validateUserInput(html, 1000000); // 1MB limit
+      if (!htmlValidation.valid) {
+        throw new Error(`Invalid HTML content: ${htmlValidation.error}`);
+      }
+
+      const descriptionValidation = validateUserInput(description, 500, true);
+      if (!descriptionValidation.valid) {
+        throw new Error(`Invalid description: ${descriptionValidation.error}`);
+      }
+
+      // Use sanitized inputs
+      name = nameValidation.sanitized;
+      html = htmlValidation.sanitized;
+      description = descriptionValidation.sanitized;
 
       // Step 1: Decode multi-level JSON encoding
       html = decodeHtmlContent(html);

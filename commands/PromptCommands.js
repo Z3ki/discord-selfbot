@@ -1,5 +1,25 @@
 import { logger } from '../utils/logger.js';
 
+// Input validation utility
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
 /**
  * Handle prompt management commands
  */
@@ -11,8 +31,16 @@ export async function handlePromptCommand(message, args, bot) {
     return;
   }
 
-  const type = args[0]?.toLowerCase();
-  const promptText = args.slice(1).join(' ');
+  const typeValidation = validateUserInput(args[0], 20);
+  const promptTextValidation = validateUserInput(args.slice(1).join(' '), 3000);
+
+  if (!typeValidation.valid) {
+    await message.reply('Invalid prompt type parameter');
+    return;
+  }
+
+  const type = typeValidation.sanitized.toLowerCase();
+  const promptText = promptTextValidation.sanitized || '';
 
   if (!type) {
     const promptHelp = `**Prompt Management**
@@ -49,6 +77,12 @@ export async function handlePromptCommand(message, args, bot) {
           return;
         }
 
+        const promptCheck = validateUserInput(promptText, 3000);
+        if (!promptCheck.valid) {
+          await message.reply(`Invalid prompt text: ${promptCheck.error}`);
+          return;
+        }
+
         // Clear memory for this channel
         bot.channelMemories.delete(channelId);
 
@@ -67,6 +101,12 @@ export async function handlePromptCommand(message, args, bot) {
           return;
         }
 
+        const promptCheck = validateUserInput(promptText, 3000);
+        if (!promptCheck.valid) {
+          await message.reply(`Invalid prompt text: ${promptCheck.error}`);
+          return;
+        }
+
         // Set global prompt
         bot.globalPrompt[0] = promptText;
         await bot.dataManager.saveGlobalPrompt(promptText);
@@ -79,6 +119,12 @@ export async function handlePromptCommand(message, args, bot) {
           await message.reply(
             'Prompt text required for clear all command\nUsage: `,prompt clearall <text>`'
           );
+          return;
+        }
+
+        const promptCheck = validateUserInput(promptText, 3000);
+        if (!promptCheck.valid) {
+          await message.reply(`Invalid prompt text: ${promptCheck.error}`);
           return;
         }
 
@@ -96,10 +142,14 @@ export async function handlePromptCommand(message, args, bot) {
 
       default: {
         // Default behavior: set server prompt
-        bot.serverPrompts.set(
-          serverId,
-          type + (promptText ? ' ' + promptText : '')
-        );
+        const fullPrompt = type + (promptText ? ' ' + promptText : '');
+        const promptCheck = validateUserInput(fullPrompt, 3000);
+        if (!promptCheck.valid) {
+          await message.reply(`Invalid prompt text: ${promptCheck.error}`);
+          return;
+        }
+
+        bot.serverPrompts.set(serverId, promptCheck.sanitized);
         await bot.dataManager.saveData('serverPrompts.json', bot.serverPrompts);
         await message.reply(`**Server prompt updated**`);
         break;
@@ -122,7 +172,13 @@ export async function handleNvidiaCommand(message, args, providerManager) {
     return;
   }
 
-  const msg = args.join(' ');
+  const msgValidation = validateUserInput(args.join(' '), 2000);
+  if (!msgValidation.valid) {
+    await message.reply(`Invalid message: ${msgValidation.error}`);
+    return;
+  }
+
+  const msg = msgValidation.sanitized;
   if (!msg) {
     await message.reply(
       'Message required for NVIDIA AI\nUsage: `,nvidia <message>`'

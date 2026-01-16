@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { sanitizeTokens, sanitizeObject } from './tokenSanitizer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,60 +19,18 @@ class Logger {
   }
 
   // Sanitize sensitive information for logging
-  sanitizeForLogging(str) {
-    if (!str || typeof str !== 'string') return str;
-
-    let sanitized = str;
-
-    // Discord bot tokens (more comprehensive pattern)
-    sanitized = sanitized.replace(
-      /[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,
-      '[REDACTED_TOKEN]'
-    );
-
-    // Discord user tokens (different format)
-    sanitized = sanitized.replace(
-      /[A-Za-z0-9_-]{59,}/g,
-      '[REDACTED_USER_TOKEN]'
-    );
-
-    // API keys (common patterns)
-    sanitized = sanitized.replace(
-      /['"]?[A-Za-z0-9_-]{20,}['"]?(\s*:\s*['"]?[A-Za-z0-9_-]{20,}['"]?)/g,
-      '[REDACTED_API_KEY]'
-    );
-
-    // Passwords in JSON
-    sanitized = sanitized.replace(
-      /(['"]password['"]:\s*['"])[^'"]*(['"])/gi,
-      '$1[REDACTED_PASSWORD]$2'
-    );
-
-    // Authorization headers
-    sanitized = sanitized.replace(
-      /(authorization:\s*[Bb]earer\s+)[A-Za-z0-9._-]+/gi,
-      '$1[REDACTED_BEARER]'
-    );
-
-    // Email addresses (optional, for privacy)
-    sanitized = sanitized.replace(
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-      '[REDACTED_EMAIL]'
-    );
-
-    return sanitized;
+  sanitizeForLogging(input) {
+    // Use the comprehensive token sanitizer
+    return sanitizeTokens(input);
   }
 
   formatMessage(level, message, meta = {}) {
     const timestamp = new Date().toISOString();
     const sanitizedMessage = this.sanitizeForLogging(message);
-    const sanitizedMeta = {};
-    for (const [key, value] of Object.entries(meta)) {
-      sanitizedMeta[key] =
-        typeof value === 'object' && value !== null
-          ? JSON.stringify(value)
-          : this.sanitizeForLogging(String(value));
-    }
+
+    // Use comprehensive object sanitization for metadata
+    const sanitizedMeta = sanitizeObject(meta);
+
     const metaStr =
       Object.keys(sanitizedMeta).length > 0
         ? ` ${JSON.stringify(sanitizedMeta)}`

@@ -1,11 +1,37 @@
 import { logger } from '../utils/logger.js';
 
+// Input validation utility
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
 /**
  * Handles debug commands
  */
 export async function handleDebugCommand(message, args) {
+  // Validate args
+  const argsValidation = validateUserInput(args.join(' '), 1000, true);
+  if (!argsValidation.valid) {
+    return 'Invalid arguments for debug command';
+  }
+
   logger.debug('Debug command received', {
-    args,
+    args: argsValidation.sanitized,
     user: message.author.username,
   });
 
@@ -33,7 +59,16 @@ export async function handleDebugCommand(message, args) {
  * Handles info commands
  */
 export async function handleInfoCommand(message, args) {
-  logger.info('Info command received', { args, user: message.author.username });
+  // Validate args
+  const argsValidation = validateUserInput(args.join(' '), 1000, true);
+  if (!argsValidation.valid) {
+    return 'Invalid arguments for info command';
+  }
+
+  logger.info('Info command received', {
+    args: argsValidation.sanitized,
+    user: message.author.username,
+  });
 
   try {
     const uptime = process.uptime();
@@ -70,8 +105,14 @@ export async function handleInfoCommand(message, args) {
  * Handles restart commands
  */
 export async function handleRestartCommand(message, args) {
+  // Validate args
+  const argsValidation = validateUserInput(args.join(' '), 1000, true);
+  if (!argsValidation.valid) {
+    return 'Invalid arguments for restart command';
+  }
+
   logger.info('Restart command received', {
-    args,
+    args: argsValidation.sanitized,
     user: message.author.username,
   });
 
@@ -91,8 +132,14 @@ export async function handleRestartCommand(message, args) {
  * Handles refresh commands
  */
 export async function handleRefreshCommand(message, args, bot) {
+  // Validate args
+  const argsValidation = validateUserInput(args.join(' '), 1000, true);
+  if (!argsValidation.valid) {
+    return 'Invalid arguments for refresh command';
+  }
+
   logger.info('Refresh command received', {
-    args,
+    args: argsValidation.sanitized,
     user: message.author.username,
   });
 

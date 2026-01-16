@@ -3,6 +3,50 @@ import path from 'path';
 import { logger } from '../../utils/logger.js';
 
 /**
+ * Enhanced input validation
+ */
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  // Check for dangerous patterns
+  const dangerousPatterns = [
+    /javascript:/i,
+    /vbscript:/i,
+    /onload=/i,
+    /onerror=/i,
+    /onclick=/i,
+    /<script/i,
+    /<iframe/i,
+    /<object/i,
+    /<embed/i,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(input)) {
+      return {
+        valid: false,
+        error: 'Input contains potentially dangerous content',
+      };
+    }
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
+/**
  * Sanitize filename to prevent path traversal attacks
  */
 function sanitizeFilename(filename) {
@@ -70,6 +114,25 @@ export const createMessageFileTool = {
     // Set default llmResponse if not provided
     const capturedLlmResponse = llmResponse || '';
     try {
+      // Validate content
+      const contentValidation = validateUserInput(content, 10000000); // 10MB limit
+      if (!contentValidation.valid) {
+        return `Error: Invalid content - ${contentValidation.error}`;
+      }
+
+      // Validate filename if provided
+      if (filename) {
+        const filenameValidation = validateUserInput(filename, 100);
+        if (!filenameValidation.valid) {
+          return `Error: Invalid filename - ${filenameValidation.error}`;
+        }
+      }
+
+      // Validate description
+      const descriptionValidation = validateUserInput(description, 1000, true);
+      if (!descriptionValidation.valid) {
+        return `Error: Invalid description - ${descriptionValidation.error}`;
+      }
       // Create temp directory if it doesn't exist
       const tempDir = path.join(process.cwd(), 'temp');
       if (!fs.existsSync(tempDir)) {

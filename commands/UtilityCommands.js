@@ -1,6 +1,26 @@
 import { logger } from '../utils/logger.js';
 import { toolRegistry } from '../tools/index.js';
 
+// Input validation utility
+function validateUserInput(input, maxLength = 4000, allowEmpty = false) {
+  if (!allowEmpty && (!input || input.trim() === '')) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+
+  if (typeof input !== 'string') {
+    return { valid: false, error: 'Invalid input type' };
+  }
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  return { valid: true, sanitized: input.trim() };
+}
+
 /**
  * Handle utility commands like help, functions, testqueue
  */
@@ -92,6 +112,13 @@ export async function handleSafeModeCommand(message, args, bot) {
 
   if (!adminManager.isAdmin(message.author.id)) {
     await message.reply('Access denied. Admin command only.');
+    return;
+  }
+
+  // Validate args (should be empty for this command)
+  const argsValidation = validateUserInput(args.join(' '), 1000, true);
+  if (!argsValidation.valid) {
+    await message.reply('Invalid arguments for safe mode command');
     return;
   }
 
