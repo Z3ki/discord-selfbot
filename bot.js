@@ -18,6 +18,11 @@ logger.cleanOldLogs();
 // Validate configuration
 validateConfig();
 
+// Track all intervals and timeouts for cleanup
+const intervals = new Set();
+const timeouts = new Set();
+let cronJob = null; // Track cron job for cleanup
+
 (async () => {
   // Initialize AI providers
   const providerManager = new ProviderManager();
@@ -53,7 +58,7 @@ validateConfig();
   await bot.start();
 
   // Schedule the proactive cognitive loop to run daily at 12:00 PM
-  cron.schedule('0 12 * * *', () => {
+  cronJob = cron.schedule('0 12 * * *', () => {
     logger.info('Executing daily proactive cognitive loop...');
     if (bot.isReady()) {
       bot.proactiveCognitiveLoop();
@@ -72,7 +77,7 @@ validateConfig();
     fs.mkdirSync(tempDir, { recursive: true });
   }
 
-  setInterval(async () => {
+  const pollingInterval = setInterval(async () => {
     if (fs.existsSync(triggerFile)) {
       logger.info(
         'Manual trigger detected for proactive cognitive loop via polling.'
@@ -86,7 +91,7 @@ validateConfig();
           'Bot not ready, delaying proactive cognitive loop trigger via polling.'
         );
         // Retry after a short delay
-        setTimeout(async () => {
+        const retryTimeout = setTimeout(async () => {
           if (bot.isReady()) {
             await bot.proactiveCognitiveLoop();
           } else {
@@ -95,6 +100,7 @@ validateConfig();
             );
           }
         }, 5000);
+        timeouts.add(retryTimeout);
       }
 
       // Clean up the trigger file
@@ -107,6 +113,8 @@ validateConfig();
     }
   }, 5000); // Check every 5 seconds
 
+  intervals.add(pollingInterval);
+
   logger.info('Manual trigger polling is active.');
 })();
 
@@ -116,6 +124,17 @@ function setupProcessHandlers(bot) {
     logger.info(`Received ${signal}, starting graceful shutdown...`);
 
     try {
+      // Clear all intervals and timeouts to prevent memory leaks
+      intervals.forEach((interval) => clearInterval(interval));
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      intervals.clear();
+      timeouts.clear();
+
+      // Stop cron jobs
+      if (cronJob) {
+        cronJob.stop();
+      }
+
       await bot.shutdown();
 
       process.exit(0);
@@ -169,7 +188,7 @@ function setupProcessHandlers(bot) {
   });
 
   // Monitor memory usage
-  setInterval(() => {
+  const memoryInterval = setInterval(() => {
     const memUsage = process.memoryUsage();
     const memUsageMB = {
       heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -195,4 +214,6 @@ function setupProcessHandlers(bot) {
       }
     }
   }, 300000); // Check every 5 minutes
+
+  intervals.add(memoryInterval);
 }

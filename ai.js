@@ -930,37 +930,51 @@ export async function generateResponse(
     });
   }
 
-  let response;
-  let responseMetadata = null;
-  try {
-    response = await generateWithRetry(providerManager, prompt);
+  // Normalize AI response to ensure consistent string type
+  function normalizeAIResponse(response) {
+    let responseMetadata = null;
+    let normalizedResponse;
 
-    // Handle enhanced response format
-    if (typeof response === 'object' && response.text) {
-      responseMetadata = response.metadata;
-      response = response.text;
-      logger.debug('Enhanced AI response received', {
-        provider: responseMetadata?.provider,
-        model: responseMetadata?.model,
-        usage: responseMetadata?.usage,
-        finishReason:
-          responseMetadata?.finish_reason || responseMetadata?.finishReason,
-      });
+    if (typeof response === 'object' && response !== null) {
+      if (response.text) {
+        // Enhanced response format
+        responseMetadata = response.metadata;
+        normalizedResponse = response.text;
+        logger.debug('Enhanced AI response received', {
+          provider: responseMetadata?.provider,
+          model: responseMetadata?.model,
+          usage: responseMetadata?.usage,
+          finishReason:
+            responseMetadata?.finish_reason || responseMetadata?.finishReason,
+        });
+      } else {
+        // Plain object, convert to JSON string
+        normalizedResponse = JSON.stringify(response);
+        logger.debug('Plain object response converted to JSON');
+      }
     } else if (typeof response === 'string') {
-      // Legacy string response
-      logger.debug('Legacy AI response received (string format)');
+      // Already a string
+      normalizedResponse = response;
+      logger.debug('String AI response received');
     } else {
-      // Unexpected response type, convert to string properly
-      logger.warn('Unexpected AI response type, converting to string', {
+      // Any other type (null, undefined, number, boolean)
+      normalizedResponse = String(response || 'Error: Invalid AI response');
+      logger.warn('Non-standard AI response type converted to string', {
         type: typeof response,
         value: response,
       });
-      if (response && typeof response === 'object') {
-        response = JSON.stringify(response);
-      } else {
-        response = String(response || 'Error: Invalid AI response');
-      }
     }
+
+    return { text: normalizedResponse, metadata: responseMetadata };
+  }
+
+  let response;
+  try {
+    response = await generateWithRetry(providerManager, prompt);
+
+    // Normalize response to ensure consistent string type
+    const normalized = normalizeAIResponse(response);
+    response = normalized.text;
   } catch (error) {
     const { handleError } = await import('./utils/errorHandler.js');
     const result = handleError(error, {
@@ -1098,23 +1112,9 @@ export async function generateResponse(
         followUpPrompt
       );
 
-      // Handle enhanced response format
-      let responseText = followUpResponse;
-      if (typeof followUpResponse === 'object' && followUpResponse.text) {
-        responseText = followUpResponse.text;
-      } else if (typeof followUpResponse !== 'string') {
-        logger.warn(
-          'Unexpected follow-up AI response type, converting to string',
-          { type: typeof followUpResponse, value: followUpResponse }
-        );
-        if (followUpResponse && typeof followUpResponse === 'object') {
-          responseText = JSON.stringify(followUpResponse);
-        } else {
-          responseText = String(
-            followUpResponse || 'Error: Invalid AI follow-up response'
-          );
-        }
-      }
+      // Normalize follow-up response using the same function
+      const normalizedFollowUp = normalizeAIResponse(followUpResponse);
+      let responseText = normalizedFollowUp.text;
 
       // Extract new tool calls from the follow-up response
       toolCalls = extractToolCalls(responseText);

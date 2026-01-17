@@ -9,6 +9,7 @@ import {
 } from './health.js';
 import { logger } from './utils/logger.js';
 import { processMessageMedia } from './media.js';
+import { ConcurrentMap } from './utils/mutex.js';
 
 // Stealth utilities removed - no stealth features
 
@@ -1114,33 +1115,35 @@ export async function handleCommand(
 
 // Confusion detection function
 
-// Typing state tracker
-const typingStates = new Map(); // channelId-userId -> { isTyping: boolean, lastTyping: timestamp }
+// Typing state tracker (concurrent)
+const typingStates = new ConcurrentMap(); // channelId-userId -> { isTyping: boolean, lastTyping: timestamp }
 
-// Anti-spam system
-const lastMessageTimes = new Map(); // userId -> channelId -> timestamp
+// Anti-spam system (concurrent)
+const lastMessageTimes = new ConcurrentMap(); // userId -> channelId -> timestamp
 const SPAM_THRESHOLD = 1000; // 1 second between messages
-const spamWarnings = new Map(); // userId -> channelId -> warningCount
+const spamWarnings = new ConcurrentMap(); // userId -> channelId -> warningCount
 
 // Memory cleanup for anti-spam maps
-function cleanupSpamMaps() {
+async function cleanupSpamMaps() {
   const now = Date.now();
   const CLEANUP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
   // Cleanup lastMessageTimes
-  for (const [userId, channels] of lastMessageTimes.entries()) {
+  const lastTimeEntries = await lastMessageTimes.entries();
+  for (const [userId, channels] of lastTimeEntries) {
     for (const [channelId, timestamp] of channels.entries()) {
       if (now - timestamp > CLEANUP_THRESHOLD) {
         channels.delete(channelId);
       }
     }
     if (channels.size === 0) {
-      lastMessageTimes.delete(userId);
+      await lastMessageTimes.delete(userId);
     }
   }
 
   // Cleanup spamWarnings
-  for (const [userId, channels] of spamWarnings.entries()) {
+  const spamWarningEntries = await spamWarnings.entries();
+  for (const [userId, channels] of spamWarningEntries) {
     for (const [channelId] of channels.entries()) {
       // Keep warnings for shorter time - 2 minutes
       if (now - channels.get(channelId) > 2 * 60 * 1000) {
@@ -1148,14 +1151,15 @@ function cleanupSpamMaps() {
       }
     }
     if (channels.size === 0) {
-      spamWarnings.delete(userId);
+      await spamWarnings.delete(userId);
     }
   }
 
   // Cleanup typingStates
-  for (const [key, state] of typingStates.entries()) {
+  const typingEntries = await typingStates.entries();
+  for (const [key, state] of typingEntries) {
     if (now - state.lastTyping > CLEANUP_THRESHOLD) {
-      typingStates.delete(key);
+      await typingStates.delete(key);
     }
   }
 }
@@ -1211,10 +1215,10 @@ export function setupHandlers(
   });
 
   // Typing start handler - ignore bot's own typing
-  client.on('typingStart', (typing) => {
+  client.on('typingStart', async (typing) => {
     if (typing.user.id === client.user.id) return; // Ignore bot's own typing
     const key = `${typing.channel.id}-${typing.user.id}`;
-    typingStates.set(key, {
+    await typingStates.set(key, {
       isTyping: true,
       lastTyping: Date.now(),
     });
@@ -1225,14 +1229,14 @@ export function setupHandlers(
   });
 
   // Typing stop handler
-  client.on('typingStop', (typing) => {
+  client.on('typingStop', async (typing) => {
     const key = `${typing.channel.id}-${typing.user.id}`;
-    const state = typingStates.get(key);
+    const state = await typingStates.get(key);
     if (state) {
       state.isTyping = false;
       // Keep the state for a short time in case they start typing again
-      setTimeout(() => {
-        typingStates.delete(key);
+      setTimeout(async () => {
+        await typingStates.delete(key);
       }, 2000); // Clean up after 2 seconds
     }
     logger.debug('User stopped typing', {
@@ -1347,55 +1351,75 @@ export function setupHandlers(
       const channelId = message.channel?.id || message.channelId;
       const now = Date.now();
 
-      if (!lastMessageTimes.has(userId)) {
-        lastMessageTimes.set(userId, new Map());
-      }
-      const userChannels = lastMessageTimes.get(userId);
-
-      if (userChannels.has(channelId)) {
-        const lastTime = userChannels.get(channelId);
-        const timeDiff = now - lastTime;
-
-        if (timeDiff < SPAM_THRESHOLD) {
-          // Detected spam - ignore the message
-          logger.info('Spam detected - ignoring message', {
-            userId,
-            channelId,
-            timeDiff,
-            content: message.content.substring(0, 50),
-          });
-
-          // Track warnings
-          if (!spamWarnings.has(userId)) {
-            spamWarnings.set(userId, new Map());
+      // Check for spam with atomic operations
+      const isSpam = await lastMessageTimes.atomicUpdateNestedMap(
+        userId,
+        channelId,
+        async (userChannels) => {
+          if (userChannels.has(channelId)) {
+            const lastTime = userChannels.get(channelId);
+            const timeDiff = now - lastTime;
+            return { isSpam: timeDiff < SPAM_THRESHOLD, timeDiff };
           }
-          const userWarnings = spamWarnings.get(userId);
-          if (!userWarnings.has(channelId)) {
-            userWarnings.set(channelId, 0);
-          }
-          const warningCount = userWarnings.get(channelId) + 1;
-          userWarnings.set(channelId, warningCount);
-
-          // Warn after 3 consecutive spam messages
-          if (warningCount >= 3) {
-            try {
-              await message.reply(
-                'Please slow down with your messages. You are sending them too quickly.'
-              );
-              userWarnings.set(channelId, 0); // Reset after warning
-            } catch (error) {
-              logger.warn('Failed to send spam warning', {
-                error: error.message,
-              });
-            }
-          }
-
-          return; // Ignore the spam message
+          return { isSpam: false, timeDiff: null };
         }
+      );
+
+      if (isSpam.isSpam) {
+        // Detected spam - ignore the message
+        logger.info('Spam detected - ignoring message', {
+          userId,
+          channelId,
+          timeDiff: isSpam.timeDiff,
+          content: message.content.substring(0, 50),
+        });
+
+        // Track warnings with atomic operation
+        const warningCount = await spamWarnings.atomicUpdateNestedMap(
+          userId,
+          channelId,
+          async (userWarnings) => {
+            if (!userWarnings.has(channelId)) {
+              userWarnings.set(channelId, 0);
+            }
+            const currentCount = userWarnings.get(channelId) + 1;
+            userWarnings.set(channelId, currentCount);
+            return currentCount;
+          }
+        );
+
+        // Warn after 3 consecutive spam messages
+        if (warningCount >= 3) {
+          try {
+            await message.reply(
+              'Please slow down with your messages. You are sending them too quickly.'
+            );
+            // Reset warning count
+            await spamWarnings.atomicUpdateNestedMap(
+              userId,
+              channelId,
+              async (userWarnings) => {
+                userWarnings.set(channelId, 0);
+              }
+            );
+          } catch (error) {
+            logger.warn('Failed to send spam warning', {
+              error: error.message,
+            });
+          }
+        }
+
+        return; // Ignore the spam message
       }
 
-      // Update last message time
-      userChannels.set(channelId, now);
+      // Update last message time atomically
+      await lastMessageTimes.atomicUpdateNestedMap(
+        userId,
+        channelId,
+        async (userChannels) => {
+          userChannels.set(channelId, now);
+        }
+      );
 
       logger.debug('Processing message for response', {
         hasAttachments: message.attachments.size > 0,

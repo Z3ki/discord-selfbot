@@ -178,7 +178,10 @@ class AdminManager {
   saveAdmins() {
     try {
       const adminList = Array.from(this.admins);
-      writeFileSync(ADMIN_FILE, JSON.stringify(adminList, null, 2));
+      const data = JSON.stringify(adminList, null, 2);
+
+      // Save with secure file permissions (owner read/write only)
+      writeFileSync(ADMIN_FILE, data, { mode: 0o600 });
       logger.debug(`Saved ${adminList.length} admin(s) to file`);
     } catch (error) {
       logger.error('Failed to save admins file', { error: error.message });
@@ -245,14 +248,6 @@ class AdminManager {
       return {
         success: false,
         error: 'Only original administrator can modify admin permissions',
-      };
-    }
-
-    // Validate requester is admin AND is original admin
-    if (!this.isAdmin(requesterId) || requesterId !== this.getOriginalAdmin()) {
-      return {
-        success: false,
-        error: 'Only the original administrator can modify admin permissions',
       };
     }
 
@@ -358,6 +353,20 @@ class AdminManager {
    * @returns {Object} Result
    */
   async clearAdmins(requesterId = null) {
+    // Validate requester is admin AND is original admin
+    if (
+      requesterId &&
+      (!this.isAdmin(requesterId) || requesterId !== this.getOriginalAdmin())
+    ) {
+      await this.addToAuditLog(requesterId, 'UNAUTHORIZED_CLEAR_ADMINS', {
+        reason: 'Non-admin or non-original admin attempted to clear all admins',
+      });
+      return {
+        success: false,
+        error: 'Only original administrator can clear all admins',
+      };
+    }
+
     const count = this.admins.size;
     this.admins.clear();
 

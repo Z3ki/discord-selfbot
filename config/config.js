@@ -125,7 +125,24 @@ function extractUserIdFromToken(token) {
   }
 
   try {
-    const decoded = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+    // Validate base64 format before parsing
+    const headerPart = parts[0];
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(headerPart)) {
+      throw new Error('Invalid base64 format in token header');
+    }
+
+    // Pad base64 string if needed (base64 strings must be divisible by 4)
+    let paddedHeader = headerPart;
+    while (paddedHeader.length % 4 !== 0) {
+      paddedHeader += '=';
+    }
+
+    let decoded;
+    try {
+      decoded = JSON.parse(Buffer.from(paddedHeader, 'base64').toString());
+    } catch (parseError) {
+      throw new Error(`Failed to parse token header: ${parseError.message}`);
+    }
 
     // Discord user tokens have the user ID directly in the decoded object
     // or sometimes the user ID is the decoded value itself
