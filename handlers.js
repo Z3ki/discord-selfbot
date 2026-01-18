@@ -27,6 +27,24 @@ async function safeReply(message, content) {
   }
 }
 
+// Helper function to ensure bot has server prompts initialized
+function ensureServerPromptsInitialized(bot) {
+  if (!bot.serverPrompts) {
+    bot.serverPrompts = new Map();
+  }
+}
+
+// Helper function to clear all memory
+function clearAllMemory(bot) {
+  bot.channelMemories.clear();
+  if (bot.dmContexts) {
+    bot.dmContexts.clear();
+  }
+  if (bot.dmOrigins) {
+    bot.dmOrigins.clear();
+  }
+}
+
 // Input sanitization utility
 function sanitizeInput(input, maxLength = 2000) {
   if (typeof input !== 'string') return '';
@@ -790,9 +808,7 @@ export async function handleCommand(
               }
             } else {
               // Server-specific prompt
-              if (!bot.serverPrompts) {
-                bot.serverPrompts = new Map();
-              }
+              ensureServerPromptsInitialized(bot);
               bot.serverPrompts.set(serverId, newPrompt);
               await bot.dataManager.saveData(
                 'serverPrompts.json',
@@ -868,9 +884,7 @@ export async function handleCommand(
             }
           } else {
             // Server-specific prompt
-            if (!bot.serverPrompts) {
-              bot.serverPrompts = new Map();
-            }
+            ensureServerPromptsInitialized(bot);
             bot.serverPrompts.set(serverId, promptArgs);
             await bot.dataManager.saveData(
               'serverPrompts.json',
@@ -1216,33 +1230,45 @@ export function setupHandlers(
 
   // Typing start handler - ignore bot's own typing
   client.on('typingStart', async (typing) => {
-    if (typing.user.id === client.user.id) return; // Ignore bot's own typing
-    const key = `${typing.channel.id}-${typing.user.id}`;
-    await typingStates.set(key, {
-      isTyping: true,
-      lastTyping: Date.now(),
-    });
-    logger.debug('User started typing', {
-      userId: typing.user.id,
-      channelId: typing.channel.id,
-    });
+    try {
+      if (typing.user.id === client.user.id) return; // Ignore bot's own typing
+      const key = `${typing.channel.id}-${typing.user.id}`;
+      await typingStates.set(key, {
+        isTyping: true,
+        lastTyping: Date.now(),
+      });
+      logger.debug('User started typing', {
+        userId: typing.user.id,
+        channelId: typing.channel.id,
+      });
+    } catch (error) {
+      logger.warn('Error in typingStart handler', { error: error.message });
+    }
   });
 
   // Typing stop handler
   client.on('typingStop', async (typing) => {
-    const key = `${typing.channel.id}-${typing.user.id}`;
-    const state = await typingStates.get(key);
-    if (state) {
-      state.isTyping = false;
-      // Keep the state for a short time in case they start typing again
-      setTimeout(async () => {
-        await typingStates.delete(key);
-      }, 2000); // Clean up after 2 seconds
+    try {
+      const key = `${typing.channel.id}-${typing.user.id}`;
+      const state = await typingStates.get(key);
+      if (state) {
+        state.isTyping = false;
+        // Keep the state for a short time in case they start typing again
+        setTimeout(async () => {
+          try {
+            await typingStates.delete(key);
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        }, 2000); // Clean up after 2 seconds
+      }
+      logger.debug('User stopped typing', {
+        userId: typing.user.id,
+        channelId: typing.channel.id,
+      });
+    } catch (error) {
+      logger.warn('Error in typingStop handler', { error: error.message });
     }
-    logger.debug('User stopped typing', {
-      userId: typing.user.id,
-      channelId: typing.channel.id,
-    });
   });
 
   // Friend request functionality has been removed to prevent CAPTCHA loops and excessive restarts

@@ -50,11 +50,15 @@ export function getHealthMetrics(client) {
  * @param {Object} metrics - Health metrics
  */
 export async function logHealthMetrics(metrics) {
-  const timestamp = new Date().toISOString();
-  const perf = metrics.performance;
-  const logEntry = `${timestamp} - Uptime: ${metrics.uptime}, Memory: ${perf.memoryUsage}, API Latency: ${metrics.apiLatency}ms, Responses: ${perf.totalResponses}, Cache Hit Rate: ${perf.cacheHitRate}, Avg Response Time: ${perf.averageResponseTime}\n`;
+  try {
+    const timestamp = new Date().toISOString();
+    const perf = metrics.performance;
+    const logEntry = `${timestamp} - Uptime: ${metrics.uptime}, Memory: ${perf.memoryUsage}, API Latency: ${metrics.apiLatency}ms, Responses: ${perf.totalResponses}, Cache Hit Rate: ${perf.cacheHitRate}, Avg Response Time: ${perf.averageResponseTime}\n`;
 
-  await fs.promises.appendFile(HEALTH_LOG_FILE, logEntry);
+    await fs.promises.appendFile(HEALTH_LOG_FILE, logEntry);
+  } catch (error) {
+    logger.error('Failed to write health metrics', { error: error.message });
+  }
 }
 
 /**
