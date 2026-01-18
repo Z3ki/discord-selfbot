@@ -10,6 +10,8 @@ import {
 import { logger } from './utils/logger.js';
 import { processMessageMedia } from './media.js';
 import { ConcurrentMap } from './utils/mutex.js';
+import { CONFIG } from './config/config.js';
+import { splitHumanLike, randomDelay } from './utils/humanMessageSplitter.js';
 
 // Stealth utilities removed - no stealth features
 
@@ -41,6 +43,44 @@ function sanitizeInput(input, maxLength = 2000) {
     .replace(/[<>]/g, '') // Remove HTML tags
     .trim()
     .substring(0, maxLength);
+}
+
+// Helper function to send a single message with human-like timing
+async function sendHumanLikeMessage(
+  message,
+  content,
+  isDM,
+  isFirstMessage = false
+) {
+  try {
+    if (isFirstMessage) {
+      // First message uses reply/send as before
+      if (isDM) {
+        return await message.channel.send(content);
+      } else {
+        return await message.reply(content);
+      }
+    } else {
+      // Subsequent messages use send
+      return await message.channel.send(content);
+    }
+  } catch (error) {
+    if (error.code === 50035 && error.message.includes('message_reference')) {
+      // Fallback: send without reply if reference is invalid
+      logger.warn(
+        'Reply failed due to invalid message_reference, sending without reply',
+        { error: error.message }
+      );
+      return await message.channel.send(content);
+    } else {
+      logger.error('Failed to send human-like message', {
+        error: error.message,
+        isFirstMessage,
+        contentLength: content.length,
+      });
+      throw error;
+    }
+  }
 }
 
 // Enhanced input validation utility
@@ -1700,51 +1740,147 @@ export function setupHandlers(
 
               // No stealth processing - direct response
 
+              // Check if we should use human-like multi-message sending
+              const humanLikeConfig = CONFIG.messaging?.humanLike;
+              const responseText = response.response;
+              const shouldUseHumanLike =
+                humanLikeConfig?.enabled &&
+                responseText.length > humanLikeConfig.minSentenceLength;
+
               try {
-                // Handle response chunking for long messages
-                const { chunkMessage } = await import(
-                  './utils/messageUtils.js'
-                );
-                const responseText = response.response;
+                if (shouldUseHumanLike) {
+                  // Try human-like splitting
+                  const messages = splitHumanLike(
+                    responseText,
+                    humanLikeConfig
+                  );
 
-                if (responseText.length > 2000) {
-                  const chunks = chunkMessage(responseText);
-                  for (let i = 0; i < chunks.length; i++) {
-                    const chunkText =
-                      i === 0
-                        ? chunks[i]
-                        : `**Response (Part ${i + 1}/${chunks.length})**\n\n${chunks[i]}`;
+                  if (messages.length > 1) {
+                    // Send multiple messages with human-like timing
+                    logger.debug('Using human-like multi-message sending', {
+                      channelId: message.channel?.id || message.channelId,
+                      userId: message.author.id,
+                      totalMessages: messages.length,
+                    });
 
-                    if (i === 0) {
-                      // First chunk uses reply/send as before
-                      if (isDM) {
-                        await message.channel.send(chunkText);
-                      } else {
-                        await message.reply(chunkText);
+                    for (let i = 0; i < messages.length; i++) {
+                      const isFirstMessage = i === 0;
+
+                      // Show typing indicator before subsequent messages
+                      if (!isFirstMessage && humanLikeConfig.typingBetween) {
+                        try {
+                          await message.channel.sendTyping();
+                          // Brief pause after typing indicator
+                          await new Promise((resolve) =>
+                            setTimeout(resolve, 500)
+                          );
+                        } catch (typingError) {
+                          logger.debug('Failed to send typing indicator', {
+                            error: typingError.message,
+                          });
+                        }
                       }
-                    } else {
-                      // Subsequent chunks use send
-                      await message.channel.send(chunkText);
+
+                      // Send the message
+                      await sendHumanLikeMessage(
+                        message,
+                        messages[i],
+                        isDM,
+                        isFirstMessage
+                      );
+
+                      // Add delay between messages (except after the last one)
+                      if (i < messages.length - 1) {
+                        const delay = randomDelay(
+                          humanLikeConfig.minDelay,
+                          humanLikeConfig.maxDelay
+                        );
+                        logger.debug(
+                          'Adding human-like delay between messages',
+                          {
+                            delay,
+                            messageIndex: i + 1,
+                            totalMessages: messages.length,
+                          }
+                        );
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, delay)
+                        );
+                      }
                     }
-                  }
-                  logger.debug('Chunked response sent successfully', {
-                    channelId: message.channel?.id || message.channelId,
-                    userId: message.author.id,
-                    totalChunks: chunks.length,
-                    usedReply: !isDM,
-                  });
-                } else {
-                  // Original logic for short responses
-                  if (isDM) {
-                    await message.channel.send(responseText);
+
+                    logger.debug(
+                      'Human-like multi-message response sent successfully',
+                      {
+                        channelId: message.channel?.id || message.channelId,
+                        userId: message.author.id,
+                        totalMessages: messages.length,
+                        usedReply: !isDM,
+                      }
+                    );
                   } else {
-                    await message.reply(responseText);
+                    // Single message (either not split or split resulted in one message)
+                    await sendHumanLikeMessage(
+                      message,
+                      messages[0],
+                      isDM,
+                      true
+                    );
+                    logger.debug(
+                      'Single human-like message sent successfully',
+                      {
+                        channelId: message.channel?.id || message.channelId,
+                        userId: message.author.id,
+                        usedReply: !isDM,
+                      }
+                    );
                   }
-                  logger.debug('Follow-up response sent successfully', {
-                    channelId: message.channel?.id || message.channelId,
-                    userId: message.author.id,
-                    usedReply: !isDM,
-                  });
+                } else {
+                  // Fallback to original chunking logic for very long messages or when disabled
+                  const { chunkMessage } = await import(
+                    './utils/messageUtils.js'
+                  );
+
+                  if (responseText.length > 2000) {
+                    const chunks = chunkMessage(responseText);
+                    for (let i = 0; i < chunks.length; i++) {
+                      const chunkText =
+                        i === 0
+                          ? chunks[i]
+                          : `**Response (Part ${i + 1}/${chunks.length})**\n\n${chunks[i]}`;
+
+                      if (i === 0) {
+                        if (isDM) {
+                          await message.channel.send(chunkText);
+                        } else {
+                          await message.reply(chunkText);
+                        }
+                      } else {
+                        await message.channel.send(chunkText);
+                      }
+                    }
+                    logger.debug(
+                      'Fallback chunked response sent successfully',
+                      {
+                        channelId: message.channel?.id || message.channelId,
+                        userId: message.author.id,
+                        totalChunks: chunks.length,
+                        usedReply: !isDM,
+                      }
+                    );
+                  } else {
+                    // Original logic for short responses
+                    if (isDM) {
+                      await message.channel.send(responseText);
+                    } else {
+                      await message.reply(responseText);
+                    }
+                    logger.debug('Fallback single response sent successfully', {
+                      channelId: message.channel?.id || message.channelId,
+                      userId: message.author.id,
+                      usedReply: !isDM,
+                    });
+                  }
                 }
               } catch (error) {
                 if (
@@ -1770,13 +1906,15 @@ export function setupHandlers(
                 }
               }
               // Add follow-up response to memory
+              // For human-like messaging, we store the full response as one memory entry
+              // to maintain conversation continuity
               const memory = channelMemories.get(
                 message.channel?.id || message.channelId
               );
               if (memory) {
                 const botMessage = {
                   user: `${client.user.displayName || client.user.username} (${client.user.username})`,
-                  message: response.response,
+                  message: response.response, // Store the full original response
                   timestamp: Date.now(),
                 };
                 memory.push(botMessage);
@@ -1789,6 +1927,10 @@ export function setupHandlers(
                   user: botMessage.user,
                   messageLength: botMessage.message.length,
                   totalMessages: memory.length,
+                  wasSplit:
+                    shouldUseHumanLike &&
+                    splitHumanLike(response.response, humanLikeConfig).length >
+                      1,
                 });
 
                 // Save memory after adding bot's response
