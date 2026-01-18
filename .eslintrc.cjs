@@ -9,6 +9,6 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    // Add any custom rules here
+    'no-control-regex': 'off',
   },
 };

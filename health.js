@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { logger } from './utils/logger.js';
 
 const HEALTH_LOG_FILE = 'health.log';
 

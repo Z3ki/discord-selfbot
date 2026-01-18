@@ -27,7 +27,7 @@ const command = args[0];
 
 if (command === 'list') {
   const admins = adminManager.getAdmins();
-  console.log(`👑 Bot Administrators (${admins.length}):`);
+  console.log(`Bot Administrators (${admins.length}):`);
   if (admins.length > 0) {
     admins.forEach((adminId, index) => {
       console.log(`  ${index + 1}. ${adminId}`);

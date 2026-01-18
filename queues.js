@@ -389,8 +389,11 @@ export class RequestQueue {
     agentQueue.processing = true;
 
     try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
+      while (
+        agentQueue.priorities.get('HIGH').length > 0 ||
+        agentQueue.priorities.get('NORMAL').length > 0 ||
+        agentQueue.priorities.get('LOW').length > 0
+      ) {
         let task = null;
 
         // Process by priority: HIGH -> NORMAL -> LOW

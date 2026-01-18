@@ -781,7 +781,6 @@ export async function processMessageImages(message) {
  * @param {boolean} asyncProcessing - If true, process media asynchronously and send follow-up messages
  * @returns {Promise<{hasMedia: boolean, multimodalContent: Array, fallbackText: string}>}
  */
-/* eslint-disable no-unused-vars */
 export async function processMessageMedia(
   message,
   asyncProcessing = false,
@@ -1249,8 +1248,7 @@ async function processMediaAsync(message, context) {
 
   // Process Tenor URLs in message content
   const tenorRegex = /https?:\/\/tenor\.com\/view\/[^/\s]+\/(\d+)/g;
-  let match;
-  while ((match = tenorRegex.exec(message.content)) !== null) {
+  while (tenorRegex.exec(message.content) !== null) {
     // hasMedia = true;
     // fallbackText += `**GIF MEDIA**: Tenor animated GIF from ${match[0]} `;
   }

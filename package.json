@@ -1,7 +1,7 @@
 {
   "name": "discord-selfbot",
   "version": "1.0.0",
-  "description": "Basic Maxwell Selfbot",
+  "description": "Selfbot",
   "type": "module",
   "main": "bot.js",
   "scripts": {
@@ -17,7 +17,6 @@
     "@google/generative-ai": "^0.24.1",
     "discord.js-selfbot-v13": "^3.7.1",
     "dotenv": "^17.2.3",
-    "duck-duck-scrape": "^2.2.5",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.2",
     "node-cron": "^4.2.1"

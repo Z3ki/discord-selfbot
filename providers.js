@@ -93,11 +93,9 @@ export class AIProvider {
 
   /**
    * Generate content using the provider
-   * @param {string|object} _content - The content to generate from
    * @returns {Promise<object>} - The generated response with metadata
    */
-  // eslint-disable-next-line no-unused-vars
-  async generateContent(_content) {
+  async generateContent() {
     throw new Error('generateContent() must be implemented by subclass');
   }
 

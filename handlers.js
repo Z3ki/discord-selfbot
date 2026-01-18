@@ -34,28 +34,13 @@ function ensureServerPromptsInitialized(bot) {
   }
 }
 
-// Helper function to clear all memory
-function clearAllMemory(bot) {
-  bot.channelMemories.clear();
-  if (bot.dmContexts) {
-    bot.dmContexts.clear();
-  }
-  if (bot.dmOrigins) {
-    bot.dmOrigins.clear();
-  }
-}
-
-// Input sanitization utility
 function sanitizeInput(input, maxLength = 2000) {
   if (typeof input !== 'string') return '';
-  return (
-    input
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
-      .replace(/[<>]/g, '') // Remove HTML tags
-      .trim()
-      .substring(0, maxLength)
-  );
+  return input
+    .replace(/[\u0000-\u001F\u007F]/g, '') // Remove control characters
+    .replace(/[<>]/g, '') // Remove HTML tags
+    .trim()
+    .substring(0, maxLength);
 }
 
 // Enhanced input validation utility
@@ -138,7 +123,6 @@ function validatePath(inputPath) {
   return allowedPaths.some((allowed) => resolved.startsWith(allowed));
 }
 
-/* eslint-disable no-control-regex */
 export async function handleCommand(
   message,
   channelMemories,
@@ -1524,7 +1508,7 @@ export function setupHandlers(
         await requestQueue.add(
           message.channel?.id || message.channelId,
           async () => {
-            // const processingStartTime = Date.now(); // eslint-disable-line no-unused-vars
+            // const processingStartTime = Date.now();
 
             // Start typing indicator to show the bot is processing
             try {

@@ -60,8 +60,7 @@ export function parseToolArgs(funcName, paramsStr) {
 
       // Remove problematic control characters manually
       cleanJsonStr = cleanJsonStr.replace(
-        // eslint-disable-next-line no-control-regex
-        /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,
+        /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\u009F]/g,
         ''
       );
 
