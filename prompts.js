@@ -53,6 +53,8 @@ function truncateContent(content, limit) {
  * @param {string} messageContent - User's message content
  * @param {string} audioTranscription - Audio transcription if present
  * @param {number} messageLimit - Character limit for message content
+ * @param {string} repliedMessageContent - Content of the message being replied to
+ * @param {string} repliedMessageAuthor - Username of the message author being replied to
  * @param {boolean} safeMode - Whether safe mode is enabled
  * @returns {string} Formatted message section
  */
@@ -61,11 +63,21 @@ function buildMessageSection(
   messageContent,
   audioTranscription,
   messageLimit,
+  repliedMessageContent = null,
+  repliedMessageAuthor = null,
   safeMode = false
 ) {
   const limitedMessageContent = truncateContent(messageContent, messageLimit);
   let section =
     '=== MESSAGE ===\n' + messageInfo + '\n\nUSER: ' + limitedMessageContent;
+
+  if (repliedMessageContent && repliedMessageAuthor) {
+    const limitedReplyContent = truncateContent(
+      repliedMessageContent,
+      Math.floor(messageLimit * 0.3)
+    );
+    section += `\n\nREPLY CONTEXT: The user replied to this message from ${repliedMessageAuthor} and pinged you:\n"${limitedReplyContent}"`;
+  }
 
   if (audioTranscription) {
     section += '\n\nAUDIO: ' + audioTranscription;
@@ -203,6 +215,8 @@ function buildFinalInstructions(safeMode = false) {
  * @param {Array} multimodalContent - Media content for multimodal input
  * @param {string} fallbackText - Fallback text description of media content
  * @param {string} audioTranscription - Transcribed text from audio files
+ * @param {string} repliedMessageContent - Content of message being replied to
+ * @param {string} repliedMessageAuthor - Username of message author being replied to
  * @param {string} serverPrompt - Server-specific prompt (optional)
  * @returns {string|Array} Prompt content (string for text-only, array for multimodal)
  */
@@ -219,6 +233,8 @@ export function buildPromptContent(
   multimodalContent,
   fallbackText,
   audioTranscription = '',
+  repliedMessageContent = null,
+  repliedMessageAuthor = null,
   serverPrompt = null,
   safeMode = false
 ) {
@@ -231,6 +247,8 @@ export function buildPromptContent(
     messageContent,
     audioTranscription,
     allocation.message,
+    repliedMessageContent,
+    repliedMessageAuthor,
     safeMode
   );
   const responseRules = buildResponseRules(messageInfo, safeMode);
@@ -256,10 +274,10 @@ export function buildPromptContent(
   // Add identity reset at the beginning of every prompt
   const identityReset = `
 IDENTITY: AI assistant responding to human user.
-- USER_MESSAGE = human input
-- BOT_RESPONSE = previous AI replies
-- Never confuse identities
-`;
+ - USER_MESSAGE = human input
+ - BOT_RESPONSE = previous AI replies
+ - Never confuse identities
+ `;
 
   // Assemble complete system prompt
   let systemPrompt =

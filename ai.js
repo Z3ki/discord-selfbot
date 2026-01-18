@@ -782,6 +782,33 @@ export async function generateResponse(
     fullMessageContent += `\n\nAUDIO TRANSCRIPTION: "${audioTranscription}"`;
   }
 
+  // Fetch replied message content (only when replying to non-bot user AND user mentioned bot)
+  let repliedMessageContent = null;
+  let repliedMessageAuthor = null;
+  if (message.reference && message.reference.messageId) {
+    try {
+      const repliedMessage = await message.channel?.messages?.fetch(
+        message.reference.messageId
+      );
+      // Only fetch content when replying to non-bot user and user mentioned the bot
+      if (
+        repliedMessage.author.id !== message.client.user.id &&
+        message.isMentioned
+      ) {
+        repliedMessageContent = repliedMessage.content;
+        repliedMessageAuthor = repliedMessage.author.username;
+        logger.debug('Fetched replied message content for AI', {
+          repliedTo: repliedMessageAuthor,
+          contentLength: repliedMessageContent.length,
+        });
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch replied message content', {
+        error: error.message,
+      });
+    }
+  }
+
   // Detect and handle identity claims
   const identityClaimPatterns = [
     /i\s+made\s+you/i,
@@ -898,6 +925,8 @@ export async function generateResponse(
     multimodalContent,
     fallbackText,
     audioTranscription,
+    repliedMessageContent,
+    repliedMessageAuthor,
     serverPrompt,
     safeMode
   );
