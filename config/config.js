@@ -94,7 +94,7 @@ export const CONFIG = {
       probability: 0.6, // 60% chance to split when safe
       minSentenceLength: 30, // Min chars per message
       splitAtParagraphs: true, // Prefer paragraph breaks
-      maxMessageLength: 800, // Split long responses
+      maxMessageLength: 200, // Split long responses
       typingBetween: true, // Show typing between messages
     },
   },

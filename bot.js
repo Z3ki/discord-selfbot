@@ -45,8 +45,8 @@ let cronJob = null; // Track cron job for cleanup
   providerManager.registerProvider(nvidiaProvider);
 
   // Set primary and fallback providers
-  providerManager.setPrimaryProvider('google');
-  providerManager.setFallbackProvider('nvidia-nim');
+  providerManager.setPrimaryProvider('nvidia-nim');
+  providerManager.setFallbackProvider('google');
 
   // Initialize and start bot
   const bot = new Bot();

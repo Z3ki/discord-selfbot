@@ -123,7 +123,7 @@ function findBestSplitPoint(text, settings) {
   }
 
   // Fourth try: Split at other punctuation
-  const punctuation = [', ', '; ', ': '];
+  const punctuation = [];
   for (const punct of punctuation) {
     const punctBreak = text.lastIndexOf(punct, maxLength);
     if (punctBreak > settings.minSentenceLength) {
