@@ -4,35 +4,32 @@ vibecoded shitty code
 
 A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B-IT fallback, featuring comprehensive tool integration, multimodal support, and intelligent conversation management.
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 **This is a selfbot. Selfbots violate Discord's Terms of Service. Use at your own risk. The developers are not responsible for any consequences of using this software.**
 
-## 🌟 Key Features
+## Key Features
 
-### 🤖 Advanced AI System
+### Advanced AI System
 
 - **Primary AI**: NVIDIA NIM with multimodal support
 - **Fallback AI**: Google Gemma 3-27B-IT with multimodal support
 - **Multi-Round Tool Execution**: AI can execute multiple sequential tools in a single conversation
 - **Context-Aware Responses**: LRU-cached conversation memory with automatic cleanup
 
-### 🔧 Comprehensive Tool System (5 Tools)
+### Comprehensive Tool System (6 Tools)
 
-- **Communication Tools**: Direct messaging, user context management
 - **Discord Management**: Reactions, messages, threads, invites, server utilities
-- **System Tools**: Memory inspection
-- **Information Tools**: Wikipedia information lookup
-- **Relationship Tools**: Friend request management and monitoring
+- **System Tools**: Memory inspection, message file creation
 
-### 🎯 Multimodal Support
+### Multimodal Support
 
 - **Images**: JPEG, PNG, GIF, WebP, BMP with AI analysis
 - **Videos**: MP4, WebM, QuickTime, AVI with frame extraction
-- **Audio**: MP3, WAV, OGG, WebM, M4A, AAC, FLAC, Opus with Whisper transcription
+- **Audio**: MP3, WAV, OGG, WebM, M4A, AAC, FLAC, Opus (file analysis only)
 - **Animated GIFs**: Frame-by-frame processing
 
-### 🛡️ Security & Privacy
+### Security & Privacy
 
 - **Admin Management**: Environment-based permanent admin system with dynamic admin list
 - **Per-Server Controls**: Shell access, safe mode, and prompts configurable per server
@@ -41,34 +38,33 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
 - **Input Sanitization**: XSS prevention, content filtering, and file type validation
 - **Access Control**: Command validation, environment-based security, and audit logging
 
-### 📊 Advanced Features
+### Advanced Features
 
 - **Memory Inspection**: System memory analysis
 - **Server-Specific Prompts**: Custom AI behavior per server
 - **Safe Mode**: Family-friendly response toggles
 - **Health Monitoring**: Real-time system metrics and diagnostics
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Tool System](#-tool-system)
-- [Commands](#-commands)
-- [Architecture](#-architecture)
-- [Security](#-security--privacy)
-- [Troubleshooting](#-troubleshooting)
-- [Development](#-development)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Tool System](#tool-system)
+- [Commands](#commands)
+- [Architecture](#architecture)
+- [Security](#security--privacy)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
 - **Node.js 18+** with npm
-- **Python 3.8+** with pip
 - **FFmpeg** for media processing
 
-- **Discord user token** (⚠️ Never share this)
+- **Discord user token** (Never share this)
 - **Google AI API key** (required for AI functionality)
 - **NVIDIA NIM API key** (optional, for fallback AI provider)
 
@@ -87,25 +83,19 @@ A sophisticated Discord selfbot powered by NVIDIA NIM AI with Google Gemma 3-27B
    npm install
    ```
 
-3. **Install Python dependencies**
-
-   ```bash
-   pip install torch faster-whisper
-   ```
-
-4. **Create environment file**
+3. **Create environment file**
 
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
-5. **Start the bot**
+4. **Start the bot**
    ```bash
    npm start
    ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Required Environment Variables
 
@@ -165,7 +155,7 @@ LOG_LEVEL=info  # debug, info, warn, error
 1. Enable Developer Mode in Discord settings
 2. Right-click your profile → Copy User ID
 
-## 📖 Usage
+## Usage
 
 ### Basic Interaction
 
@@ -179,8 +169,8 @@ The bot responds to:
 Simply send messages with attachments:
 
 - **Images & Stickers**: Automatically analyzed by AI (processed synchronously in async mode for immediate response)
-- **Videos**: Frame extraction + audio transcription (processed asynchronously with follow-up analysis)
-- **Audio files**: Transcribed using Whisper (processed asynchronously with follow-up analysis)
+- **Videos**: Frame extraction (processed asynchronously with follow-up analysis)
+- **Audio files**: File analysis only (processed asynchronously with follow-up analysis)
 - **GIFs**: Processed frame by frame (processed asynchronously with follow-up analysis)
 
 ### Tool Usage
@@ -189,12 +179,11 @@ Tools can be invoked by the AI automatically or manually:
 
 ```
 TOOL: change_presence status="online" activity="Playing games"
-
 ```
 
-## 🛠️ Tool System
+## Tool System
 
-### Available Tools (5 Total)
+### Available Tools (6 Total)
 
 #### Discord Management Tools
 
@@ -206,7 +195,7 @@ TOOL: change_presence status="online" activity="Playing games"
 #### System Tools
 
 - **`memory_inspect`**: Inspect and analyze conversation memory data
-- **`memory_inspect`**: Inspect current conversation memory for debugging
+- **`create_message_file`**: Save AI responses to files for later reference
 
 ### Multi-Round Execution
 
@@ -218,7 +207,7 @@ The AI can execute multiple tools in sequence:
 
 All sequential tool calls edit the same Discord message for a clean experience.
 
-## 🎮 Commands
+## Commands
 
 ### Basic Commands
 
@@ -269,7 +258,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 ,admin remove 123456789012345678
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
@@ -291,7 +280,7 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 #### Tool Executor (`tools/ToolExecutor.js`)
 
-- 5 consolidated tool categories: communication, discord, information, relationship, system
+- 6 consolidated tool categories: discord, system
 - Multi-round execution with shared message editing for clean user experience
 - Live progress updates and error recovery for long-running operations
 - Dynamic tool availability based on permissions and parameter validation
@@ -300,15 +289,8 @@ All sequential tool calls edit the same Discord message for a clean experience.
 
 - Multimodal content handling (images, videos, audio, GIFs) with async processing
 - Automatic download, validation, and file type checking with magic numbers
-- Frame extraction for videos, audio transcription via Whisper, and GIF processing
+- Frame extraction for videos and GIF processing via FFmpeg
 - Base64 encoding for AI input with MIME type verification
-
-#### Transcription Service (`services/TranscriptionService.py`)
-
-- Persistent Python-based Whisper service
-- Real-time audio transcription
-- Video audio track extraction
-- Language detection and processing
 
 ### Data Persistence
 
@@ -358,7 +340,7 @@ data-selfbot/
 - Reasoning activity tracking and audit trails
 - Automatic log cleanup (7 days) with configurable levels
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 ### Data Protection
 
@@ -378,7 +360,7 @@ data-selfbot/
 - **Command Validation**: Input sanitization, XSS prevention, and audit logging
 - **Safe Mode**: Family-friendly response toggles with server-specific settings
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -403,9 +385,6 @@ node -e "console.log(process.env.DISCORD_USER_TOKEN ? 'Token set' : 'Token missi
 ```bash
 # Check FFmpeg installation
 ffmpeg -version
-
-# Test Python dependencies
-python3 -c "import torch; import faster_whisper; print('Dependencies OK')"
 ```
 
 #### Memory Issues
@@ -425,13 +404,11 @@ tail -f logs/bot.log
 # Error messages
 tail -f logs/errors.log
 
-
-
 # System health
 tail -f logs/health.log
 ```
 
-#### In-Di scord Commands
+#### In-Discord Commands
 
 - `,health` - Check system health and metrics
 - `,debug` - Show debug information and status
@@ -450,7 +427,7 @@ tail -f logs/health.log
 - Request queuing and rate limiting
 - Stealth features to avoid detection
 
-## 🛠️ Development
+## Development
 
 ### Project Structure
 
@@ -458,13 +435,9 @@ tail -f logs/health.log
 maxwell-selfbot/
 ├── services/                 # Core services
 │   ├── Bot.js               # Main bot orchestrator
-│   ├── DataManager.js       # Data persistence
-│   └── TranscriptionService.py # Audio transcription
-├── tools/                    # Tool system (14 tools)
-│   ├── communication/        # DM and context tools
+│   └── DataManager.js       # Data persistence
+├── tools/                    # Tool system (6 tools)
 │   ├── discord/             # Discord interaction tools
-│   ├── information/          # Information lookup tools
-│   ├── relationship/        # Friend management tools
 │   ├── system/              # System and calculation tools
 │   ├── ToolExecutor.js     # Tool execution engine
 │   └── index.js            # Tool registry
@@ -474,6 +447,7 @@ maxwell-selfbot/
 │   ├── adminManager.js     # Admin management
 │   └── errorHandler.js     # Error handling
 ├── config/                   # Configuration management
+├── commands/                 # Discord commands
 ├── handlers.js              # Discord event handlers
 ├── ai.js                    # AI processing logic
 ├── providers.js             # AI provider implementations
@@ -580,7 +554,7 @@ The bot extracts comprehensive metadata from AI responses:
 
 See `API_CAPABILITIES.md` for detailed information about available API features.
 
-## 🐛 Bug Fixes & Improvements
+## Bug Fixes & Improvements
 
 ### New Features
 
@@ -716,11 +690,11 @@ See `API_CAPABILITIES.md` for detailed information about available API features.
 
 **Impact**: AI now maintains clear separation between its own responses and user input, eliminating self-confusion behavior.
 
-## 📄 License
+## License
 
 This project is provided as-is without warranty. Use at your own risk.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please ensure:
 
@@ -729,7 +703,7 @@ Contributions are welcome! Please ensure:
 - Documentation is updated for new features
 - Security considerations are addressed
 
-## 📞 Support
+## Support
 
 For issues or questions:
 
