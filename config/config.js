@@ -86,6 +86,18 @@ export const CONFIG = {
     minTimeBetweenActions:
       parseInt(process.env.PROACTIVE_MIN_TIME_BETWEEN) || 300000, // 5 minutes
   },
+  messaging: {
+    humanLike: {
+      enabled: true, // Enable human-like multi-messages
+      minDelay: 1500, // 1.5s min between messages
+      maxDelay: 3500, // 3.5s max between messages
+      probability: 0.6, // 60% chance to split when safe
+      minSentenceLength: 30, // Min chars per message
+      splitAtParagraphs: true, // Prefer paragraph breaks
+      maxMessageLength: 800, // Split long responses
+      typingBetween: true, // Show typing between messages
+    },
+  },
 };
 
 function extractUserIdFromConfig() {
