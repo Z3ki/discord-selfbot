@@ -36,7 +36,9 @@ if (command === 'list') {
     console.log('  No administrators configured');
   }
 } else if (command === 'clear') {
-  const result = adminManager.clearAdmins();
+  const result = await adminManager.clearAdmins(
+    adminManager.getOriginalAdmin()
+  );
   console.log(`🚨 Cleared ${result.count} admin(s)`);
 } else if (command === 'think') {
   const fs = await import('fs');
@@ -48,7 +50,10 @@ if (command === 'list') {
 } else {
   // Treat as user ID to toggle
   const userId = command;
-  const result = adminManager.toggleAdmin(userId);
+  const result = await adminManager.toggleAdmin(
+    adminManager.getOriginalAdmin(),
+    userId
+  );
 
   if (result.success) {
     const emoji = result.action === 'added' ? '➕' : '➖';

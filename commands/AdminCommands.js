@@ -96,7 +96,10 @@ export async function handleAdminCommand(message, args) {
           await message.reply(`Invalid user ID: ${userIdCheck.error}`);
           return;
         }
-        const addResult = adminManager.toggleAdmin(userId);
+        const addResult = await adminManager.toggleAdmin(
+          message.author.id,
+          userId
+        );
         if (addResult.success && addResult.action === 'added') {
           await message.reply(
             `**Admin Added**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`
@@ -124,7 +127,10 @@ export async function handleAdminCommand(message, args) {
           await message.reply(`Invalid user ID: ${userIdCheck.error}`);
           return;
         }
-        const removeResult = adminManager.toggleAdmin(userId);
+        const removeResult = await adminManager.toggleAdmin(
+          message.author.id,
+          userId
+        );
         if (removeResult.success && removeResult.action === 'removed') {
           await message.reply(
             `**Admin Removed**\n\n**User ID:** ${userId}\n**Total Admins:** ${adminManager.getAdminCount()}`
@@ -152,7 +158,10 @@ export async function handleAdminCommand(message, args) {
           await message.reply(`Invalid user ID: ${userIdCheck.error}`);
           return;
         }
-        const toggleResult = adminManager.toggleAdmin(userId);
+        const toggleResult = await adminManager.toggleAdmin(
+          message.author.id,
+          userId
+        );
         if (toggleResult.success) {
           const status =
             toggleResult.action === 'added'
@@ -183,7 +192,7 @@ export async function handleAdminCommand(message, args) {
       }
 
       case 'clear': {
-        adminManager.clearAdmins();
+        await adminManager.clearAdmins(message.author.id);
         await message.reply(
           '**All administrators removed**\n\nUse `,admin add <userId>` to add new administrators.'
         );
